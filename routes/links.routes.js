@@ -1,0 +1,158 @@
+const express = require('express');
+const router = express.Router();
+const moment = require('moment');
+
+const authMiddleware = require('../middleware/auth.middleware');
+
+const {
+  findBaseUrl,
+  pullIdFromUrl,
+  findLinkByVideoId,
+  createNewLink,
+  conversionIncorrectLinks,
+} = require('../controllers/links.controller');
+
+const { getUserById } = require('../controllers/user.controller');
+
+const {
+  createCardInTrello,
+  findWorkersTrelloIds,
+  getCardDataByCardId,
+  updateCustomFieldByTrelloCard,
+  definingValueOfCustomFieldReminderInTrello,
+  calculatingTimeUntilNextReminder,
+  updateTrelloCard,
+} = require('../controllers/trello.controller');
+
+const { findWorkersForCard } = require('../controllers/user.controller');
+
+router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
+  const { list, workers, reminders, title, authorNickname, link } = req.body;
+
+  const convertedLink = conversionIncorrectLinks(link);
+
+  try {
+    //const videoLink = await findBaseUrl(convertedLink);
+
+    //if (!videoLink) {
+    //  return res
+    //    .status(400)
+    //    .json({ message: 'Link is invalid', status: 'error' });
+    //}
+
+    const videoId = await pullIdFromUrl(convertedLink);
+
+    console.log(videoId, 88);
+
+    if (!videoId) {
+      return res
+        .status(400)
+        .json({ message: 'Link is invalid', status: 'error' });
+    }
+
+    const linkInfo = await findLinkByVideoId(videoId);
+
+    if (linkInfo) {
+      const trelloCardData = await getCardDataByCardId(linkInfo.trelloCardId);
+
+      return res.status(200).json({
+        status: 'warning',
+        message: 'This video has already been added',
+        apiData: {
+          trelloCardData,
+        },
+      });
+    }
+
+    const selfWorker = await getUserById(req.user.id);
+
+    if (!selfWorker) {
+      return res
+        .status(404)
+        .json({ message: 'Worker not found', status: 'error' });
+    }
+
+    const foundWorkers = await findWorkersForCard(workers, selfWorker);
+
+    if (!foundWorkers.length) {
+      return res.status(404).json({
+        message: 'Not a single user with the role of "worker" was found',
+        status: 'error',
+      });
+    }
+
+    const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
+
+    if (!foundWorkersTrelloIds.length) {
+      return res.status(404).json({
+        message: 'Not a single employee was found in trello',
+        status: 'error',
+      });
+    }
+
+    const trelloResponseAfterCreatingCard = await createCardInTrello(
+      authorNickname,
+      title,
+      convertedLink,
+      list,
+      foundWorkersTrelloIds
+    );
+
+    //https://www.tiktok.com/@diablophysique97/video/7233958742516206854
+
+    if (reminders) {
+      const reminderCustomFieldValue =
+        await definingValueOfCustomFieldReminderInTrello(
+          process.env.TRELLO_CUSTOM_FIELD_REMINDER,
+          reminders
+        );
+
+      await updateCustomFieldByTrelloCard(
+        trelloResponseAfterCreatingCard.id,
+        process.env.TRELLO_CUSTOM_FIELD_REMINDER,
+        { idValue: reminderCustomFieldValue.id }
+      );
+
+      const dateMlscUntilNextReminder = await calculatingTimeUntilNextReminder(
+        reminderCustomFieldValue
+      );
+
+      const currentTime = moment().valueOf();
+
+      await updateTrelloCard(trelloResponseAfterCreatingCard.id, {
+        due: +dateMlscUntilNextReminder + +currentTime,
+      });
+    }
+
+    const newLinkInfo = await createNewLink(
+      selfWorker.email,
+      selfWorker.name,
+      selfWorker.nickname,
+      title,
+      authorNickname,
+      convertedLink,
+      videoId,
+      trelloResponseAfterCreatingCard.url,
+      trelloResponseAfterCreatingCard.id
+    );
+
+    if (!newLinkInfo) {
+      return res.status(400).json({
+        status: 'err',
+        message: 'Server side error',
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Video added and sent',
+    });
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(400)
+      .json({ status: 'error', message: 'Server side error' });
+  }
+});
+
+module.exports = router;
