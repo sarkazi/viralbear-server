@@ -24,5 +24,13 @@ const schema = new Schema({
     required: true,
     enum: roles,
   },
+  percentage: {
+    type: Number,
+    required: false,
+  },
+  amountPerVideo: {
+    type: Number,
+    required: false,
+  },
 });
 module.exports = model('User', schema);

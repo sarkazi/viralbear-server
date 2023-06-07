@@ -251,8 +251,6 @@ router.post(
             file: null,
           });
 
-        yyy = uuuuuu;
-
         if (!reqVideoId) {
           videoId = await generateVideoId();
         } else {

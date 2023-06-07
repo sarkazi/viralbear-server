@@ -53,7 +53,17 @@ router.get('/getWorkerById', authMiddleware, async (req, res) => {
 
 router.post('/createOne', authMiddleware, async (req, res) => {
   try {
-    const { email, password, nickname, name, role } = req.body;
+    const {
+      email,
+      password,
+      nickname,
+      name,
+      role,
+      percentage,
+      amountPerVideo,
+    } = req.body;
+
+    console.log(amountPerVideo, percentage);
 
     if (!email || !password || !nickname || !name || !role) {
       return res
@@ -64,12 +74,10 @@ router.post('/createOne', authMiddleware, async (req, res) => {
     const candidate = await getUserByEmail(email);
 
     if (candidate) {
-      return res
-        .status(400)
-        .json({
-          message: 'A user with this email already exists',
-          status: 'warning',
-        });
+      return res.status(400).json({
+        message: 'A user with this email already exists',
+        status: 'warning',
+      });
     }
 
     const salt = await genSalt(10);
@@ -80,6 +88,8 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       email: email,
       password: await hashBcrypt(password, salt),
       role,
+      percentage,
+      amountPerVideo,
     };
 
     const newUser = await createUser(objDB);
@@ -108,13 +118,16 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const { name, nickname, role, email } = req.body;
+    const { name, nickname, role, email, percentage, amountPerVideo } =
+      req.body;
 
     objDB = {
-      ...(name && { name }),
-      ...(nickname && { nickname: `@${nickname}` }),
-      ...(role && { role }),
-      ...(email && { email }),
+      name,
+      nickname: `@${nickname}`,
+      role,
+      email,
+      percentage,
+      amountPerVideo,
     };
 
     await updateUser(userId, objDB);
