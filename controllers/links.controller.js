@@ -23,7 +23,13 @@ const findBaseUrl = async (link) => {
 
 const pullIdFromUrl = async (videoLink) => {
   if (videoLink.includes('tiktok.com')) {
-    return urlParser.parse(videoLink)?.id;
+    const link = urlParser.parse(videoLink)?.id;
+
+    if (link) {
+      return link;
+    } else {
+      videoLink;
+    }
   }
   if (videoLink.includes('facebook')) {
     const link = urlParser.parse(videoLink)?.id;
