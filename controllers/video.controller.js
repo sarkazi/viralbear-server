@@ -1050,7 +1050,9 @@ const convertingVideoToHorizontal = async (video, userId) => {
           //.fps(60)
           .toFormat('mp4')
           .on('start', () => {
-            console.log('start conversion');
+            console.log(
+              '------------------ start conversion ----------------------'
+            );
           })
           .on('progress', (progress) => {
             //console.log(progress, `видео ${video.originalname}`);
@@ -1069,7 +1071,9 @@ const convertingVideoToHorizontal = async (video, userId) => {
               });
           })
           .on('end', () => {
-            console.log('end conversion');
+            console.log(
+              '------------------------- end conversion ----------------------------------'
+            );
             resolve({
               message: 'the video has been successfully converted and saved',
               status: 'success',

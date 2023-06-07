@@ -21,6 +21,9 @@ const { getUserById } = require('../controllers/user.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
 
+var Mutex = require('async-mutex').Mutex;
+const mutex = new Mutex();
+
 const {
   refreshMrssFiles,
   findByIsBrandSafe,
@@ -81,277 +84,282 @@ router.post(
     },
   ]),
   async (req, res) => {
-    const {
-      originalLink,
-      vbCode,
-      authorEmail,
-      percentage,
-      advancePayment,
-      researchers,
-      title,
-      desc,
-      creditTo,
-      tags,
-      category,
-      categoryReuters,
-      city,
-      country,
-      date,
-      trelloCardUrl,
-      trelloCardId,
-      trelloCardName,
-      priority,
-      whereFilmed,
-      whyDecide,
-      whatHappen,
-      whenFilmed,
-      whoAppears,
-      agreementLink,
-      videoId: reqVideoId,
-    } = req.body;
+    await mutex.runExclusive(async () => {
+      const {
+        originalLink,
+        vbCode,
+        authorEmail,
+        percentage,
+        advancePayment,
+        researchers,
+        title,
+        desc,
+        creditTo,
+        tags,
+        category,
+        categoryReuters,
+        city,
+        country,
+        date,
+        trelloCardUrl,
+        trelloCardId,
+        trelloCardName,
+        priority,
+        whereFilmed,
+        whyDecide,
+        whatHappen,
+        whenFilmed,
+        whoAppears,
+        agreementLink,
+        videoId: reqVideoId,
+      } = req.body;
 
-    const { video, screen } = req.files;
+      const { video, screen } = req.files;
 
-    if (
-      path.extname(video[0].originalname) !== '.mp4' ||
-      path.extname(screen[0].originalname) !== '.jpg'
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Invalid file/s extension', status: 'warning' });
-    }
+      if (
+        path.extname(video[0].originalname) !== '.mp4' ||
+        path.extname(screen[0].originalname) !== '.jpg'
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'Invalid file/s extension', status: 'warning' });
+      }
 
-    let videoId;
+      let videoId;
 
-    if (
-      !originalLink ||
-      !researchers ||
-      !title ||
-      !desc ||
-      !tags ||
-      !category ||
-      !categoryReuters ||
-      !city ||
-      !country ||
-      !date ||
-      !trelloCardUrl ||
-      !trelloCardId ||
-      !trelloCardName ||
-      !priority ||
-      !video ||
-      !screen
-    ) {
-      return res.status(404).json({
-        message: 'Missing values for adding a new video',
-        status: 'warning',
-      });
-    }
-
-    try {
-      const videoWithVBCode = await findVideoByVBCode(vbCode);
-
-      if (videoWithVBCode) {
-        return res.status(200).json({
-          message: 'a video with such a "vbcode" is already in the database',
+      if (
+        !originalLink ||
+        !researchers ||
+        !title ||
+        !desc ||
+        !tags ||
+        !category ||
+        !categoryReuters ||
+        !city ||
+        !country ||
+        !date ||
+        !trelloCardUrl ||
+        !trelloCardId ||
+        !trelloCardName ||
+        !priority ||
+        !video ||
+        !screen
+      ) {
+        return res.status(404).json({
+          message: 'Missing values for adding a new video',
           status: 'warning',
         });
       }
 
-      const countryCode = await findTheCountryCodeByName(country);
+      try {
+        const videoWithVBCode = await findVideoByVBCode(vbCode);
 
-      if (!countryCode) {
-        return res.status(400).json({
-          message: 'Could not determine the country code',
+        if (videoWithVBCode) {
+          return res.status(200).json({
+            message: 'a video with such a "vbcode" is already in the database',
+            status: 'warning',
+          });
+        }
+
+        const countryCode = await findTheCountryCodeByName(country);
+
+        if (!countryCode) {
+          return res.status(400).json({
+            message: 'Could not determine the country code',
+            status: 'error',
+          });
+        }
+
+        const responseAfterConversion = await convertingVideoToHorizontal(
+          video[0],
+          req.user.id
+        );
+
+        const bucketResponseByConvertedVideoUpload = await new Promise(
+          (resolve, reject) => {
+            fs.readFile(
+              path.resolve(`./videos/${req.user.id}/output-for-conversion.mp4`),
+              {},
+              async (err, buffer) => {
+                if (err) {
+                  console.log(err);
+                  reject({
+                    status: 'error',
+                    message: 'Error when reading a file from disk',
+                  });
+                } else {
+                  await uploadFileToStorage(
+                    video[0].originalname,
+                    'reuters-videos',
+                    createUniqueHash(),
+                    buffer,
+                    video[0].mimetype,
+                    path.extname(video[0].originalname),
+                    resolve,
+                    reject,
+                    'progressOfRequestInPublishing',
+                    'Uploading the converted video to the bucket',
+                    req.user.id
+                  );
+                }
+              }
+            );
+          }
+        );
+
+        const bucketResponseByVideoUpload = await new Promise(
+          async (resolve, reject) => {
+            await uploadFileToStorage(
+              video[0].originalname,
+              'videos',
+              createUniqueHash(),
+              video[0].buffer,
+              video[0].mimetype,
+              path.extname(video[0].originalname),
+              resolve,
+              reject,
+              'progressOfRequestInPublishing',
+              'Uploading video to the bucket',
+              req.user.id
+            );
+          }
+        );
+
+        const bucketResponseByScreenUpload = await new Promise(
+          async (resolve, reject) => {
+            await uploadFileToStorage(
+              screen[0].originalname,
+              'screens',
+              createUniqueHash(),
+              screen[0].buffer,
+              screen[0].mimetype,
+              path.extname(screen[0].originalname),
+              resolve,
+              reject,
+              'progressOfRequestInPublishing',
+              'Uploading screen to the bucket',
+              req.user.id
+            );
+          }
+        );
+
+        socketInstance
+          .io()
+          .sockets.in(req.user.id)
+          .emit('progressOfRequestInPublishing', {
+            event: 'Just a little bit left',
+            file: null,
+          });
+
+        if (!reqVideoId) {
+          videoId = await generateVideoId();
+        } else {
+          videoId = +reqVideoId;
+        }
+
+        const bodyForNewVideo = {
+          videoId,
+          originalLink,
+          title,
+          desc,
+          ...(creditTo && {
+            creditTo,
+          }),
+          tags: JSON.parse(tags).map((el) => {
+            return el.trim();
+          }),
+          category,
+          categoryReuters,
+          city,
+          hasAudioTrack: responseAfterConversion.data.hasAudioTrack,
+          country,
+          countryCode,
+          date,
+          duration: Math.floor(getDurationFromBuffer(video[0].buffer)),
+          trelloCardUrl,
+          trelloCardId,
+          trelloCardName,
+          researchers: await findWorkerEmailByWorkerName(
+            JSON.parse(researchers)
+          ),
+          priority: JSON.parse(priority),
+          ...(agreementLink && {
+            agreementLink,
+          }),
+          ...(vbCode && {
+            vbCode: `VB${vbCode}`,
+          }),
+          ...(authorEmail && {
+            authorEmail,
+          }),
+          ...(advancePayment && {
+            advancePayment,
+          }),
+          ...(percentage && {
+            percentage,
+          }),
+          ...(whereFilmed && {
+            whereFilmed,
+          }),
+          ...(whyDecide && {
+            whyDecide,
+          }),
+          ...(whatHappen && {
+            whatHappen,
+          }),
+          ...(whenFilmed && {
+            whenFilmed,
+          }),
+          ...(whoAppears && {
+            whoAppears,
+          }),
+          bucketResponseByVideoUpload: bucketResponseByVideoUpload.response,
+          bucketResponseByScreenUpload: bucketResponseByScreenUpload.response,
+          bucketResponseByConversionVideoUpload:
+            bucketResponseByConvertedVideoUpload.response,
+        };
+
+        const newVideo = await createNewVideo(bodyForNewVideo);
+
+        if (!newVideo) {
+          return res.status(400).json({
+            message: 'Error while adding a new video',
+            status: 'error',
+          });
+        }
+
+        const videosReadyForPublication = await findReadyForPublication();
+
+        const { doneTasks, approvedTasks } =
+          await getTrelloCardsFromDoneListByApprovedAndNot();
+
+        socketInstance.io().emit('findReadyForPublication', {
+          data: {
+            videosReadyForPublication,
+            doneTasks,
+            approvedTasks,
+          },
+          event: 'ready for publication',
+        });
+
+        socketInstance.io().emit('changeDoneAndApprovedCards', {
+          doneTasks,
+          approvedTasks,
+        });
+
+        return res.status(200).json({
+          apiData: newVideo,
+          status: 'success',
+          message: 'Video successfully added',
+        });
+      } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+          message: err?.message ? err?.message : 'Server side error',
           status: 'error',
         });
       }
-
-      const responseAfterConversion = await convertingVideoToHorizontal(
-        video[0],
-        req.user.id
-      );
-
-      const bucketResponseByConvertedVideoUpload = await new Promise(
-        (resolve, reject) => {
-          fs.readFile(
-            path.resolve(`./videos/${req.user.id}/output-for-conversion.mp4`),
-            {},
-            async (err, buffer) => {
-              if (err) {
-                console.log(err);
-                reject({
-                  status: 'error',
-                  message: 'Error when reading a file from disk',
-                });
-              } else {
-                await uploadFileToStorage(
-                  video[0].originalname,
-                  'reuters-videos',
-                  createUniqueHash(),
-                  buffer,
-                  video[0].mimetype,
-                  path.extname(video[0].originalname),
-                  resolve,
-                  reject,
-                  'progressOfRequestInPublishing',
-                  'Uploading the converted video to the bucket',
-                  req.user.id
-                );
-              }
-            }
-          );
-        }
-      );
-
-      const bucketResponseByVideoUpload = await new Promise(
-        async (resolve, reject) => {
-          await uploadFileToStorage(
-            video[0].originalname,
-            'videos',
-            createUniqueHash(),
-            video[0].buffer,
-            video[0].mimetype,
-            path.extname(video[0].originalname),
-            resolve,
-            reject,
-            'progressOfRequestInPublishing',
-            'Uploading video to the bucket',
-            req.user.id
-          );
-        }
-      );
-
-      const bucketResponseByScreenUpload = await new Promise(
-        async (resolve, reject) => {
-          await uploadFileToStorage(
-            screen[0].originalname,
-            'screens',
-            createUniqueHash(),
-            screen[0].buffer,
-            screen[0].mimetype,
-            path.extname(screen[0].originalname),
-            resolve,
-            reject,
-            'progressOfRequestInPublishing',
-            'Uploading screen to the bucket',
-            req.user.id
-          );
-        }
-      );
-
-      socketInstance
-        .io()
-        .sockets.in(req.user.id)
-        .emit('progressOfRequestInPublishing', {
-          event: 'Just a little bit left',
-          file: null,
-        });
-
-      if (!reqVideoId) {
-        videoId = await generateVideoId();
-      } else {
-        videoId = +reqVideoId;
-      }
-
-      const bodyForNewVideo = {
-        videoId,
-        originalLink,
-        title,
-        desc,
-        ...(creditTo && {
-          creditTo,
-        }),
-        tags: JSON.parse(tags).map((el) => {
-          return el.trim();
-        }),
-        category,
-        categoryReuters,
-        city,
-        hasAudioTrack: responseAfterConversion.data.hasAudioTrack,
-        country,
-        countryCode,
-        date,
-        duration: Math.floor(getDurationFromBuffer(video[0].buffer)),
-        trelloCardUrl,
-        trelloCardId,
-        trelloCardName,
-        researchers: await findWorkerEmailByWorkerName(JSON.parse(researchers)),
-        priority: JSON.parse(priority),
-        ...(agreementLink && {
-          agreementLink,
-        }),
-        ...(vbCode && {
-          vbCode: `VB${vbCode}`,
-        }),
-        ...(authorEmail && {
-          authorEmail,
-        }),
-        ...(advancePayment && {
-          advancePayment,
-        }),
-        ...(percentage && {
-          percentage,
-        }),
-        ...(whereFilmed && {
-          whereFilmed,
-        }),
-        ...(whyDecide && {
-          whyDecide,
-        }),
-        ...(whatHappen && {
-          whatHappen,
-        }),
-        ...(whenFilmed && {
-          whenFilmed,
-        }),
-        ...(whoAppears && {
-          whoAppears,
-        }),
-        bucketResponseByVideoUpload: bucketResponseByVideoUpload.response,
-        bucketResponseByScreenUpload: bucketResponseByScreenUpload.response,
-        bucketResponseByConversionVideoUpload:
-          bucketResponseByConvertedVideoUpload.response,
-      };
-
-      const newVideo = await createNewVideo(bodyForNewVideo);
-
-      if (!newVideo) {
-        return res
-          .status(400)
-          .json({ message: 'Error while adding a new video', status: 'error' });
-      }
-
-      const videosReadyForPublication = await findReadyForPublication();
-
-      const { doneTasks, approvedTasks } =
-        await getTrelloCardsFromDoneListByApprovedAndNot();
-
-      socketInstance.io().emit('findReadyForPublication', {
-        data: {
-          videosReadyForPublication,
-          doneTasks,
-          approvedTasks,
-        },
-        event: 'ready for publication',
-      });
-
-      socketInstance.io().emit('changeDoneAndApprovedCards', {
-        doneTasks,
-        approvedTasks,
-      });
-
-      return res.status(200).json({
-        apiData: newVideo,
-        status: 'success',
-        message: 'Video successfully added',
-      });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({
-        message: err?.message ? err?.message : 'Server side error',
-        status: 'error',
-      });
-    }
+    });
   }
 );
 
@@ -1673,8 +1681,107 @@ router.post(
       name: 'video',
       maxCount: 1,
     },
+    {
+      name: 'screen',
+      maxCount: 1,
+    },
   ]),
-  async (req, res) => {}
+  async (req, res) => {
+    const video = req.files.video[0];
+    const userId = req.user.id;
+
+    console.log(mutex.isLocked(), 67577);
+
+    mutex
+      .runExclusive(async () => {
+        try {
+          const response = await new Promise(async (resolve, reject) => {
+            const response = await convertingVideoToHorizontal(video, userId);
+
+            if (response.status === 'error') {
+              reject({ status: 'error', message: response.message });
+            } else {
+              resolve({
+                status: 'success',
+                apiData: response.data,
+                message: response.message,
+              });
+            }
+          });
+
+          const bucketResponseByConvertedVideoUpload = await new Promise(
+            (resolve, reject) => {
+              fs.readFile(
+                path.resolve(
+                  `./videos/${req.user.id}/output-for-conversion.mp4`
+                ),
+                {},
+                async (err, buffer) => {
+                  if (err) {
+                    console.log(err);
+                    reject({
+                      status: 'error',
+                      message: 'Error when reading a file from disk',
+                    });
+                  } else {
+                    await uploadFileToStorage(
+                      video.originalname,
+                      'testo',
+                      createUniqueHash(),
+                      buffer,
+                      video.mimetype,
+                      path.extname(video.originalname),
+                      resolve,
+                      reject,
+                      'progressOfRequestInPublishing',
+                      'Uploading the converted video to the bucket',
+                      userId
+                    );
+                  }
+                }
+              );
+            }
+          );
+
+          console.log(bucketResponseByConvertedVideoUpload);
+
+          const bucketResponseByVideoUpload = await new Promise(
+            async (resolve, reject) => {
+              await uploadFileToStorage(
+                video.originalname,
+                'testo',
+                createUniqueHash(),
+                video.buffer,
+                video.mimetype,
+                path.extname(video.originalname),
+                resolve,
+                reject,
+                'progressOfRequestInPublishing',
+                'Uploading video to the bucket',
+                userId
+              );
+            }
+          );
+
+          console.log(bucketResponseByVideoUpload);
+
+          return res.status(200).json({
+            status: 'success',
+            message: response.message,
+            apiData: bucketResponseByVideoUpload,
+          });
+        } catch (err) {
+          console.log(err);
+          return res.status(500).json({
+            status: 'error',
+            message: err?.response?.message,
+          });
+        }
+      })
+      .then((result) => {
+        console.log(result);
+      });
+  }
 );
 
 module.exports = router;

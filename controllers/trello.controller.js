@@ -46,7 +46,7 @@ const getTrelloCardsFromDoneListByApprovedAndNot = async () => {
   const prePublishingVideos = await findReadyForPublication();
 
   const doneCardsFromTrello = await getAllCardsByListId(
-    process.env.TRELLO_LIST_DONE_ID
+    process.env.TRELLO_LIST_TEST_ID
   );
 
   const doneTasks = doneCardsFromTrello
