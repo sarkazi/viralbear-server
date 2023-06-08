@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const xlsx = require('xlsx');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -17,8 +18,17 @@ router.post(
   ]),
   async (req, res) => {
     const { csv } = req.files;
+    const { company } = req.body;
 
-    console.log(csv);
+    const workbook = xlsx.read(csv[0].buffer, {
+      type: 'buffer',
+    });
+
+    workbook.SheetNames.forEach((sheetName) => {
+      const parseData = xlsx.utils.sheet_to_row_object_array(
+        workbook.Sheets[sheetName]
+      );
+    });
 
     try {
       return res.status(200).json({
