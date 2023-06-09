@@ -672,24 +672,8 @@ const findAllVideo = async (req, res) => {
   }
 };
 
-const findById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const video = await Video.findOne({ 'videoData.videoId': +id });
-
-    if (!video) {
-      res.status(200).json({ message: `Video with id "${id}" was not found` });
-      return;
-    }
-
-    const { _id, __v, ...data } = video._doc;
-
-    res.status(200).json(data);
-  } catch (err) {
-    console.log(err);
-    throw Error('Server side error...');
-  }
+const findById = async (id) => {
+  return await Video.findOne({ 'videoData.videoId': +id });
 };
 
 const addCommentForFixed = async (req, res) => {

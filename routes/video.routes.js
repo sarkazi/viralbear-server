@@ -413,7 +413,32 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
 
 router.get('/findRelated', findRelated);
 
-router.get('/findOne/:id', findById);
+router.get('/findOne/:id', async (videoId) => {
+  try {
+    const { id } = req.params;
+
+    const video = await findById(id);
+
+    if (!video) {
+      return res.status(404).json({
+        message: `Video with id "${id}" was not found`,
+        status: 'warning',
+      });
+    }
+
+    return res.status(200).json({
+      message: `Video with id "${id}" was found`,
+      status: 'success',
+      apiData: video,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Server side error`,
+      status: 'error',
+    });
+  }
+});
 
 router.get('/findOneInTheFeed/:id', findOneVideoInFeed);
 
