@@ -78,9 +78,7 @@ router.post(
             amount: +convertedAmount.toFixed(2),
             videoTitle: videoDb.videoData.title,
             company,
-            amountToResearcher: +(convertedAmount / researchers.length).toFixed(
-              2
-            ),
+            amountToResearcher: (+convertedAmount * 0.4).toFixed(2),
             date: moment().toString(),
             status: 'found',
           };
