@@ -21,7 +21,13 @@ const {
 
 router.get('/getWorkers', authMiddleware, async (req, res) => {
   try {
-    const workers = await getWorkers();
+    const { me, nameWithCountry } = req.query;
+
+    console.log(JSON.parse(nameWithCountry));
+
+    const userId = req.user.id;
+
+    let workers = await getWorkers(JSON.parse(me), userId);
 
     if (!workers) {
       return res
@@ -29,9 +35,23 @@ router.get('/getWorkers', authMiddleware, async (req, res) => {
         .json({ message: 'Workers not found', status: 'error', code: 404 });
     }
 
-    return res.status(200).json(workers);
+    if (JSON.parse(nameWithCountry) === true) {
+      workers = workers.map((obj) => {
+        return {
+          ...obj._doc,
+          name: `${obj.name}${obj.country ? ` | ${obj.country}` : ''}`,
+        };
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'The list of workers has been received',
+      apiData: workers,
+    });
   } catch (err) {
     console.log(err);
+    return res.status(500).json({ status: 'error' });
   }
 });
 

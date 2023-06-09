@@ -16,8 +16,12 @@ const sendEmailPassword = async (email, subjectText, textEmail, htmlText) => {
   });
 };
 
-const getWorkers = async () => {
-  return await User.find({ role: 'worker' });
+const getWorkers = async (me, userId) => {
+  if (me === false) {
+    return await User.find({ _id: { $ne: userId }, role: 'worker' });
+  } else {
+    return await User.find({ role: 'worker' });
+  }
 };
 
 const getUserById = async (userId) => {
