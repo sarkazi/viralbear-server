@@ -37,6 +37,7 @@ const authRouter = require('./routes/auth.routes');
 const viewedMentionsRouter = require('./routes/viewedMention.routes');
 const authorLinkRouter = require('./routes/authorLink.routes');
 const filesRouter = require('./routes/files.routes');
+const salesRouter = require('./routes/sales.routes');
 
 app.use(cors());
 
@@ -83,6 +84,7 @@ app.use('/auth', authRouter);
 app.use('/viewedMentions', viewedMentionsRouter);
 app.use('/authorLink', authorLinkRouter);
 app.use('/files', filesRouter);
+app.use('/sales', salesRouter);
 
 app.post('/trelloCallback', async (req, res) => {
   const allNecessaryLabelsForDoneCard = [

@@ -142,12 +142,13 @@ router.post(
       idLess1460: newReport.lessThen1460.length,
       suitable: newReport.suitable,
       notFounded: newReport.notFounded.length,
+      type: 'file',
     };
 
     try {
       return res.status(200).json({
         status: 'success',
-        message: 'The data has been processed successfully.',
+        message: 'The data has been processed successfully',
         apiData,
       });
     } catch (err) {

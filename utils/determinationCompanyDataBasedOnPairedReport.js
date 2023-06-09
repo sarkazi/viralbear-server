@@ -1,5 +1,6 @@
 const CC = require('currency-converter-lt');
 const axios = require('axios');
+
 let currencyConverter = new CC();
 
 const test = async (curFrom, amount) => {
@@ -20,7 +21,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             return {
               videoId: obj['Partner Video Id'],
               usage: obj['Sale Type'],
-              amount: await test('GBP', obj['Your Earnings']),
+              amount: await test('JPY', obj['Your Earnings']),
               title: null,
             };
           })
