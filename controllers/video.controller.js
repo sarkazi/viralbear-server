@@ -535,6 +535,12 @@ const findVideoById = async (id) => {
   return video;
 };
 
+const findVideoByTitle = async (title) => {
+  const video = await Video.findOne({ 'videoData.title': title });
+
+  return video;
+};
+
 const findAllVideo = async (req, res) => {
   const ITEMS_PER_PAGE = 10;
 
@@ -1107,4 +1113,5 @@ module.exports = {
   updateVideoById,
   deleteVideoById,
   findByNotApproved,
+  findVideoByTitle,
 };

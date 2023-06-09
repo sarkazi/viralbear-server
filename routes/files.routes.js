@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const xlsx = require('xlsx');
-const { findById } = require('../controllers/video.controller');
+const {
+  findById,
+  findVideoByTitle,
+} = require('../controllers/video.controller');
 const moment = require('moment');
-const CC = require('currency-converter-lt');
 
-const currencyConverter = new CC();
+const determinationCompanyDataBasedOnPairedReport = require('../utils/determinationCompanyDataBasedOnPairedReport');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -23,9 +25,9 @@ router.post(
   ]),
   async (req, res) => {
     const { csv } = req.files;
-    const { company } = req.body;
+    const { company: resCompany } = req.body;
 
-    if (!company || !csv) {
+    if (!resCompany || !csv) {
       return res.status(200).json({
         status: 'warning',
         message: 'Missing values: "company" or "csv file"',
@@ -36,72 +38,108 @@ router.post(
       type: 'buffer',
     });
 
-    const parseData = await Promise.all(
+    const parseDocument = await Promise.all(
       workbook.SheetNames.map(async (sheetName) => {
         return xlsx.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
       })
-    ).then((arr) =>
-      arr[0].reduce(
-        (res, item) => {
-          res[
-            !item['Partner Video Id']
-              ? 'emptyVideoId'
-              : item['Partner Video Id'] < 1460
-              ? 'idLess1460'
-              : 'suitable'
-          ].push(item);
-          return res;
-        },
-        { suitable: [], idLess1460: [], emptyVideoId: [] }
-      )
     );
 
+    const processingData = await determinationCompanyDataBasedOnPairedReport(
+      parseDocument[0]
+    );
+
+    if (resCompany !== processingData.company) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'The report and the company are not comparable',
+      });
+    }
+
     const newReport = await Promise.all(
-      parseData.suitable.map(async (obj) => {
-        const earnings = obj['Your Earnings'];
+      processingData.data.suitable.map(async (obj) => {
+        if (obj.videoId) {
+          if (obj.videoId < 1460) {
+            return {
+              videoId: obj.videoId,
+              status: 'lessThen1460',
+            };
+          } else {
+            const videoDb = await findById(obj.videoId);
 
-        const videoDb = await findById(obj['Partner Video Id']);
-
-        if (videoDb) {
-          const researchers = videoDb.trelloData.researchers;
-
-          const convertedAmount = await currencyConverter
-            .from('GBP')
-            .to('USD')
-            .amount(earnings)
-            .convert();
-
-          return {
-            researchers,
-            videoId: obj['Partner Video Id'],
-            usage: obj['Sale Type'],
-            amount: +convertedAmount.toFixed(2),
-            videoTitle: videoDb.videoData.title,
-            company,
-            amountToResearcher: (+convertedAmount * 0.4).toFixed(2),
-            date: moment().toString(),
-            status: 'found',
-          };
+            if (!videoDb) {
+              return {
+                videoId: obj.videoId,
+                status: 'notFound',
+              };
+            } else {
+              return {
+                researchers: videoDb.trelloData.researchers,
+                videoId: obj.videoId,
+                ...(obj.usage && { usage: obj.usage }),
+                amount: (+obj.amount).toFixed(2),
+                videoTitle: videoDb.videoData.title,
+                company: resCompany,
+                amountToResearcher: (+obj.amount * 0.4).toFixed(2),
+                date: moment().toString(),
+                status: 'found',
+                author: null,
+                advance: null,
+                percentage: null,
+              };
+            }
+          }
         } else {
-          return {
-            videoId: obj['Partner Video Id'],
-            status: 'not found',
-          };
+          const videoDb = await findVideoByTitle(obj.title);
+
+          if (!videoDb) {
+            return {
+              videoId: obj.title,
+              status: 'notFound',
+            };
+          } else {
+            if (videoDb.videoData.videoId < 1460) {
+              return {
+                videoId: obj.videoId,
+                status: 'lessThen1460',
+              };
+            } else {
+              return {
+                researchers: videoDb.trelloData.researchers,
+                videoId: videoDb.videoData.videoId,
+                ...(obj.usage && { usage: obj.usage }),
+                amount: (+obj.amount).toFixed(2),
+                videoTitle: obj.title,
+                company,
+                amountToResearcher: (+obj.amount * 0.4).toFixed(2),
+                date: moment().toString(),
+                status: 'found',
+                author: null,
+                advance: null,
+                percentage: null,
+              };
+            }
+          }
         }
       })
     ).then((arr) =>
       arr.reduce(
         (res, item) => {
-          res[item.status === 'found' ? 'suitable' : 'notFounded'].push(item);
+          res[
+            item.status === 'found'
+              ? 'suitable'
+              : item.status === 'lessThen1460'
+              ? 'lessThen1460'
+              : 'notFounded'
+          ].push(item);
           return res;
         },
-        { suitable: [], notFounded: [] }
+        { suitable: [], notFounded: [], lessThen1460: [] }
       )
     );
 
     const apiData = {
-      idLess1460: parseData.idLess1460.length,
-      emptyVideoId: parseData.emptyVideoId.length,
+      emptyVideoId: processingData.data.emptyField.length,
+      idLess1460: newReport.lessThen1460.length,
       suitable: newReport.suitable,
       notFounded: newReport.notFounded.length,
     };

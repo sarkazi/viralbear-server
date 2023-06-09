@@ -19,6 +19,11 @@
     "http-response-object" "^3.0.1"
     "parse-cache-control" "^1.0.1"
 
+"@everapi/currencyapi-js@^1.0.6":
+  "integrity" "sha512-CJcsHpHepOT/FB8tNqXeryhv2AgDd8DvZUkBkdrTB2SvVJDtFt8b1KFaJpGbOvwK1mp9jgHqcSgwEb9NlrUMxg=="
+  "resolved" "https://registry.npmmirror.com/@everapi/currencyapi-js/-/currencyapi-js-1.0.6.tgz"
+  "version" "1.0.6"
+
 "@ffmpeg-installer/ffmpeg@^1.1.0":
   "integrity" "sha512-Uq4rmwkdGxIa9A6Bd/VqqYbT7zqh1GrT5/rFwCwKM70b42W5gIjWeVETq6SdcL0zXqDtY081Ws/iJWhr1+xvQg=="
   "resolved" "https://registry.npmmirror.com/@ffmpeg-installer/ffmpeg/-/ffmpeg-1.1.0.tgz"
