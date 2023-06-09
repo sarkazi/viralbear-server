@@ -61,11 +61,12 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       role,
       percentage,
       amountPerVideo,
+      country,
     } = req.body;
 
     console.log(amountPerVideo, percentage);
 
-    if (!email || !password || !nickname || !name || !role) {
+    if (!email || !password || !nickname || !name || !role || !country) {
       return res
         .status(404)
         .json({ message: 'Missing data to create a user', status: 'warning' });
@@ -90,6 +91,9 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       role,
       percentage,
       amountPerVideo,
+      percentage,
+      amountPerVideo,
+      country,
     };
 
     const newUser = await createUser(objDB);
@@ -118,7 +122,7 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const { name, nickname, role, email, percentage, amountPerVideo } =
+    const { name, nickname, role, email, percentage, amountPerVideo, country } =
       req.body;
 
     objDB = {
@@ -128,6 +132,7 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
       email,
       percentage,
       amountPerVideo,
+      country,
     };
 
     await updateUser(userId, objDB);

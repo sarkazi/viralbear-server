@@ -32,5 +32,9 @@ const schema = new Schema({
     type: Number,
     required: false,
   },
+  country: {
+    type: String,
+    required: true,
+  },
 });
 module.exports = model('User', schema);
