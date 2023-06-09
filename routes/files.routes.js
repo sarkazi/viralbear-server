@@ -25,6 +25,13 @@ router.post(
     const { csv } = req.files;
     const { company } = req.body;
 
+    if (!company || !csv) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'Missing values: "company" or "csv file"',
+      });
+    }
+
     const workbook = xlsx.read(csv[0].buffer, {
       type: 'buffer',
     });
@@ -34,13 +41,23 @@ router.post(
         return xlsx.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
       })
     ).then((arr) =>
-      arr[0].filter(
-        (obj) => obj['Partner Video Id'] && obj['Partner Video Id'] >= 1460
+      arr[0].reduce(
+        (res, item) => {
+          res[
+            !item['Partner Video Id']
+              ? 'emptyVideoId'
+              : item['Partner Video Id'] < 1460
+              ? 'idLess1460'
+              : 'suitable'
+          ].push(item);
+          return res;
+        },
+        { suitable: [], idLess1460: [], emptyVideoId: [] }
       )
     );
 
     const newReport = await Promise.all(
-      parseData.map(async (obj) => {
+      parseData.suitable.map(async (obj) => {
         const earnings = obj['Your Earnings'];
 
         const videoDb = await findById(obj['Partner Video Id']);
@@ -77,24 +94,33 @@ router.post(
     ).then((arr) =>
       arr.reduce(
         (res, item) => {
-          res[item.status === 'found' ? 'founded' : 'notFounded'].push(item);
+          res[item.status === 'found' ? 'suitable' : 'notFounded'].push(item);
           return res;
         },
-        { founded: [], notFounded: [] }
+        { suitable: [], notFounded: [] }
       )
     );
+
+    const apiData = {
+      idLess1460: parseData.idLess1460.length,
+      emptyVideoId: parseData.emptyVideoId.length,
+      suitable: newReport.suitable,
+      notFounded: newReport.notFounded.length,
+    };
 
     try {
       return res.status(200).json({
         status: 'success',
-        message: 'Video added and sent',
-        apiData: newReport,
+        message: 'The data has been processed successfully.',
+        apiData,
       });
     } catch (err) {
       console.log(err);
-      return res
-        .status(500)
-        .json({ status: 'error', message: 'Server side error' });
+
+      return res.status(500).json({
+        status: 'error',
+        message: err?.message ? err.message : 'Server side error',
+      });
     }
   }
 );
