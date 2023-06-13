@@ -4,6 +4,11 @@ const router = express.Router();
 const multer = require('multer');
 const xlsx = require('xlsx');
 
+const {
+  createNewSale,
+  findSaleBySaleId,
+} = require('../controllers/sales.controller');
+
 const determinationCompanyDataBasedOnPairedReport = require('../utils/determinationCompanyDataBasedOnPairedReport');
 
 const storage = multer.memoryStorage();
@@ -135,15 +140,16 @@ router.post(
                 researchers: videoDb.trelloData.researchers,
                 videoId: obj.videoId,
                 ...(obj.usage && { usage: obj.usage }),
-                amount: (+obj.amount).toFixed(2),
+                amount: +(+obj.amount).toFixed(2),
                 videoTitle: videoDb.videoData.title,
                 company: resCompany,
-                amountToResearcher: (+obj.amount * 0.4).toFixed(2),
+                amountToResearcher: +(+obj.amount * 0.4).toFixed(2),
                 date: moment().toString(),
                 status: 'found',
                 author: null,
                 advance: null,
                 percentage: null,
+                saleId: obj.saleId,
               };
             }
           }
@@ -166,15 +172,16 @@ router.post(
                 researchers: videoDb.trelloData.researchers,
                 videoId: videoDb.videoData.videoId,
                 ...(obj.usage && { usage: obj.usage }),
-                amount: (+obj.amount).toFixed(2),
+                amount: +(+obj.amount).toFixed(2),
                 videoTitle: obj.title,
                 company: resCompany,
-                amountToResearcher: (+obj.amount * 0.4).toFixed(2),
-                date: moment().toString(),
+                amountToResearcher: +(+obj.amount * 0.4).toFixed(2),
+                date: moment().format('ll'),
                 status: 'found',
                 author: null,
                 advance: null,
                 percentage: null,
+                saleId: obj.saleId,
               };
             }
           }
@@ -220,5 +227,82 @@ router.post(
     }
   }
 );
+
+router.post('/create', authMiddleware, async (req, res) => {
+  try {
+    const body = req.body;
+
+    const promiseAfterCreated = await Promise.all(
+      body.map(async (obj) => {
+        if (obj.saleId) {
+          const sale = await findSaleBySaleId(obj.saleId);
+
+          if (sale) {
+            return {
+              status: 'existed',
+              videoId: obj.videoId,
+            };
+          }
+        }
+
+        const objDB = {
+          researchers: obj.researchers,
+          videoId: obj.videoId,
+          amount: obj.amount,
+          date: moment().format('ll'),
+          usage: obj.usage,
+          ...(obj.saleId && { saleId: obj.saleId }),
+          manual: obj.saleId ? false : true,
+        };
+
+        await createNewSale(objDB);
+
+        return {
+          status: 'created',
+          videoId: obj.videoId,
+        };
+      })
+    );
+
+    const salesInfo = promiseAfterCreated.reduce(
+      (res, item) => {
+        res[item.status === 'existed' ? 'existed' : 'created'].push(item);
+        return res;
+      },
+      { existed: [], created: [] }
+    );
+
+    console.log(salesInfo, 9987);
+
+    return res.status(200).json({
+      status: salesInfo.existed.length ? 'warning' : 'success',
+      message: salesInfo.existed.length
+        ? `Sales with video ${salesInfo.existed
+            .map((obj) => {
+              return obj.videoId;
+            })
+            .join(',')} previously added to the database${
+            salesInfo.created.length
+              ? `, ${salesInfo.created
+                  .map((obj) => {
+                    return obj.videoId;
+                  })
+                  .join(',')} have been added`
+              : ''
+          }`
+        : `Sales with video ${salesInfo.created
+            .map((obj) => {
+              return obj.videoId;
+            })
+            .join(',')} has been added to the database`,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      message: err?.message ? err.message : 'Server side error',
+    });
+  }
+});
 
 module.exports = router;

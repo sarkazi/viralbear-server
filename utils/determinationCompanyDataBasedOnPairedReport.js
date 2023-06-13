@@ -17,6 +17,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
                 .amount(obj['Your Earnings'])
                 .convert(),
               title: null,
+              saleId: obj['Reference'],
             };
           })
         ).then((arr) => {
@@ -40,6 +41,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
               usage: null,
               amount: obj['Content Provider Revenue'],
               title: obj['Title'],
+              saleId: '5657655676',
             };
           })
           .reduce(
@@ -66,6 +68,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
                 .amount(obj['Total'])
                 .convert(),
               title: null,
+              saleId: '5657655676',
             };
           })
         ).then((arr) => {
@@ -89,6 +92,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
               usage: obj['Client'],
               amount: obj['Amount'],
               title: obj['Title'],
+              saleId: obj['JV ID'],
             };
           })
           .reduce(
