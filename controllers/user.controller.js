@@ -32,6 +32,15 @@ const getUserByEmail = async (email) => {
   return await User.findOne({ email });
 };
 
+const findUsersByEmails = async (emails) => {
+  return await User.find(
+    {
+      email: { $in: emails },
+    },
+    { name: 1, _id: 0 }
+  );
+};
+
 const deleteUser = async (userId) => {
   await User.deleteOne({ _id: userId });
 };
@@ -145,4 +154,5 @@ module.exports = {
   getUserByEmail,
   findWorkersForCard,
   updateUser,
+  findUsersByEmails,
 };

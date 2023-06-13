@@ -7,7 +7,10 @@ const xlsx = require('xlsx');
 const {
   createNewSale,
   findSaleBySaleId,
+  getAllSales,
 } = require('../controllers/sales.controller');
+
+const { findUsersByEmails } = require('../controllers/user.controller');
 
 const determinationCompanyDataBasedOnPairedReport = require('../utils/determinationCompanyDataBasedOnPairedReport');
 
@@ -109,8 +112,6 @@ router.post(
     const processingData = await determinationCompanyDataBasedOnPairedReport(
       parseDocument[0]
     );
-
-    console.log(processingData.data, 877787);
 
     if (resCompany !== processingData.company) {
       return res.status(200).json({
@@ -245,14 +246,24 @@ router.post('/create', authMiddleware, async (req, res) => {
           }
         }
 
+        const namesByUsers = await findUsersByEmails(obj.researchers);
+
         const objDB = {
-          researchers: obj.researchers,
+          researchers: {
+            emails: obj.researchers,
+            names: namesByUsers.map((obj) => {
+              return obj.name;
+            }),
+          },
           videoId: obj.videoId,
           amount: obj.amount,
+          amountToResearcher: obj.amountToResearcher,
           date: moment().format('ll'),
           usage: obj.usage,
           ...(obj.saleId && { saleId: obj.saleId }),
           manual: obj.saleId ? false : true,
+          videoTitle: obj.videoTitle,
+          company: obj.company,
         };
 
         await createNewSale(objDB);
@@ -271,8 +282,6 @@ router.post('/create', authMiddleware, async (req, res) => {
       },
       { existed: [], created: [] }
     );
-
-    console.log(salesInfo, 9987);
 
     return res.status(200).json({
       status: salesInfo.existed.length ? 'warning' : 'success',
@@ -295,6 +304,51 @@ router.post('/create', authMiddleware, async (req, res) => {
               return obj.videoId;
             })
             .join(',')} has been added to the database`,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      message: err?.message ? err.message : 'Server side error',
+    });
+  }
+});
+
+router.get('/getAll', authMiddleware, async (req, res) => {
+  try {
+    const { count, company, date, videoId, researcher } = req.query;
+
+    const sales = await getAllSales({
+      count,
+      ...(company && { company }),
+      ...(date && { date }),
+      ...(videoId && { videoId }),
+      ...(researcher && { researcher }),
+      ...(date && {
+        date: date[0] === 'null' || date[1] === 'null' ? null : date,
+      }),
+    });
+
+    const sumAmount = sales.reduce((acc, item) => {
+      return acc + item.amount;
+    }, 0);
+
+    const sumAmountResearcher = sales.reduce((acc, item) => {
+      return acc + item.amountToResearcher;
+    }, 0);
+
+    const apiData = {
+      sales,
+      sumAmount,
+      sumAmountResearcher,
+    };
+
+    return res.status(200).json({
+      status: 'success',
+      message: count
+        ? `The last ${count} sales have been received`
+        : 'All sales have been received',
+      apiData,
     });
   } catch (err) {
     console.log(err);
