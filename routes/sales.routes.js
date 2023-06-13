@@ -105,6 +105,8 @@ router.post(
       parseDocument[0]
     );
 
+    console.log(processingData.data, 877787);
+
     if (resCompany !== processingData.company) {
       return res.status(200).json({
         status: 'warning',
@@ -166,7 +168,7 @@ router.post(
                 ...(obj.usage && { usage: obj.usage }),
                 amount: (+obj.amount).toFixed(2),
                 videoTitle: obj.title,
-                company,
+                company: resCompany,
                 amountToResearcher: (+obj.amount * 0.4).toFixed(2),
                 date: moment().toString(),
                 status: 'found',

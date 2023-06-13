@@ -1,14 +1,4 @@
 const CC = require('currency-converter-lt');
-const axios = require('axios');
-
-let currencyConverter = new CC();
-
-const test = async (curFrom, amount) => {
-  const { data } = await axios.get(
-    `https://api.apilayer.com/currency_data/convert?from=${curFrom}&to=USD&amount=${amount}&apikey=94RslgQImpbDjRPyZ5vXGxzrQx1nQ4sD`
-  );
-  return data.result;
-};
 
 const determinationCompanyDataBasedOnPairedReport = async (arr) => {
   return await new Promise(async (resolve, reject) => {
@@ -21,7 +11,11 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             return {
               videoId: obj['Partner Video Id'],
               usage: obj['Sale Type'],
-              amount: await test('JPY', obj['Your Earnings']),
+              amount: await new CC()
+                .from('GBP')
+                .to('USD')
+                .amount(obj['Your Earnings'])
+                .convert(),
               title: null,
             };
           })
@@ -66,7 +60,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             return {
               videoId: obj['Supplier Ref'],
               usage: null,
-              amount: await currencyConverter
+              amount: await new CC()
                 .from('JPY')
                 .to('USD')
                 .amount(obj['Total'])
