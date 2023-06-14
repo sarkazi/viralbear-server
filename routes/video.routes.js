@@ -420,7 +420,7 @@ router.get('/findOne/:id', async (req, res) => {
     const video = await findById(id);
 
     if (!video) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: `Video with id "${id}" was not found`,
         status: 'warning',
       });
