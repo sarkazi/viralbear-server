@@ -1,7 +1,7 @@
 const CC = require('currency-converter-lt');
 
 const determinationCompanyDataBasedOnPairedReport = async (arr) => {
-  console.log(arr[0], 4587645);
+  console.log(arr, 4587645);
 
   return await new Promise(async (resolve, reject) => {
     if (arr[0].hasOwnProperty('Partner Video Id')) {
@@ -104,7 +104,32 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
           ),
       });
     } else if (arr[0].hasOwnProperty('Video_ref_ID')) {
-      console.log('sgiudyugdf');
+      resolve({
+        company: 'kameraone',
+        searchBy: 'videoId',
+        data: await Promise.all(
+          arr.map(async (obj) => {
+            return {
+              videoId: obj['Video_ref_ID'],
+              usage: null,
+              amount: await new CC()
+                .from('EUR')
+                .to('USD')
+                .amount(obj[' EUR/clip'])
+                .convert(),
+              title: null,
+            };
+          })
+        ).then((arr) => {
+          return arr.reduce(
+            (res, item) => {
+              res[!item.videoId ? 'emptyField' : 'suitable'].push(item);
+              return res;
+            },
+            { suitable: [], emptyField: [] }
+          );
+        }),
+      });
     }
   });
 };
