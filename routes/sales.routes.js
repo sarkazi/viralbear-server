@@ -6,8 +6,9 @@ const xlsx = require('xlsx');
 
 const {
   createNewSale,
-  findSaleBySaleId,
+  deleteSaleById,
   getAllSales,
+  findSaleById,
 } = require('../controllers/sales.controller');
 
 const { findUsersByEmails } = require('../controllers/user.controller');
@@ -150,7 +151,6 @@ router.post(
                 author: null,
                 advance: null,
                 percentage: null,
-                saleId: obj.saleId,
               };
             }
           }
@@ -182,7 +182,6 @@ router.post(
                 author: null,
                 advance: null,
                 percentage: null,
-                saleId: obj.saleId,
               };
             }
           }
@@ -235,17 +234,6 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     const promiseAfterCreated = await Promise.all(
       body.map(async (obj) => {
-        if (obj.saleId) {
-          const sale = await findSaleBySaleId(obj.saleId);
-
-          if (sale) {
-            return {
-              status: 'existed',
-              videoId: obj.videoId,
-            };
-          }
-        }
-
         const namesByUsers = await findUsersByEmails(obj.researchers);
 
         const objDB = {
@@ -259,8 +247,7 @@ router.post('/create', authMiddleware, async (req, res) => {
           amount: obj.amount,
           amountToResearcher: obj.amountToResearcher,
           date: moment().format('ll'),
-          usage: obj.usage,
-          ...(obj.saleId && { saleId: obj.saleId }),
+          ...(obj.usage && { usage: obj.usage }),
           manual: obj.saleId ? false : true,
           videoTitle: obj.videoTitle,
           company: obj.company,
@@ -348,6 +335,69 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       message: count
         ? `The last ${count} sales have been received`
         : 'All sales have been received',
+      apiData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      message: err?.message ? err.message : 'Server side error',
+    });
+  }
+});
+
+router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
+  const { saleId } = req.params;
+
+  const { count, company, date, videoId, researcher } = req.query;
+
+  if (!saleId) {
+    return res.status(200).json({
+      status: 'warning',
+      message: `Missing value: "saleId"`,
+    });
+  }
+
+  try {
+    const sale = await findSaleById(saleId);
+
+    if (!sale) {
+      return res.status(200).json({
+        status: 'warning',
+        message: `Sales with id ${saleId} not found in the database`,
+      });
+    }
+
+    await deleteSaleById(saleId);
+
+    const sales = await getAllSales({
+      count,
+      ...(company && { company }),
+      ...(date && { date }),
+      ...(videoId && { videoId }),
+      ...(researcher && { researcher }),
+      ...(date && {
+        date: date[0] === 'null' || date[1] === 'null' ? null : date,
+      }),
+    });
+
+    const sumAmount = sales.reduce((acc, item) => {
+      return acc + item.amount;
+    }, 0);
+
+    const sumAmountResearcher = sales.reduce((acc, item) => {
+      return acc + item.amountToResearcher;
+    }, 0);
+
+    const apiData = {
+      sales,
+      sumAmount,
+      sumAmountResearcher,
+    };
+
+    return res.status(200).json({
+      status: 'success',
+      message: `The sale with id ${saleId} has been deleted`,
       apiData,
     });
   } catch (err) {

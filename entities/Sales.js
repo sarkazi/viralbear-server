@@ -33,10 +33,6 @@ const schema = new Schema(
     },
     usage: {
       type: String,
-      required: true,
-    },
-    saleId: {
-      type: String,
       required: false,
     },
     manual: {

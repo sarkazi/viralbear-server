@@ -7,10 +7,6 @@ const createNewSale = async (body) => {
   return newSales;
 };
 
-const findSaleBySaleId = async (saleId) => {
-  return await Sales.findOne({ saleId });
-};
-
 const getAllSales = async ({ count, company, date, videoId, researcher }) => {
   return await Sales.find({
     ...(researcher && { 'researchers.names': { $in: [researcher] } }),
@@ -27,8 +23,17 @@ const getAllSales = async ({ count, company, date, videoId, researcher }) => {
     .sort({ $natural: -1 });
 };
 
+const deleteSaleById = async (saleId) => {
+  return await Sales.deleteOne({ _id: saleId });
+};
+
+const findSaleById = async (saleId) => {
+  return Sales.findById(saleId);
+};
+
 module.exports = {
   createNewSale,
-  findSaleBySaleId,
+  deleteSaleById,
   getAllSales,
+  findSaleById,
 };
