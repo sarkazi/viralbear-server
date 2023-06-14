@@ -23,8 +23,6 @@ router.get('/getWorkers', authMiddleware, async (req, res) => {
   try {
     const { me, nameWithCountry } = req.query;
 
-    console.log(JSON.parse(nameWithCountry));
-
     const userId = req.user.id;
 
     let workers = await getWorkers(JSON.parse(me), userId);
