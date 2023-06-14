@@ -103,6 +103,8 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             { suitable: [], emptyField: [] }
           ),
       });
+    } else if (arr[0].hasOwnProperty('Video_ref_ID')) {
+      console.log('sgiudyugdf');
     }
   });
 };
