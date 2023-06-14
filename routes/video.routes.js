@@ -413,7 +413,7 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
 
 router.get('/findRelated', findRelated);
 
-router.get('/findOne/:id', async (videoId) => {
+router.get('/findOne/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -485,8 +485,11 @@ router.patch(
       country,
       date,
       brandSafe,
+      socialMedia,
       reuters,
     } = req.body;
+
+    console.log(req.body, 8888);
 
     const { video: reqVideo, screen: reqScreen } = req.files;
 
@@ -776,6 +779,9 @@ router.patch(
           ...(category && { 'videoData.category': category }),
           ...(categoryReuters && {
             'videoData.categoryReuters': categoryReuters,
+          }),
+          ...(socialMedia && {
+            socialMedia,
           }),
           ...(city && { 'videoData.city': city }),
           ...(reuters && { reuters }),
@@ -1156,6 +1162,9 @@ router.patch(
           ...(category && { 'videoData.category': category }),
           ...(categoryReuters && {
             'videoData.categoryReuters': categoryReuters,
+          }),
+          ...(socialMedia && {
+            socialMedia,
           }),
           ...(city && { 'videoData.city': city }),
           ...(reuters && { reuters }),
@@ -1558,6 +1567,9 @@ router.patch(
           ...(category && { 'videoData.category': category }),
           ...(categoryReuters && {
             'videoData.categoryReuters': categoryReuters,
+          }),
+          ...(socialMedia && {
+            socialMedia,
           }),
           ...(city && { 'videoData.city': city }),
           ...(reuters && { reuters }),

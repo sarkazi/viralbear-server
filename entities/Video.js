@@ -166,6 +166,10 @@ const schema = new Schema(
       type: Boolean,
       default: false,
     },
+    socialMedia: {
+      type: Boolean,
+      default: false,
+    },
     reuters: {
       type: Boolean,
       default: true,
