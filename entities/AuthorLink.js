@@ -20,23 +20,27 @@ const schema = new Schema({
   },
   videoLink: {
     type: String,
-    required: false,
+    required: true,
   },
   videoId: {
     type: String,
-    required: false,
+    required: true,
   },
   formLink: {
     type: String,
-    required: false,
+    required: true,
   },
   formId: {
     type: String,
-    required: false,
+    required: true,
   },
   used: {
     type: Boolean,
     default: false,
+  },
+  exclusivity: {
+    type: Boolean,
+    required: true,
   },
 });
 

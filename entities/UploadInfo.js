@@ -100,6 +100,10 @@ const schema = new Schema(
       type: String,
       required: false,
     },
+    exclusivity: {
+      type: Boolean,
+      default: true,
+    },
     submittedDate: {
       type: String,
       required: true,

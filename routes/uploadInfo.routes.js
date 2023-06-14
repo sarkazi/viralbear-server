@@ -127,6 +127,7 @@ router.post(
         researcherNickname,
         researcherEmail,
         hashLink,
+        exclusivity,
       } = req?.body;
 
       const { videos } = req.files;
@@ -250,6 +251,8 @@ router.post(
         submittedDate: moment().utc(),
         ...(advancePayment && { advancePayment }),
         ...(percentage && { percentage }),
+        ...((JSON.parse(exclusivity) === false ||
+          JSON.parse(exclusivity) === true) && { exclusivity }),
         ...(researcherNickname &&
           researcherEmail && {
             researcher: {

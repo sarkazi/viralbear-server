@@ -27,7 +27,10 @@ router.post('/create', authMiddleware, async (req, res) => {
     advancePayment,
     videoLink: reqVideoLink,
     confirmDeletion,
+    exclusivity,
   } = req.body;
+
+  console.log(req.body, 98897);
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(400).json({
@@ -91,6 +94,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       formLink: `${process.env.CLIENT_URI}/submitVideo?unq=${formId}`,
       videoLink,
       videoId,
+      exclusivity,
     };
 
     const newAuthorLink = await createNewAuthorLink(bodyForNewAuthorLink);
