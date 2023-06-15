@@ -36,5 +36,10 @@ const schema = new Schema({
     type: String,
     required: true,
   },
+  balance: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
 });
 module.exports = model('User', schema);

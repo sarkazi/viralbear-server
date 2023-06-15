@@ -1,8 +1,6 @@
 const Sales = require('../entities/Sales');
 
 const createNewSale = async (body) => {
-  console.log(body, 78798);
-
   const newSales = await Sales.create(body);
   return newSales;
 };

@@ -294,7 +294,7 @@ router.get('/findOne/:id', authMiddleware, async (req, res) => {
     const form = await findOne(id);
 
     if (!form) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: `The form with the vb code ${id} was not found in the database`,
         status: 'warning',
       });
@@ -307,7 +307,7 @@ router.get('/findOne/:id', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.status(400).json({ message: 'Server side error', status: 'error' });
+    res.status(500).json({ message: 'Server side error', status: 'error' });
   }
 });
 

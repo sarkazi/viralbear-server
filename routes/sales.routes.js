@@ -11,7 +11,10 @@ const {
   findSaleById,
 } = require('../controllers/sales.controller');
 
-const { findUsersByEmails } = require('../controllers/user.controller');
+const {
+  findUsersByEmails,
+  updateUsersByEmails,
+} = require('../controllers/user.controller');
 
 const determinationCompanyDataBasedOnPairedReport = require('../utils/determinationCompanyDataBasedOnPairedReport');
 
@@ -124,7 +127,7 @@ router.post(
       }
 
       const newReport = await Promise.all(
-        processingData.data.suitable.map(async (obj) => {
+        processingData.data.suitable.map(async (obj, index) => {
           if (obj.videoId) {
             if (obj.videoId < 1460) {
               return {
@@ -140,19 +143,24 @@ router.post(
                   status: 'notFound',
                 };
               } else {
+                const emailsOfResearchers = videoDb.trelloData.researchers;
+                const amount = +(+obj.amount).toFixed(2);
+                const amountToResearchers = +(amount * 0.4).toFixed(2);
+
                 return {
-                  researchers: videoDb.trelloData.researchers,
+                  researchers: emailsOfResearchers,
                   videoId: obj.videoId,
                   ...(obj.usage && { usage: obj.usage }),
-                  amount: +(+obj.amount).toFixed(2),
+                  amount,
                   videoTitle: videoDb.videoData.title,
                   company: resCompany,
-                  amountToResearcher: +(+obj.amount * 0.4).toFixed(2),
+                  amountToResearcher: amountToResearchers,
                   date: moment().toString(),
                   status: 'found',
                   author: null,
                   advance: null,
                   percentage: null,
+                  saleIdForClient: index + 1,
                 };
               }
             }
@@ -171,19 +179,24 @@ router.post(
                   status: 'lessThen1460',
                 };
               } else {
+                const emailsOfResearchers = videoDb.trelloData.researchers;
+                const amount = +(+obj.amount).toFixed(2);
+                const amountToResearchers = +(amount * 0.4).toFixed(2);
+
                 return {
-                  researchers: videoDb.trelloData.researchers,
+                  researchers: emailsOfResearchers,
                   videoId: videoDb.videoData.videoId,
                   ...(obj.usage && { usage: obj.usage }),
-                  amount: +(+obj.amount).toFixed(2),
+                  amount,
                   videoTitle: obj.title,
                   company: resCompany,
-                  amountToResearcher: +(+obj.amount * 0.4).toFixed(2),
+                  amountToResearcher: amountToResearchers,
                   date: moment().format('ll'),
                   status: 'found',
                   author: null,
                   advance: null,
                   percentage: null,
+                  saleIdForClient: index + 1,
                 };
               }
             }
@@ -204,6 +217,8 @@ router.post(
           { suitable: [], notFounded: [], lessThen1460: [] }
         )
       );
+
+      console.log(newReport.suitable, 11111111);
 
       const apiData = {
         emptyVideoId: processingData.data.emptyField.length,
@@ -255,6 +270,18 @@ router.post('/create', authMiddleware, async (req, res) => {
         };
 
         await createNewSale(objDB);
+
+        const emailsOfResearchers = obj.researchers;
+        const amountToResearchers = obj.amountToResearcher;
+        const amountToResearcher = +(
+          amountToResearchers / emailsOfResearchers.length
+        ).toFixed(2);
+
+        const dataDBForUpdate = {
+          balance: amountToResearcher,
+        };
+
+        await updateUsersByEmails(emailsOfResearchers, dataDBForUpdate);
 
         return {
           status: 'created',

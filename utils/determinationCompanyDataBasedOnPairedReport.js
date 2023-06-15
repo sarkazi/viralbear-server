@@ -1,7 +1,6 @@
 const CC = require('currency-converter-lt');
 
 const determinationCompanyDataBasedOnPairedReport = async (arr) => {
-  console.log(arr, 4587645);
 
   return await new Promise(async (resolve, reject) => {
     if (arr[0].hasOwnProperty('Partner Video Id')) {

@@ -144,6 +144,13 @@ const updateUser = async (userId, objDB) => {
   );
 };
 
+const updateUsersByEmails = async (emailsOfResearchers, objDB) => {
+  return await User.updateMany(
+    { email: { $in: emailsOfResearchers } },
+    { $inc: objDB }
+  );
+};
+
 module.exports = {
   getWorkers,
   deleteUser,
@@ -155,4 +162,5 @@ module.exports = {
   findWorkersForCard,
   updateUser,
   findUsersByEmails,
+  updateUsersByEmails,
 };
