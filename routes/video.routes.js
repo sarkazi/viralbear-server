@@ -870,6 +870,7 @@ router.patch(
       country,
       date,
       brandSafe,
+      socialMedia,
       reuters,
     } = req.body;
 
@@ -1257,6 +1258,7 @@ router.patch(
       date,
       brandSafe,
       reuters,
+      socialMedia,
     } = req.body;
 
     const { video: reqVideo, screen: reqScreen } = req.files;
