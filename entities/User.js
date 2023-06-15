@@ -26,11 +26,13 @@ const schema = new Schema({
   },
   percentage: {
     type: Number,
-    required: false,
+    required: true,
+    default: 0,
   },
   amountPerVideo: {
     type: Number,
-    required: false,
+    required: true,
+    default: 0,
   },
   country: {
     type: String,
@@ -47,6 +49,21 @@ const schema = new Schema({
     default: 0,
   },
   earnedForYourself: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  sentVideosCount: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  approvedVideosCount: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  acquiredVideosCount: {
     type: Number,
     required: true,
     default: 0,

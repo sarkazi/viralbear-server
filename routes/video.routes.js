@@ -17,7 +17,11 @@ const { generateVideoId } = require('../utils/generateVideoId');
 
 const { getDurationFromBuffer } = require('fancy-video-duration');
 
-const { getUserById } = require('../controllers/user.controller');
+const {
+  getUserById,
+  getWorkers,
+  updateUserByIncrement,
+} = require('../controllers/user.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
 
@@ -152,6 +156,17 @@ router.post(
       }
 
       try {
+        if (vbCode) {
+          const form = await findOne(vbCode);
+
+          if (!form) {
+            return res.status(200).json({
+              message: `The form with the vb code ${vbCode} was not found in the database`,
+              status: 'warning',
+            });
+          }
+        }
+
         const videoWithVBCode = await findVideoByVBCode(vbCode);
 
         if (videoWithVBCode) {
@@ -1609,6 +1624,18 @@ router.patch(
         event: 'published',
       });
 
+      await updateUserByIncrement(
+        'email',
+        updatedVideo.trelloData.researchers,
+        { acquiredVideosCount: 1 }
+      );
+
+      const researchersWithUpdateStat = getWorkers(true, null);
+
+      socketInstance
+        .io()
+        .emit('changeUsersStatistics', researchersWithUpdateStat);
+
       //const videosForSocialMedia = await findByIsBrandSafe();
 
       //socketInstance.io().emit('findReadyForSocialMedia', videosForSocialMedia);
@@ -1624,7 +1651,9 @@ router.patch(
       });
     } catch (err) {
       console.log(err);
-      res.status(400).json({ message: 'Server side error', status: 'error' });
+      return res
+        .status(500)
+        .json({ message: 'Server side error', status: 'error' });
     }
   }
 );

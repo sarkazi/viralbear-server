@@ -4,6 +4,8 @@ const moment = require('moment');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
+const socketInstance = require('../socket.instance');
+
 const {
   findBaseUrl,
   pullIdFromUrl,
@@ -12,7 +14,11 @@ const {
   conversionIncorrectLinks,
 } = require('../controllers/links.controller');
 
-const { getUserById } = require('../controllers/user.controller');
+const {
+  getUserById,
+  updateUserByIncrement,
+  getWorkers,
+} = require('../controllers/user.controller');
 
 const {
   createCardInTrello,
@@ -41,8 +47,6 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
     //}
 
     const videoId = await pullIdFromUrl(convertedLink);
-
-    console.log(videoId, 88);
 
     if (!videoId) {
       return res
@@ -98,8 +102,6 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       foundWorkersTrelloIds
     );
 
-    //https://www.tiktok.com/@diablophysique97/video/7233958742516206854
-
     if (reminders) {
       const reminderCustomFieldValue =
         await definingValueOfCustomFieldReminderInTrello(
@@ -124,7 +126,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       });
     }
 
-    const newLinkInfo = await createNewLink(
+    await createNewLink(
       selfWorker.email,
       selfWorker.name,
       selfWorker.nickname,
@@ -136,12 +138,13 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       trelloResponseAfterCreatingCard.id
     );
 
-    if (!newLinkInfo) {
-      return res.status(400).json({
-        status: 'err',
-        message: 'Server side error',
-      });
-    }
+    await updateUserByIncrement('email', [selfWorker.email], {
+      sentVideosCount: 1,
+    });
+
+    const researchers = await getWorkers(true, null);
+
+    socketInstance.io().emit('changeUsersStatistics', researchers);
 
     return res.status(200).json({
       status: 'success',
@@ -150,7 +153,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
   } catch (err) {
     console.log(err);
     return res
-      .status(400)
+      .status(500)
       .json({ status: 'error', message: 'Server side error' });
   }
 });

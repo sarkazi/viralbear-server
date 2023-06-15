@@ -23,7 +23,13 @@ const {
   calculatingTimeUntilNextReminder,
   removeLabelFromTrelloCard,
   getCustomField,
+  getTrelloMemberById,
 } = require('./controllers/trello.controller');
+
+const {
+  updateUserByIncrement,
+  getWorkers,
+} = require('./controllers/user.controller');
 
 mongoose.set('strictQuery', false);
 
@@ -312,6 +318,32 @@ app.post('/trelloCallback', async (req, res) => {
         doneTasks,
         approvedTasks,
       });
+    }
+
+    //ловим перемещение карточки из листа "Your videos for review" в другой
+    if (
+      req?.body?.action?.data?.listBefore &&
+      req?.body?.action?.data?.listBefore?.id ===
+        process.env.TRELLO_LIST_REVIEW_ID &&
+      req?.body?.action?.data?.listAfter &&
+      req?.body?.action?.data?.listAfter?.id !==
+        process.env.TRELLO_LIST_REVIEW_ID
+    ) {
+      const memberCreatorId = req.body.action.memberCreator.id;
+
+      const memberCreatorData = await getTrelloMemberById(memberCreatorId);
+
+      await updateUserByIncrement(
+        'nickname',
+        [`@${memberCreatorData.username}`],
+        {
+          approvedVideosCount: 1,
+        }
+      );
+
+      const workers = await getWorkers(true, null);
+
+      socketInstance.io().emit('changeUsersStatistics', workers);
     }
 
     //ловим архивирование карточки в листе "done"

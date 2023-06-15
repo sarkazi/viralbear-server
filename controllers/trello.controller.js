@@ -315,6 +315,12 @@ const getAllMembers = async () => {
   return data;
 };
 
+const getTrelloMemberById = async (memberId) => {
+  const { data } = await trelloInstance.get(`/1/members/${memberId}`);
+
+  return data;
+};
+
 module.exports = {
   getAllCommentsByBoard,
   getTrelloCardsFromDoneListByApprovedAndNot,
@@ -336,4 +342,5 @@ module.exports = {
   getCustomField,
   getAllCardsByListId,
   getAllMembers,
+  getTrelloMemberById,
 };
