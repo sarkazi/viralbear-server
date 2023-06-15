@@ -13,7 +13,7 @@ const {
 
 const {
   findUsersByEmails,
-  updateUsersByEmails,
+  updateUserByIncrement,
 } = require('../controllers/user.controller');
 
 const determinationCompanyDataBasedOnPairedReport = require('../utils/determinationCompanyDataBasedOnPairedReport');
@@ -252,16 +252,24 @@ router.post('/create', authMiddleware, async (req, res) => {
       body.map(async (obj) => {
         const namesByUsers = await findUsersByEmails(obj.researchers);
 
+        const emailsOfResearchers = obj.researchers;
+        const amount = +obj.amount;
+        const amountForAllResearchers = obj.amountToResearcher;
+        const researcherEarnedForCompany = amount / emailsOfResearchers.length;
+        const researcherEarnedForYourself = +(
+          amountForAllResearchers / emailsOfResearchers.length
+        ).toFixed(2);
+
         const objDB = {
           researchers: {
-            emails: obj.researchers,
+            emails: emailsOfResearchers,
             names: namesByUsers.map((obj) => {
               return obj.name;
             }),
           },
           videoId: obj.videoId,
-          amount: obj.amount,
-          amountToResearcher: obj.amountToResearcher,
+          amount,
+          amountToResearcher: amountForAllResearchers,
           date: moment().format('ll'),
           ...(obj.usage && { usage: obj.usage }),
           manual: obj.saleId ? false : true,
@@ -271,17 +279,16 @@ router.post('/create', authMiddleware, async (req, res) => {
 
         await createNewSale(objDB);
 
-        const emailsOfResearchers = obj.researchers;
-        const amountToResearchers = obj.amountToResearcher;
-        const amountToResearcher = +(
-          amountToResearchers / emailsOfResearchers.length
-        ).toFixed(2);
-
         const dataDBForUpdate = {
-          balance: amountToResearcher,
+          earnedForCompany: researcherEarnedForCompany,
+          earnedForYourself: researcherEarnedForYourself,
         };
 
-        await updateUsersByEmails(emailsOfResearchers, dataDBForUpdate);
+        await updateUserByIncrement(
+          'email',
+          emailsOfResearchers,
+          dataDBForUpdate
+        );
 
         return {
           status: 'created',

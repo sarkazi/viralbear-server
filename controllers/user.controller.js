@@ -144,9 +144,9 @@ const updateUser = async (userId, objDB) => {
   );
 };
 
-const updateUsersByEmails = async (emailsOfResearchers, objDB) => {
+const updateUserByIncrement = async (field, emailsOfResearchers, objDB) => {
   return await User.updateMany(
-    { email: { $in: emailsOfResearchers } },
+    { [field]: { $in: emailsOfResearchers } },
     { $inc: objDB }
   );
 };
@@ -162,5 +162,5 @@ module.exports = {
   findWorkersForCard,
   updateUser,
   findUsersByEmails,
-  updateUsersByEmails,
+  updateUserByIncrement,
 };

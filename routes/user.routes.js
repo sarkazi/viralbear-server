@@ -12,6 +12,7 @@ const {
   recoveryPassword,
   getUserById,
   updateUser,
+  updateUserByIncrement,
   getUserByEmail,
 } = require('../controllers/user.controller.js');
 
@@ -140,20 +141,40 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const { name, nickname, role, email, percentage, amountPerVideo, country } =
-      req.body;
-
-    objDB = {
+    const {
       name,
-      nickname: `@${nickname}`,
+      nickname,
       role,
       email,
       percentage,
       amountPerVideo,
       country,
+      balance,
+    } = req.body;
+
+    console.log(req.body);
+
+    objDB = {
+      ...(name && { name }),
+      ...(nickname && { nickname: `@${nickname}` }),
+      ...(role && { role }),
+      ...(email && { email }),
+      ...(percentage && { percentage }),
+      ...(amountPerVideo && { amountPerVideo }),
+      ...(country && { country }),
     };
 
-    await updateUser(userId, objDB);
+    objDBForIncrement = {
+      ...(balance && { balance }),
+    };
+
+    if (Object.keys(objDB).length) {
+      await updateUser(userId, objDB);
+    }
+
+    if (Object.keys(objDBForIncrement).length) {
+      await updateUserByIncrement('_id', [userId], objDBForIncrement);
+    }
 
     const allWorkers = await getWorkers();
 

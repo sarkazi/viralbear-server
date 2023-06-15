@@ -41,5 +41,15 @@ const schema = new Schema({
     required: true,
     default: 0,
   },
+  earnedForCompany: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  earnedForYourself: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
 });
 module.exports = model('User', schema);
