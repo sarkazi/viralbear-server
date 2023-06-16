@@ -1,6 +1,8 @@
 const Links = require('../entities/Links');
 const fetch = require('node-fetch');
 
+const moment = require('moment');
+
 const urlParser = require('js-video-url-parser');
 
 const getAllLinks = async (req, res) => {
@@ -183,13 +185,11 @@ const conversionIncorrectLinks = (link) => {
 const getCountLinksByUserEmail = async (userValue, dateLimit) => {
   return Links.find({
     email: userValue,
-    createdAt: dateLimit
-      ? {
-          $gte: new Date(
-            new Date().getTime() - dateLimit * 24 * 60 * 60 * 1000
-          ),
-        }
-      : {},
+    ...(dateLimit && {
+      createdAt: {
+        $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),
+      },
+    }),
   })
     .countDocuments()
     .sort({ createdAt: -1 });

@@ -138,13 +138,13 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       trelloResponseAfterCreatingCard.id
     );
 
-    await updateUserByIncrement('email', [selfWorker.email], {
-      'sentVideosCount.total': 1,
-    });
+    //await updateUserByIncrement('email', [selfWorker.email], {
+    //  'sentVideosCount.total': 1,
+    //});
 
-    const researchers = await getWorkers(true, null);
+    //const researchers = await getWorkers(true, null);
 
-    socketInstance.io().emit('changeUsersStatistics', researchers);
+    //socketInstance.io().emit('changeUsersStatistics', researchers);
 
     return res.status(200).json({
       status: 'success',

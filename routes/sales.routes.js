@@ -253,12 +253,12 @@ router.post('/create', authMiddleware, async (req, res) => {
         const emailsOfResearchers = obj.researchers;
         const amount = +obj.amount;
         const amountForAllResearchers = obj.amountToResearcher;
-        const researcherEarnedForCompany = +(
-          amount / emailsOfResearchers.length
-        ).toFixed(2);
-        const researcherEarnedForYourself = +(
-          amountForAllResearchers / emailsOfResearchers.length
-        ).toFixed(2);
+        //const researcherEarnedForCompany = +(
+        //  amount / emailsOfResearchers.length
+        //).toFixed(2);
+        //const researcherEarnedForYourself = +(
+        //  amountForAllResearchers / emailsOfResearchers.length
+        //).toFixed(2);
 
         const objDB = {
           researchers: {
@@ -279,16 +279,16 @@ router.post('/create', authMiddleware, async (req, res) => {
 
         await createNewSale(objDB);
 
-        const dataDBForUpdate = {
-          earnedForCompany: researcherEarnedForCompany,
-          'earnedForYourself.total': researcherEarnedForYourself,
-        };
+        //const dataDBForUpdate = {
+        //  earnedForCompany: researcherEarnedForCompany,
+        //  'earnedForYourself.total': researcherEarnedForYourself,
+        //};
 
-        await updateUserByIncrement(
-          'email',
-          emailsOfResearchers,
-          dataDBForUpdate
-        );
+        //await updateUserByIncrement(
+        //  'email',
+        //  emailsOfResearchers,
+        //  dataDBForUpdate
+        //);
 
         return {
           status: 'created',

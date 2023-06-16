@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { genSalt, hash: hashBcrypt } = require('bcryptjs');
+const moment = require('moment');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -164,8 +165,6 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
       balance,
     } = req.body;
 
-    console.log(req.body);
-
     objDB = {
       ...(name && { name }),
       ...(nickname && { nickname: `@${nickname}` }),
@@ -174,19 +173,22 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
       ...(percentage && { percentage }),
       ...(amountPerVideo && { amountPerVideo }),
       ...(country && { country }),
+      ...(balance && { lastPaymentDate: moment().toDate() }),
     };
 
     objDBForIncrement = {
       ...(balance && { balance }),
     };
 
-    if (Object.keys(objDB).length) {
-      await updateUser(userId, objDB);
-    }
+    //if (Object.keys(objDB).length) {
+    //  await updateUser(userId, objDB);
+    //}
 
-    if (Object.keys(objDBForIncrement).length) {
-      await updateUserByIncrement('_id', [userId], objDBForIncrement);
-    }
+    await updateUser(userId, objDB, objDBForIncrement);
+
+    //if (Object.keys(objDBForIncrement).length) {
+    //  await updateUserByIncrement('_id', [userId], objDBForIncrement);
+    //}
 
     const allWorkers = await getWorkers();
 
@@ -209,45 +211,58 @@ router.patch(
   authMiddleware,
   async (req, res) => {
     try {
-      const { dateLimit } = req.query;
-
       const allWorkers = await getWorkers(true, null);
 
       await Promise.all(
         allWorkers.map(async (user) => {
-          const sales = await getSalesByUserEmail(
-            user.email,
-            dateLimit ? +dateLimit : null
-          );
+          const salesDateLimit = await getSalesByUserEmail(user.email, 30);
 
-          const sumAmount = sales.reduce((acc, sale) => {
+          const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
             return +(
               acc +
               sale.amountToResearcher / sale.researchers.emails.length
             ).toFixed(2);
           }, 0);
 
-          const linksCount = await getCountLinksByUserEmail(
+          const sales = await getSalesByUserEmail(user.email, null);
+
+          const salesSumAmount = sales.reduce((acc, sale) => {
+            return +(
+              acc +
+              sale.amountToResearcher / sale.researchers.emails.length
+            ).toFixed(2);
+          }, 0);
+
+          const linksCountDateLimit = await getCountLinksByUserEmail(
             user.email,
-            dateLimit ? +dateLimit : null
+            30
           );
+
+          const linksCount = await getCountLinksByUserEmail(user.email, null);
+
+          const acquiredVideoCountDateLimit =
+            await getCountAcquiredVideoByUserEmail(user.email, 5);
 
           const acquiredVideoCount = await getCountAcquiredVideoByUserEmail(
             user.email,
-            dateLimit ? +dateLimit : null
+            null
           );
 
+          const approvedTrelloCardCountDateLimit =
+            await getCountApprovedTrelloCardByNickname(user.nickname, 30);
+
           const approvedTrelloCardCount =
-            await getCountApprovedTrelloCardByNickname(
-              user.nickname,
-              dateLimit ? +dateLimit : null
-            );
+            await getCountApprovedTrelloCardByNickname(user.nickname, null);
 
           const dataDBForUpdateUser = {
-            'sentVideosCount.dateLimit': linksCount,
-            'earnedForYourself.dateLimit': sumAmount,
-            'acquiredVideosCount.dateLimit': acquiredVideoCount,
-            'approvedVideosCount.dateLimit': approvedTrelloCardCount,
+            'sentVideosCount.dateLimit': linksCountDateLimit,
+            'sentVideosCount.total': linksCount,
+            'earnedForYourself.dateLimit': salesSumAmountDateLimit,
+            'earnedForYourself.total': salesSumAmount,
+            'acquiredVideosCount.dateLimit': acquiredVideoCountDateLimit,
+            'acquiredVideosCount.total': acquiredVideoCount,
+            'approvedVideosCount.dateLimit': approvedTrelloCardCountDateLimit,
+            'approvedVideosCount.total': approvedTrelloCardCount,
           };
 
           await updateUser(user._id, dataDBForUpdateUser);

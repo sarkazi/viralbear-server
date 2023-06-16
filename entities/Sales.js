@@ -44,6 +44,6 @@ const schema = new Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } }
 );
 module.exports = model('Sales', schema);

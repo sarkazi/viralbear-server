@@ -1599,7 +1599,7 @@ router.patch(
             ),
           }),
           isApproved: true,
-          pubDate: moment().toString(),
+          pubDate: moment('2023-06-03').valueOf(),
         },
         { creditTo: creditTo ? creditTo : null }
       );
@@ -1626,17 +1626,17 @@ router.patch(
         event: 'published',
       });
 
-      await updateUserByIncrement(
-        'email',
-        updatedVideo.trelloData.researchers,
-        { acquiredVideosCount: 1 }
-      );
+      //await updateUserByIncrement(
+      //  'email',
+      //  updatedVideo.trelloData.researchers,
+      //  { acquiredVideosCount: 1 }
+      //);
 
-      const researchersWithUpdateStat = getWorkers(true, null);
+      //const researchersWithUpdateStat = getWorkers(true, null);
 
-      socketInstance
-        .io()
-        .emit('changeUsersStatistics', researchersWithUpdateStat);
+      //socketInstance
+      //  .io()
+      //  .emit('changeUsersStatistics', researchersWithUpdateStat);
 
       //const videosForSocialMedia = await findByIsBrandSafe();
 

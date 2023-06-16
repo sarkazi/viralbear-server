@@ -96,5 +96,9 @@ const schema = new Schema({
       default: 0,
     },
   },
+  lastPaymentDate: {
+    type: Date,
+    required: false,
+  },
 });
 module.exports = model('User', schema);

@@ -133,13 +133,15 @@ const findWorkersForCard = async (workers, selfWorker) => {
   });
 };
 
-const updateUser = async (userId, objDB) => {
+const updateUser = async (userId, objDB, objDBForIncrement) => {
+  console.log(objDB, objDBForIncrement);
   return await User.updateOne(
     {
       _id: userId,
     },
     {
-      $set: objDB,
+      ...(Object.keys(objDB).length && { $set: objDB }),
+      ...(Object.keys(objDBForIncrement).length && { $inc: objDBForIncrement }),
     }
   );
 };

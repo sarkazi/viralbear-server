@@ -1,4 +1,5 @@
 const Sales = require('../entities/Sales');
+const moment = require('moment');
 
 const createNewSale = async (body) => {
   const newSales = await Sales.create(body);
@@ -32,13 +33,11 @@ const findSaleById = async (saleId) => {
 const getSalesByUserEmail = async (userValue, dateLimit) => {
   return Sales.find({
     'researchers.emails': userValue,
-    createdAt: dateLimit
-      ? {
-          $gte: new Date(
-            new Date().getTime() - dateLimit * 24 * 60 * 60 * 1000
-          ),
-        }
-      : {},
+    ...(dateLimit && {
+      createdAt: {
+        $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),
+      },
+    }),
   }).sort({ createdAt: -1 });
 };
 

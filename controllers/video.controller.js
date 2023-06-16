@@ -774,12 +774,16 @@ const deleteVideoById = async (id) => {
 const getCountAcquiredVideoByUserEmail = async (userValue, dateLimit) => {
   return await Video.find({
     'trelloData.researchers': userValue,
-    createdAt: {
-      $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),
-    },
+    isApproved: true,
+    ...(dateLimit && {
+      pubDate: {
+        $exists: true,
+        $gte: moment().subtract(dateLimit, 'd').startOf('d').toString(),
+      },
+    }),
   })
     .countDocuments()
-    .sort({ pubDate: -1 });
+    .sort({ $natural: -1 });
 };
 
 const findReadyForPublication = async () => {
