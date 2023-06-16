@@ -218,8 +218,6 @@ router.post(
         )
       );
 
-      console.log(newReport.suitable, 11111111);
-
       const apiData = {
         emptyVideoId: processingData.data.emptyField.length,
         idLess1460: newReport.lessThen1460.length,
@@ -255,7 +253,9 @@ router.post('/create', authMiddleware, async (req, res) => {
         const emailsOfResearchers = obj.researchers;
         const amount = +obj.amount;
         const amountForAllResearchers = obj.amountToResearcher;
-        const researcherEarnedForCompany = amount / emailsOfResearchers.length;
+        const researcherEarnedForCompany = +(
+          amount / emailsOfResearchers.length
+        ).toFixed(2);
         const researcherEarnedForYourself = +(
           amountForAllResearchers / emailsOfResearchers.length
         ).toFixed(2);
@@ -281,7 +281,7 @@ router.post('/create', authMiddleware, async (req, res) => {
 
         const dataDBForUpdate = {
           earnedForCompany: researcherEarnedForCompany,
-          earnedForYourself: researcherEarnedForYourself,
+          'earnedForYourself.total': researcherEarnedForYourself,
         };
 
         await updateUserByIncrement(
@@ -380,6 +380,58 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     });
   }
 });
+
+//router.get('/updateSalesInfo', authMiddleware, async (req, res) => {
+//  try {
+//    const { dateLimit } = req.query;
+
+//    const allWorkers = await getWorkers(true, null);
+
+//    await Promise.all(
+//      allWorkers.map(async (user) => {
+//        const sales = await getSalesByUser(
+//          user.email,
+//          dateLimit ? +dateLimit : null
+//        );
+
+//        const sumAmount = sales.reduce((acc, sale) => {
+//          return +(
+//            acc +
+//            sale.amountToResearcher / sale.researchers.emails.length
+//          ).toFixed(2);
+//        }, 0);
+
+//        const dataDBForUpdateUser = {
+//          'earnedForYourself.dateLimit': sumAmount,
+//        };
+
+//        const test = await updateUserByIncrement(
+//          'email',
+//          [user.email],
+//          dataDBForUpdateUser
+//        );
+
+//        console.log(test, 87998);
+//      })
+//    );
+
+//    const researchers = await getWorkers(true, null);
+
+//    console.log(researchers, 9999);
+
+//    return res.status(200).json({
+//      status: 'success',
+//      message: `The number of sales for each worker received`,
+//      apiData: researchers,
+//    });
+//  } catch (err) {
+//    console.log(err);
+//    return res.status(500).json({
+//      status: 'error',
+//      message: err?.message ? err.message : 'Server side error',
+//    });
+//  }
+//});
 
 router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
   const { saleId } = req.params;

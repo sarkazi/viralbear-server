@@ -29,9 +29,21 @@ const findSaleById = async (saleId) => {
   return Sales.findById(saleId);
 };
 
+const getSalesByUserEmail = async (userValue, dateLimit) => {
+  return Sales.find({
+    'researchers.emails': userValue,
+    createdAt: dateLimit
+      ? {
+          $gte: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000),
+        }
+      : {},
+  });
+};
+
 module.exports = {
   createNewSale,
   deleteSaleById,
   getAllSales,
   findSaleById,
+  getSalesByUserEmail,
 };

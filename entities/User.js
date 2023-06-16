@@ -49,9 +49,16 @@ const schema = new Schema({
     default: 0,
   },
   earnedForYourself: {
-    type: Number,
-    required: true,
-    default: 0,
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   sentVideosCount: {
     type: Number,

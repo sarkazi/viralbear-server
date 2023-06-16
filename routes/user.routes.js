@@ -16,6 +16,8 @@ const {
   getUserByEmail,
 } = require('../controllers/user.controller.js');
 
+const { getSalesByUserEmail } = require('../controllers/sales.controller');
+
 const {
   updateCustomFieldByTrelloCard,
 } = require('../controllers/trello.controller');
@@ -135,9 +137,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
 
 router.post('/sendPassword', sendPassword);
 
-
 router.post('/recoveryPassword', recoveryPassword);
-
 
 router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
   try {
@@ -193,6 +193,58 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
     });
   }
 });
+
+router.patch(
+  '/updateStatisticsForAllResearchers',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { dateLimit } = req.query;
+
+      const allWorkers = await getWorkers(true, null);
+
+      await Promise.all(
+        allWorkers.map(async (user) => {
+          const sales = await getSalesByUserEmail(
+            user.email,
+            dateLimit ? +dateLimit : null
+          );
+
+          if (!sales.length) {
+            return;
+          }
+
+          const sumAmount = sales.reduce((acc, sale) => {
+            return +(
+              acc +
+              sale.amountToResearcher / sale.researchers.emails.length
+            ).toFixed(2);
+          }, 0);
+
+          const dataDBForUpdateUser = {
+            'earnedForYourself.dateLimit': sumAmount,
+          };
+
+          await updateUser(user._id, dataDBForUpdateUser);
+        })
+      );
+
+      const allWorkersWithRefreshStat = await getWorkers(true, null);
+
+      return res.status(200).json({
+        message: 'Users with updated statistics received',
+        status: 'success',
+        apiData: allWorkersWithRefreshStat,
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        message: 'Server side error',
+        status: 'error',
+      });
+    }
+  }
+);
 
 router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
   const { userId } = req.params;
