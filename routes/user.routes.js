@@ -135,7 +135,9 @@ router.post('/createOne', authMiddleware, async (req, res) => {
 
 router.post('/sendPassword', sendPassword);
 
+
 router.post('/recoveryPassword', recoveryPassword);
+
 
 router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
   try {

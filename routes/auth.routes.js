@@ -7,7 +7,10 @@ const { validationResult, check } = require('express-validator');
 
 const { compare } = require('bcryptjs');
 
-const { getUserByEmail } = require('../controllers/user.controller');
+const {
+  getUserByEmail,
+  getUserById,
+} = require('../controllers/user.controller');
 const {
   generateTokens,
   validateRefreshToken,
@@ -64,6 +67,26 @@ router.post(
     }
   }
 );
+
+router.post('/getMe', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const userData = await getUserById(userId);
+
+    return res.status(200).json({
+      apiData: userData,
+      status: 'success',
+      message: 'User data received',
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
 
 router.post('/authenticate', authMiddleware, (req, res) => {
   if (req?.user?.role) {
