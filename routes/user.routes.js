@@ -16,11 +16,21 @@ const {
   getUserByEmail,
 } = require('../controllers/user.controller.js');
 
+const { getCountLinksByUserEmail } = require('../controllers/links.controller');
+
 const { getSalesByUserEmail } = require('../controllers/sales.controller');
+
+const {
+  getCountApprovedTrelloCardByNickname,
+} = require('../controllers/moveFromReview.controller');
 
 const {
   updateCustomFieldByTrelloCard,
 } = require('../controllers/trello.controller');
+
+const {
+  getCountAcquiredVideoByUserEmail,
+} = require('../controllers/video.controller');
 
 router.get('/getWorkers', authMiddleware, async (req, res) => {
   try {
@@ -210,10 +220,6 @@ router.patch(
             dateLimit ? +dateLimit : null
           );
 
-          if (!sales.length) {
-            return;
-          }
-
           const sumAmount = sales.reduce((acc, sale) => {
             return +(
               acc +
@@ -221,8 +227,27 @@ router.patch(
             ).toFixed(2);
           }, 0);
 
+          const linksCount = await getCountLinksByUserEmail(
+            user.email,
+            dateLimit ? +dateLimit : null
+          );
+
+          const acquiredVideoCount = await getCountAcquiredVideoByUserEmail(
+            user.email,
+            dateLimit ? +dateLimit : null
+          );
+
+          const approvedTrelloCardCount =
+            await getCountApprovedTrelloCardByNickname(
+              user.nickname,
+              dateLimit ? +dateLimit : null
+            );
+
           const dataDBForUpdateUser = {
+            'sentVideosCount.dateLimit': linksCount,
             'earnedForYourself.dateLimit': sumAmount,
+            'acquiredVideosCount.dateLimit': acquiredVideoCount,
+            'approvedVideosCount.dateLimit': approvedTrelloCardCount,
           };
 
           await updateUser(user._id, dataDBForUpdateUser);

@@ -61,19 +61,40 @@ const schema = new Schema({
     },
   },
   sentVideosCount: {
-    type: Number,
-    required: true,
-    default: 0,
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   approvedVideosCount: {
-    type: Number,
-    required: true,
-    default: 0,
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   acquiredVideosCount: {
-    type: Number,
-    required: true,
-    default: 0,
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
 });
 module.exports = model('User', schema);

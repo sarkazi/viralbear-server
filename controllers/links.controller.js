@@ -180,6 +180,21 @@ const conversionIncorrectLinks = (link) => {
   }
 };
 
+const getCountLinksByUserEmail = async (userValue, dateLimit) => {
+  return Links.find({
+    email: userValue,
+    createdAt: dateLimit
+      ? {
+          $gte: new Date(
+            new Date().getTime() - dateLimit * 24 * 60 * 60 * 1000
+          ),
+        }
+      : {},
+  })
+    .countDocuments()
+    .sort({ createdAt: -1 });
+};
+
 module.exports = {
   getAllLinks,
   findBaseUrl,
@@ -187,4 +202,5 @@ module.exports = {
   findLinkByVideoId,
   createNewLink,
   conversionIncorrectLinks,
+  getCountLinksByUserEmail,
 };

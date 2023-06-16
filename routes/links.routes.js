@@ -139,7 +139,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
     );
 
     await updateUserByIncrement('email', [selfWorker.email], {
-      sentVideosCount: 1,
+      'sentVideosCount.total': 1,
     });
 
     const researchers = await getWorkers(true, null);

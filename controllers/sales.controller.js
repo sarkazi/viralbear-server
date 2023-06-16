@@ -34,10 +34,12 @@ const getSalesByUserEmail = async (userValue, dateLimit) => {
     'researchers.emails': userValue,
     createdAt: dateLimit
       ? {
-          $gte: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000),
+          $gte: new Date(
+            new Date().getTime() - dateLimit * 24 * 60 * 60 * 1000
+          ),
         }
       : {},
-  });
+  }).sort({ createdAt: -1 });
 };
 
 module.exports = {

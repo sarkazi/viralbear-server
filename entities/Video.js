@@ -44,7 +44,7 @@ const schema = new Schema(
         required: true,
       },
       date: {
-        type: String,
+        type: Date,
         required: true,
       },
       originalVideoLink: {
@@ -184,7 +184,7 @@ const schema = new Schema(
       default: false,
     },
     pubDate: {
-      type: String,
+      type: Date,
       required: false,
     },
     mRSS: {

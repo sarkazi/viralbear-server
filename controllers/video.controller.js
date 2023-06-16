@@ -29,6 +29,7 @@ const {
 } = require('../utils/findStartEndPointOfDuration');
 
 const { findTimestampsBySearch } = require('../utils/findTimestampsBySearch');
+const { timeStamp } = require('console');
 
 const filePath2 = path.join(
   __dirname,
@@ -770,6 +771,17 @@ const deleteVideoById = async (id) => {
   await Video.deleteOne({ 'videoData.videoId': id });
 };
 
+const getCountAcquiredVideoByUserEmail = async (userValue, dateLimit) => {
+  return await Video.find({
+    'trelloData.researchers': userValue,
+    createdAt: {
+      $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),
+    },
+  })
+    .countDocuments()
+    .sort({ pubDate: -1 });
+};
+
 const findReadyForPublication = async () => {
   const videosByNotApproved = await findByNotApproved();
 
@@ -1114,4 +1126,5 @@ module.exports = {
   deleteVideoById,
   findByNotApproved,
   findVideoByTitle,
+  getCountAcquiredVideoByUserEmail,
 };

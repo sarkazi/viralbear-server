@@ -133,7 +133,7 @@ router.post(
 
       if (
         !originalLink ||
-        !researchers ||
+        !researchers.length ||
         !title ||
         !desc ||
         !tags ||
@@ -154,6 +154,8 @@ router.post(
           status: 'warning',
         });
       }
+
+      console.log(!researchers, researchers);
 
       try {
         if (vbCode) {

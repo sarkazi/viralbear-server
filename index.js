@@ -26,6 +26,8 @@ const {
   getTrelloMemberById,
 } = require('./controllers/trello.controller');
 
+const { createNewMove } = require('./controllers/moveFromReview.controller');
+
 const {
   updateUserByIncrement,
   getWorkers,
@@ -331,19 +333,27 @@ app.post('/trelloCallback', async (req, res) => {
     ) {
       const memberCreatorId = req.body.action.memberCreator.id;
 
+      console.log(memberCreatorId, 8789);
+
       const memberCreatorData = await getTrelloMemberById(memberCreatorId);
 
-      await updateUserByIncrement(
-        'nickname',
-        [`@${memberCreatorData.username}`],
-        {
-          approvedVideosCount: 1,
-        }
-      );
+      const objDB = {
+        user: `@${memberCreatorData.username}`,
+      };
 
-      const workers = await getWorkers(true, null);
+      await createNewMove(objDB);
 
-      socketInstance.io().emit('changeUsersStatistics', workers);
+      //await updateUserByIncrement(
+      //  'nickname',
+      //  [`@${memberCreatorData.username}`],
+      //  {
+      //    approvedVideosCount: 1,
+      //  }
+      //);
+
+      //const workers = await getWorkers(true, null);
+
+      //socketInstance.io().emit('changeUsersStatistics', workers);
     }
 
     //ловим архивирование карточки в листе "done"
