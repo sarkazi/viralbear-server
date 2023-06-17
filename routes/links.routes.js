@@ -18,6 +18,7 @@ const {
   getUserById,
   updateUserByIncrement,
   getWorkers,
+  updateStatForAllResearchers,
 } = require('../controllers/user.controller');
 
 const {
@@ -138,13 +139,13 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       trelloResponseAfterCreatingCard.id
     );
 
-    //await updateUserByIncrement('email', [selfWorker.email], {
-    //  'sentVideosCount.total': 1,
-    //});
+    const { allWorkersWithRefreshStat, sumCountWorkersValue } =
+      await updateStatForAllResearchers();
 
-    //const researchers = await getWorkers(true, null);
-
-    //socketInstance.io().emit('changeUsersStatistics', researchers);
+    socketInstance.io().emit('changeUsersStatistics', {
+      allWorkersWithRefreshStat,
+      sumCountWorkersValue,
+    });
 
     return res.status(200).json({
       status: 'success',

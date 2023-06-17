@@ -6,6 +6,18 @@ const { genSalt, hash: hashBcrypt } = require('bcryptjs');
 
 const mailTransporter = require('../nodemailer.instance');
 
+const { getSalesByUserEmail } = require('../controllers/sales.controller');
+
+const { getCountLinksByUserEmail } = require('../controllers/links.controller');
+
+const {
+  getCountApprovedTrelloCardByNickname,
+} = require('../controllers/moveFromReview.controller');
+
+const {
+  getCountAcquiredVideoByUserEmail,
+} = require('../controllers/video.controller');
+
 const sendEmailPassword = async (email, subjectText, textEmail, htmlText) => {
   await mailTransporter.sendMail({
     from: '"Information" <info@viralbear.media>',
@@ -145,6 +157,244 @@ const updateUser = async (userId, objDB, objDBForIncrement) => {
   );
 };
 
+const updateStatForAllResearchers = async () => {
+  const allWorkers = await getWorkers(true, null);
+
+  await Promise.all(
+    allWorkers.map(async (user) => {
+      const salesDateLimit = await getSalesByUserEmail(user.email, 30);
+
+      const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
+        return +(
+          acc +
+          sale.amountToResearcher / sale.researchers.emails.length
+        ).toFixed(2);
+      }, 0);
+
+      const sales = await getSalesByUserEmail(user.email, null);
+
+      const earnedForYourself = sales.reduce(
+        (a, sale) =>
+          a + +(sale.amountToResearcher / sale?.researchers?.emails?.length),
+        0
+      );
+      const earnedTotal = sales.reduce(
+        (a, sale) => a + +(sale.amount / sale?.researchers?.emails?.length),
+        0
+      );
+
+      const earnedForCompany = sales.reduce(
+        (a, sale) =>
+          a +
+          +(
+            sale.amount / sale?.researchers?.emails?.length -
+            sale.amountToResearcher / sale?.researchers?.emails?.length
+          ),
+        0
+      );
+
+      if (user.name === 'ViralBear') {
+        console.log(earnedTotal, earnedForCompany, 898);
+      }
+
+      const earnedTillNextPayment = earnedForYourself - user.balance;
+
+      const linksCountDateLimit = await getCountLinksByUserEmail(
+        user.email,
+        30
+      );
+
+      const linksCount = await getCountLinksByUserEmail(user.email, null);
+
+      const acquiredVideoCountDateLimit =
+        await getCountAcquiredVideoByUserEmail(user.email, 30);
+
+      const acquiredVideoCount = await getCountAcquiredVideoByUserEmail(
+        user.email,
+        null
+      );
+
+      const approvedTrelloCardCountDateLimit =
+        await getCountApprovedTrelloCardByNickname(user.nickname, 30);
+
+      const approvedTrelloCardCount =
+        await getCountApprovedTrelloCardByNickname(user.nickname, null);
+
+      const defineDefaultValueForPayingInput = async () => {
+        if (user.lastPaymentDate) {
+          const daysSinceLastPayment = Math.abs(
+            Math.ceil(
+              (moment().valueOf() - moment(user.lastPaymentDate).valueOf()) /
+                1000 /
+                60 /
+                60 /
+                24
+            )
+          );
+
+          //console.log(daysSinceLastPayment, user.nickname);
+
+          const acquiredVideoCountDateLimit =
+            await getCountAcquiredVideoByUserEmail(
+              user.email,
+              daysSinceLastPayment + 1
+            );
+
+          const earnedAfterLastPayment =
+            user.amountPerVideo * acquiredVideoCountDateLimit;
+
+          const defaultInputValue =
+            earnedTillNextPayment > earnedAfterLastPayment
+              ? earnedAfterLastPayment
+              : earnedTillNextPayment;
+
+          return defaultInputValue;
+        }
+      };
+
+      const defaultInputValue = await defineDefaultValueForPayingInput();
+
+      const dataDBForUpdateUser = {
+        'sentVideosCount.dateLimit': linksCountDateLimit,
+        'sentVideosCount.total': linksCount,
+        'earnedForYourself.dateLimit': salesSumAmountDateLimit.toFixed(2),
+        'earnedForYourself.total': earnedForYourself.toFixed(2),
+        earnedTotal: earnedTotal.toFixed(2),
+        earnedForCompany: earnedForCompany.toFixed(2),
+        'acquiredVideosCount.dateLimit': acquiredVideoCountDateLimit,
+        'acquiredVideosCount.total': acquiredVideoCount,
+        'approvedVideosCount.dateLimit': approvedTrelloCardCountDateLimit,
+        'approvedVideosCount.total': approvedTrelloCardCount,
+        earnedTillNextPayment: earnedTillNextPayment.toFixed(2),
+        defaultPaymentAmount: defaultInputValue
+          ? defaultInputValue.toFixed(2)
+          : 0,
+      };
+
+      await updateUser(user._id, dataDBForUpdateUser, {});
+    })
+  );
+
+  const allWorkersWithRefreshStat = await getWorkers(true, null);
+
+  const sumCountWorkersValue = allWorkersWithRefreshStat.reduce(
+    (acc = {}, worker = {}) => {
+      //суммарный баланс работников
+      acc.balance = parseFloat((acc.balance + worker.balance).toFixed(2));
+
+      //суммарный earnedTillNextPayment работников
+      acc.earnedTillNextPayment = parseFloat(
+        (
+          acc.earnedTillNextPayment +
+          (worker.earnedForYourself.total - worker.balance)
+        ).toFixed(2)
+      );
+
+      //суммарный личный заработок работников
+      acc.earnedForYourself = {
+        //за 30 дней
+        dateLimit: parseFloat(
+          (
+            acc.earnedForYourself.dateLimit + worker.earnedForYourself.dateLimit
+          ).toFixed(2)
+        ),
+        //всего
+        total: parseFloat(
+          (
+            acc.earnedForYourself.total + worker.earnedForYourself.total
+          ).toFixed(2)
+        ),
+      };
+
+      //суммарный общий заработок работников
+      acc.earnedTotal = parseFloat(
+        (acc.earnedTotal + worker.earnedTotal).toFixed(2)
+      );
+      //суммарный заработок компании
+      acc.earnedForCompany = parseFloat(
+        (acc.earnedForCompany + worker.earnedForCompany).toFixed(2)
+      );
+
+      //суммарное количество отправленных работниками в трелло видео
+      acc.sentVideosCount = {
+        //за 30 дней
+        dateLimit: parseFloat(
+          (
+            acc.sentVideosCount.dateLimit + worker.sentVideosCount.dateLimit
+          ).toFixed(2)
+        ),
+        //общий
+        total: parseFloat(
+          (acc.sentVideosCount.total + worker.sentVideosCount.total).toFixed(2)
+        ),
+      };
+
+      //суммарное количество опубликованных на сайте видео, где присутствуют работники
+      acc.acquiredVideosCount = {
+        //за 30 дней
+        dateLimit: parseFloat(
+          (
+            acc.acquiredVideosCount.dateLimit +
+            worker.acquiredVideosCount.dateLimit
+          ).toFixed(2)
+        ),
+        //общий
+        total: parseFloat(
+          (
+            acc.acquiredVideosCount.total + worker.acquiredVideosCount.total
+          ).toFixed(2)
+        ),
+      };
+
+      //суммарное количество одобренных видео (перемещенные из review листа в trello), где присутствуют работники
+      acc.approvedVideosCount = {
+        //за 30 дней
+        dateLimit: parseFloat(
+          (
+            acc.approvedVideosCount.dateLimit +
+            worker.approvedVideosCount.dateLimit
+          ).toFixed(2)
+        ),
+        //общий
+        total: parseFloat(
+          (
+            acc.approvedVideosCount.total + worker.approvedVideosCount.total
+          ).toFixed(2)
+        ),
+      };
+
+      return acc;
+    },
+    {
+      balance: 0,
+      earnedTillNextPayment: 0,
+      earnedForYourself: {
+        dateLimit: 0,
+        total: 0,
+      },
+      earnedTotal: 0,
+      earnedForCompany: 0,
+      sentVideosCount: {
+        dateLimit: 0,
+        total: 0,
+      },
+      acquiredVideosCount: {
+        dateLimit: 0,
+        total: 0,
+      },
+      approvedVideosCount: {
+        dateLimit: 0,
+        total: 0,
+      },
+    }
+  );
+
+  return {
+    allWorkersWithRefreshStat,
+    sumCountWorkersValue,
+  };
+};
+
 const updateUserByIncrement = async (field, emailsOfResearchers, objDB) => {
   return await User.updateMany(
     { [field]: { $in: emailsOfResearchers } },
@@ -164,4 +414,5 @@ module.exports = {
   updateUser,
   findUsersByEmails,
   updateUserByIncrement,
+  updateStatForAllResearchers,
 };

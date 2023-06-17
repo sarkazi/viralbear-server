@@ -36,12 +36,6 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     })
     .join(', ');
 
-  console.log(
-    process.env.SERVICE_INFO_EMAIL,
-    researcherEmail,
-    process.env.SERVICE_LICENSING_EMAIL
-  );
-
   await mailTransporter.sendMail({
     from: `"Information" <info@viralbear.media>`,
     to:
@@ -140,8 +134,18 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
   });
 };
 
+const sendEmail = async (emailFrom, emailTo, subject, html) => {
+  await mailTransporter.sendMail({
+    from: emailFrom,
+    to: emailTo,
+    subject,
+    html,
+  });
+};
+
 module.exports = {
   sendAgreementToClientMail,
   sendSurveyInfoToServiceMail,
   sendMainInfoByVBToServiceMail,
+  sendEmail,
 };

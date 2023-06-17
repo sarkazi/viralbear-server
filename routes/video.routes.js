@@ -21,6 +21,7 @@ const {
   getUserById,
   getWorkers,
   updateUserByIncrement,
+  updateStatForAllResearchers,
 } = require('../controllers/user.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
@@ -1626,17 +1627,13 @@ router.patch(
         event: 'published',
       });
 
-      //await updateUserByIncrement(
-      //  'email',
-      //  updatedVideo.trelloData.researchers,
-      //  { acquiredVideosCount: 1 }
-      //);
+      const { allWorkersWithRefreshStat, sumCountWorkersValue } =
+        await updateStatForAllResearchers();
 
-      //const researchersWithUpdateStat = getWorkers(true, null);
-
-      //socketInstance
-      //  .io()
-      //  .emit('changeUsersStatistics', researchersWithUpdateStat);
+      socketInstance.io().emit('changeUsersStatistics', {
+        allWorkersWithRefreshStat,
+        sumCountWorkersValue,
+      });
 
       //const videosForSocialMedia = await findByIsBrandSafe();
 
