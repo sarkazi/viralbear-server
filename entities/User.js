@@ -48,6 +48,11 @@ const schema = new Schema({
     required: true,
     default: 0,
   },
+  earnedTotal: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
   earnedForYourself: {
     total: {
       type: Number,
@@ -99,6 +104,16 @@ const schema = new Schema({
   lastPaymentDate: {
     type: Date,
     required: false,
+  },
+  defaultPaymentAmount: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  earnedTillNextPayment: {
+    type: Number,
+    required: true,
+    default: 0,
   },
 });
 module.exports = model('User', schema);

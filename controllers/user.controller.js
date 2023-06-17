@@ -134,7 +134,6 @@ const findWorkersForCard = async (workers, selfWorker) => {
 };
 
 const updateUser = async (userId, objDB, objDBForIncrement) => {
-  console.log(objDB, objDBForIncrement);
   return await User.updateOne(
     {
       _id: userId,
