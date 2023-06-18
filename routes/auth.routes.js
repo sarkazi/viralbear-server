@@ -74,6 +74,13 @@ router.post('/getMe', authMiddleware, async (req, res) => {
 
     const userData = await getUserById(userId);
 
+    if (!userData) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'User not found',
+      });
+    }
+
     return res.status(200).json({
       apiData: userData,
       status: 'success',
@@ -97,7 +104,7 @@ router.post('/authenticate', authMiddleware, (req, res) => {
     });
   } else {
     return res
-      .status(401)
+      .status(200)
       .json({ message: 'Access denied', status: 'error', code: 401 });
   }
 });

@@ -100,6 +100,10 @@ const schema = new Schema(
       type: String,
       required: false,
     },
+    activatedPersonalAccount: {
+      type: Boolean,
+      default: false,
+    },
     exclusivity: {
       type: Boolean,
       default: true,

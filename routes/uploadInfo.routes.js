@@ -287,21 +287,54 @@ router.post(
   }
 );
 
-router.get('/findOne/:id', authMiddleware, async (req, res) => {
+router.get('/findOne', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { searchBy, formId, refHash } = req.query;
 
-    const form = await findOne(id);
+    console.log(req.query);
+
+    if (!searchBy) {
+      return res.status(200).json({
+        message: `The search parameter is missing`,
+        status: 'warning',
+      });
+    }
+
+    if (!formId && !refHash) {
+      return res.status(200).json({
+        message: `Missing search value`,
+        status: 'warning',
+      });
+    }
+
+    if (formId && refHash) {
+      return res.status(200).json({
+        message: `There can only be one value to search for`,
+        status: 'warning',
+      });
+    }
+
+    const objDB = {
+      searchBy,
+      ...(formId && { formId }),
+      ...(refHash && { refHash }),
+    };
+
+    const form = await findOne(objDB);
 
     if (!form) {
       return res.status(200).json({
-        message: `The form with the vb code ${id} was not found in the database`,
+        message: formId
+          ? `The form with the vb code ${formId} was not found in the database`
+          : `The form with the referral hash ${refHash} was not found in the database`,
         status: 'warning',
       });
     }
 
     res.status(200).json({
-      message: `Form with vb code ${id} found in the database`,
+      message: formId
+        ? `Form with the vb code ${formId} found in the database`
+        : `Form with the referral hash ${refHash} found in the database`,
       status: 'success',
       apiData: form,
     });
@@ -326,6 +359,8 @@ router.post(
         });
       }
 
+      console.log(formId, 888);
+
       if (!pdf.length > 1) {
         return res.status(400).json({
           message: 'A maximum of 1 pdf file is expected',
@@ -340,7 +375,12 @@ router.post(
         });
       }
 
-      const vbForm = await findOne(formId.replace('VB', ''));
+      const objToSearchVbForm = {
+        searchBy: 'formId',
+        formId: formId.replace('VB', ''),
+      };
+
+      const vbForm = await findOne(objToSearchVbForm);
 
       if (!vbForm) {
         return res.status(404).json({
@@ -411,6 +451,9 @@ router.post(
         name: vbForm.name,
         agreementLink: agreementLink,
         email: vbForm.email,
+        ...(vbForm.refHash && {
+          linkToPersonalAccount: `${process.env.CLIENT_URI}/licensors/?unq=${vbForm.refHash}`,
+        }),
       };
 
       if (vbForm.refHash) {

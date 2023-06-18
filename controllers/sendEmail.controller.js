@@ -80,13 +80,25 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
 };
 
 const sendAgreementToClientMail = async (dataForSendingAgreement) => {
-  const { name, email, agreementLink } = dataForSendingAgreement;
+  const { name, email, agreementLink, linkToPersonalAccount } =
+    dataForSendingAgreement;
 
   await mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
     to: email,
     subject: `You just submitted your video to «VIRALBEAR» LLC`,
-    html: `Hello ${name}.<br><br> Thank you for uploading the video to our platform. The agreement file is in the attachment of this letter.<br><br> Have a nice day!`,
+    html: linkToPersonalAccount
+      ? `
+    Hello ${name}.<br/>
+    Thank you for uploading the video to our platform.<br/>
+    Link to your personal account on viralbear.media: ${linkToPersonalAccount}. The agreement file is in the attachment of this letter.<br/>
+    Have a nice day!
+    `
+      : `
+    Hello ${name}.<br/>
+    Thank you for uploading the video to our platform. The agreement file is in the attachment of this letter.<br/>
+    Have a nice day!
+    `,
     attachments: [
       {
         filename: 'agreement.pdf',

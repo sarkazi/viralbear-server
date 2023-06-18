@@ -24,6 +24,10 @@ const schema = new Schema({
     required: true,
     enum: roles,
   },
+  referer: {
+    type: String,
+    required: false,
+  },
   percentage: {
     type: Number,
     required: true,
@@ -36,7 +40,7 @@ const schema = new Schema({
   },
   country: {
     type: String,
-    required: true,
+    required: false,
   },
   balance: {
     type: Number,
