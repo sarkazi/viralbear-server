@@ -5,6 +5,8 @@ const moment = require('moment');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
+const validationForRequiredInputDataInUserModel = require('../utils/validationForRequiredInputDataInUserModel');
+
 const {
   getAllUsers,
   deleteUser,
@@ -98,24 +100,12 @@ router.post('/createOne', authMiddleware, async (req, res) => {
 
     const { roleUsersForResponse } = req.query;
 
-    if (!role) {
-      return res
-        .status(200)
-        .json({ message: 'Missing value - "Role"', status: 'warning' });
-    }
+    const isValidate = validationForRequiredInputDataInUserModel(
+      role,
+      req.body
+    );
 
-    if (
-      (role === 'worker' &&
-        (!email ||
-          !password ||
-          !nickname ||
-          !name ||
-          !country ||
-          !percentage ||
-          !amountPerVideo)) ||
-      (role === 'stringer' &&
-        (!email || !password || !name || !paymentInfo || !amountPerVideo))
-    ) {
+    if (!isValidate) {
       return res
         .status(200)
         .json({ message: 'Missing data to create a user', status: 'warning' });
@@ -139,20 +129,25 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       password: await hashBcrypt(password, salt),
       role,
       ...(percentage && { percentage }),
-      amountPerVideo,
+      ...(amountPerVideo && { amountPerVideo }),
       ...(country && { country }),
-      ...(paymentInfo && { paymentInfo }),
+      ...(paymentInfo && {
+        paymentInfo,
+      }),
+      ...((role === 'author' || role === 'worker' || role === 'stringer') && {
+        balance: 0,
+      }),
     };
 
     await createUser(objDB);
 
     let apiData;
 
-    if (roleUsersForResponse) {
-      apiData = await getAllUsers(true, null, roleUsersForResponse);
-    } else {
-      apiData = await getUserById(userId);
-    }
+    //if (roleUsersForResponse) {
+    //  apiData = await getAllUsers(true, null, roleUsersForResponse);
+    //} else {
+    //  apiData = await getUserById(userId);
+    //}
 
     return res.status(200).json({
       message: 'A new user has been successfully created',
@@ -212,6 +207,7 @@ router.post('/authorRegister', async (req, res) => {
       password: await hashBcrypt(reqPassword, salt),
       referer: vbForm.researcher.email,
       role: 'author',
+      balance: 0,
     };
 
     const newUser = await createUser(objForCreateUAuthor);
@@ -226,8 +222,6 @@ router.post('/authorRegister', async (req, res) => {
     );
 
     const { password, ...userData } = newUser._doc;
-
-    console.log(userData, 888);
 
     return res.status(200).json({
       message: 'Congratulations on registering on the service!',
@@ -247,9 +241,20 @@ router.post('/sendPassword', sendPassword);
 
 router.post('/recoveryPassword', recoveryPassword);
 
-router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
+router.patch('/updateOne', authMiddleware, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.query;
+
+    const userIdToUpdate = userId ? userId : req.user.id;
+
+    const user = await getUserById(userIdToUpdate);
+
+    if (!user) {
+      return res.status(200).json({
+        message: 'User not found',
+        status: 'warning',
+      });
+    }
 
     const { roleUsersForResponse } = req.query;
 
@@ -264,6 +269,21 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
       balance,
       paymentInfo,
     } = req.body;
+
+    if (user.role === 'author') {
+      const isValidate = validationForRequiredInputDataInUserModel(
+        user.role,
+        req.body,
+        'update'
+      );
+
+      if (!isValidate) {
+        return res.status(200).json({
+          message: 'Missing value for update payment information',
+          status: 'warning',
+        });
+      }
+    }
 
     objDB = {
       ...(name && { name }),
@@ -281,7 +301,7 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
       ...(balance && { balance }),
     };
 
-    await updateUser(userId, objDB, objDBForIncrement);
+    await updateUser(userIdToUpdate, objDB, objDBForIncrement);
 
     let apiData;
 

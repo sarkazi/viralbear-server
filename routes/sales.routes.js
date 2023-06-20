@@ -249,6 +249,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     const promiseAfterCreated = await Promise.all(
       body.map(async (obj) => {
         const namesByUsers = await findUsersByEmails(obj.researchers);
+        console.log(namesByUsers, 8897987);
 
         const emailsOfResearchers = obj.researchers;
         const amount = +obj.amount;
@@ -261,12 +262,13 @@ router.post('/create', authMiddleware, async (req, res) => {
         //).toFixed(2);
 
         const objDB = {
-          researchers: {
-            emails: emailsOfResearchers,
-            names: namesByUsers.map((obj) => {
-              return obj.name;
-            }),
-          },
+          //researchers: {
+          //  emails: emailsOfResearchers,
+          //  names: namesByUsers.map((obj) => {
+          //    return obj.name;
+          //  }),
+          //},
+
           videoId: obj.videoId,
           amount,
           amountToResearcher: amountForAllResearchers,

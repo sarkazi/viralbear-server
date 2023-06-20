@@ -53,8 +53,8 @@ const findUsersByEmails = async (emails) => {
   return await User.find(
     {
       email: { $in: emails },
-    },
-    { name: 1, _id: 0 }
+    }
+    //{ name: 1, _id: 0 }
   );
 };
 
@@ -263,26 +263,24 @@ const updateStatForUsers = async (role) => {
       const dataDBForUpdateUser = {
         'sentVideosCount.dateLimit': linksCountDateLimit,
         'sentVideosCount.total': linksCount,
-        'earnedForYourself.dateLimit': salesSumAmountDateLimit.toFixed(2),
-        'earnedForYourself.total': earnedForYourself.toFixed(2),
-        earnedTotal: earnedTotal.toFixed(2),
-        earnedForCompany: earnedForCompany.toFixed(2),
+        'earnedForYourself.dateLimit': +salesSumAmountDateLimit.toFixed(2),
+        'earnedForYourself.total': +earnedForYourself.toFixed(2),
+        earnedTotal: +earnedTotal.toFixed(2),
+        earnedForCompany: +earnedForCompany.toFixed(2),
         'acquiredVideosCount.dateLimit': acquiredVideoCountDateLimit,
         'acquiredVideosCount.total': acquiredVideoCount,
         'approvedVideosCount.dateLimit': approvedTrelloCardCountDateLimit,
         'approvedVideosCount.total': approvedTrelloCardCount,
         earnedTillNextPayment:
           role === 'worker'
-            ? earnedTillNextPayment.toFixed(2)
+            ? +earnedTillNextPayment.toFixed(2)
             : defaultInputValue
             ? defaultInputValue
             : 0,
         defaultPaymentAmount: defaultInputValue
-          ? defaultInputValue.toFixed(2)
+          ? +defaultInputValue.toFixed(2)
           : 0,
       };
-
-      console.log(dataDBForUpdateUser, 888);
 
       await updateUser(user._id, dataDBForUpdateUser, {});
     })
@@ -412,6 +410,7 @@ const updateStatForUsers = async (role) => {
   return {
     allUsersWithRefreshStat,
     sumCountUsersValue,
+    status: 'success',
   };
 };
 

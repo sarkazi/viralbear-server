@@ -1,6 +1,7 @@
 const { Schema, model } = require('mongoose');
 
 const roles = ['admin', 'worker', 'author', 'editor', 'stringer'];
+const paymentMethods = ['other', 'payPal', 'bankTransfer'];
 
 const schema = new Schema({
   email: {
@@ -13,7 +14,7 @@ const schema = new Schema({
   },
   name: {
     type: String,
-    required: false,
+    required: true,
   },
   nickname: {
     type: String,
@@ -30,13 +31,11 @@ const schema = new Schema({
   },
   percentage: {
     type: Number,
-    required: true,
-    default: 0,
+    required: false,
   },
   amountPerVideo: {
     type: Number,
-    required: true,
-    default: 0,
+    required: false,
   },
   country: {
     type: String,
@@ -44,85 +43,124 @@ const schema = new Schema({
   },
   balance: {
     type: Number,
-    required: true,
-    default: 0,
-  },
-  paymentInfo: {
-    type: String,
     required: false,
   },
-  earnedForCompany: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
-  earnedTotal: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
-  earnedForYourself: {
-    total: {
-      type: Number,
-      required: true,
-      default: 0,
+  paymentInfo: {
+    variant: {
+      type: String,
+      enum: paymentMethods,
+      required: false,
     },
-    dateLimit: {
+    phoneNumber: {
       type: Number,
-      required: true,
-      default: 0,
+      required: false,
     },
-  },
-  sentVideosCount: {
-    total: {
-      type: Number,
-      required: true,
-      default: 0,
+    email: {
+      type: String,
+      required: false,
     },
-    dateLimit: {
-      type: Number,
-      required: true,
-      default: 0,
+    address: {
+      type: String,
+      required: false,
     },
-  },
-  approvedVideosCount: {
-    total: {
-      type: Number,
-      required: true,
-      default: 0,
+    zipCode: {
+      type: String,
+      required: false,
     },
-    dateLimit: {
-      type: Number,
-      required: true,
-      default: 0,
+    bankName: {
+      type: String,
+      required: false,
     },
-  },
-  acquiredVideosCount: {
-    total: {
-      type: Number,
-      required: true,
-      default: 0,
+    fullName: {
+      type: String,
+      required: false,
     },
-    dateLimit: {
-      type: Number,
-      required: true,
-      default: 0,
+    iban: {
+      type: String,
+      required: false,
+    },
+    payPalEmail: {
+      type: String,
+      required: false,
+    },
+    value: {
+      type: String,
+      required: false,
     },
   },
   lastPaymentDate: {
     type: Date,
     required: false,
   },
-  defaultPaymentAmount: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
-  earnedTillNextPayment: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
+  //earnedForCompany: {
+  //  type: Number,
+  //  //required: true,
+  //  //default: 0,
+  //},
+  //earnedTotal: {
+  //  type: Number,
+  //  //required: true,
+  //  //default: 0,
+  //},
+  //earnedForYourself: {
+  //  total: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //  dateLimit: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //},
+  //sentVideosCount: {
+  //  total: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //  dateLimit: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //},
+  //approvedVideosCount: {
+  //  total: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //  dateLimit: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //},
+  //acquiredVideosCount: {
+  //  total: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //  dateLimit: {
+  //    type: Number,
+  //    //required: true,
+  //    //default: 0,
+  //  },
+  //},
+
+  //defaultPaymentAmount: {
+  //  type: Number,
+  //  //required: true,
+  //  //default: 0,
+  //},
+  //earnedTillNextPayment: {
+  //  type: Number,
+  //  //required: true,
+  //  //default: 0,
+  //},
 });
 
 module.exports = model('User', schema);
