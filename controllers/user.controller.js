@@ -165,8 +165,6 @@ const updateUser = async (userId, objDB, objDBForIncrement) => {
 const updateStatForUsers = async (role) => {
   const users = await getAllUsers(true, null, role);
 
-  //console.log(role);
-
   await Promise.all(
     users.map(async (user) => {
       const salesDateLimit = await getSalesByUserEmail(user.email, 30);
@@ -204,7 +202,7 @@ const updateStatForUsers = async (role) => {
         console.log(earnedTotal, earnedForCompany, 898);
       }
 
-      const earnedTillNextPayment = earnedForYourself - user.balance;
+      let earnedTillNextPayment = earnedForYourself - user.balance;
 
       const linksCountDateLimit = await getCountLinksByUserEmail(
         user.email,
@@ -228,34 +226,35 @@ const updateStatForUsers = async (role) => {
         await getCountApprovedTrelloCardByNickname(user.nickname, null);
 
       const defineDefaultValueForPayingInput = async () => {
-        if (user.lastPaymentDate) {
-          const daysSinceLastPayment = Math.abs(
-            Math.ceil(
-              (moment().valueOf() - moment(user.lastPaymentDate).valueOf()) /
-                1000 /
-                60 /
-                60 /
-                24
-            )
-          );
-
-          //console.log(daysSinceLastPayment, user.nickname);
-
-          const acquiredVideoCountDateLimit =
-            await getCountAcquiredVideoByUserEmail(
-              user.email,
-              daysSinceLastPayment + 1
+        if (role === 'worker') {
+          if (user.lastPaymentDate) {
+            const daysSinceLastPayment = Math.abs(
+              Math.ceil(
+                (moment().valueOf() - moment(user.lastPaymentDate).valueOf()) /
+                  1000 /
+                  60 /
+                  60 /
+                  24
+              )
             );
 
-          const earnedAfterLastPayment =
-            user.amountPerVideo * acquiredVideoCountDateLimit;
+            const acquiredVideoCountDateLimit =
+              await getCountAcquiredVideoByUserEmail(
+                user.email,
+                daysSinceLastPayment + 1
+              );
 
-          const defaultInputValue =
-            earnedTillNextPayment > earnedAfterLastPayment
-              ? earnedAfterLastPayment
-              : earnedTillNextPayment;
+            const earnedAfterLastPayment =
+              user.amountPerVideo * acquiredVideoCountDateLimit;
 
-          return defaultInputValue;
+            const defaultInputValue =
+              earnedTillNextPayment > earnedAfterLastPayment ||
+              role === 'stringer'
+                ? earnedAfterLastPayment
+                : earnedTillNextPayment;
+
+            return defaultInputValue;
+          }
         }
       };
 
@@ -272,11 +271,18 @@ const updateStatForUsers = async (role) => {
         'acquiredVideosCount.total': acquiredVideoCount,
         'approvedVideosCount.dateLimit': approvedTrelloCardCountDateLimit,
         'approvedVideosCount.total': approvedTrelloCardCount,
-        earnedTillNextPayment: earnedTillNextPayment.toFixed(2),
+        earnedTillNextPayment:
+          role === 'worker'
+            ? earnedTillNextPayment.toFixed(2)
+            : defaultInputValue
+            ? defaultInputValue
+            : 0,
         defaultPaymentAmount: defaultInputValue
           ? defaultInputValue.toFixed(2)
           : 0,
       };
+
+      console.log(dataDBForUpdateUser, 888);
 
       await updateUser(user._id, dataDBForUpdateUser, {});
     })
@@ -290,12 +296,19 @@ const updateStatForUsers = async (role) => {
       acc.balance = parseFloat((acc.balance + user.balance).toFixed(2));
 
       //суммарный earnedTillNextPayment работников
-      acc.earnedTillNextPayment = parseFloat(
-        (
-          acc.earnedTillNextPayment +
-          (user.earnedForYourself.total - user.balance)
-        ).toFixed(2)
-      );
+      acc.earnedTillNextPayment =
+        role === 'worker'
+          ? parseFloat(
+              (
+                acc.earnedTillNextPayment +
+                (user.earnedForYourself.total - user.balance)
+              ).toFixed(2)
+            )
+          : parseFloat(
+              (acc.earnedTillNextPayment + user.earnedTillNextPayment).toFixed(
+                2
+              )
+            );
 
       //суммарный личный заработок работников
       acc.earnedForYourself = {

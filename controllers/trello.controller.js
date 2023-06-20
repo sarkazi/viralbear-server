@@ -227,7 +227,7 @@ const findWorkersTrelloIds = async (foundWorkers) => {
   return data
     .filter((arrWorker) => {
       return foundWorkers.some((worker) => {
-        return worker.nickname.split('@')[1] === arrWorker.username;
+        return worker?.nickname.split('@')[1] === arrWorker.username;
       });
     })
     .map((finalWorker) => {

@@ -17,8 +17,8 @@ const {
 const {
   getUserById,
   updateUserByIncrement,
-  getWorkers,
-  updateStatForAllResearchers,
+  getAllUsers,
+  updateStatForUsers,
 } = require('../controllers/user.controller');
 
 const {
@@ -86,65 +86,71 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       });
     }
 
-    const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
+    //const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
 
-    if (!foundWorkersTrelloIds.length) {
-      return res.status(404).json({
-        message: 'Not a single employee was found in trello',
-        status: 'error',
-      });
-    }
+    //if (!foundWorkersTrelloIds.length) {
+    //  return res.status(404).json({
+    //    message: 'Not a single employee was found in trello',
+    //    status: 'error',
+    //  });
+    //}
 
-    const trelloResponseAfterCreatingCard = await createCardInTrello(
-      authorNickname,
-      title,
-      convertedLink,
-      list,
-      foundWorkersTrelloIds
-    );
+    //const trelloResponseAfterCreatingCard = await createCardInTrello(
+    //  authorNickname,
+    //  title,
+    //  convertedLink,
+    //  list,
+    //  foundWorkersTrelloIds
+    //);
 
-    if (reminders) {
-      const reminderCustomFieldValue =
-        await definingValueOfCustomFieldReminderInTrello(
-          process.env.TRELLO_CUSTOM_FIELD_REMINDER,
-          reminders
-        );
+    //if (reminders) {
+    //  const reminderCustomFieldValue =
+    //    await definingValueOfCustomFieldReminderInTrello(
+    //      process.env.TRELLO_CUSTOM_FIELD_REMINDER,
+    //      reminders
+    //    );
 
-      await updateCustomFieldByTrelloCard(
-        trelloResponseAfterCreatingCard.id,
-        process.env.TRELLO_CUSTOM_FIELD_REMINDER,
-        { idValue: reminderCustomFieldValue.id }
-      );
+    //  await updateCustomFieldByTrelloCard(
+    //    trelloResponseAfterCreatingCard.id,
+    //    process.env.TRELLO_CUSTOM_FIELD_REMINDER,
+    //    { idValue: reminderCustomFieldValue.id }
+    //  );
 
-      const dateMlscUntilNextReminder = await calculatingTimeUntilNextReminder(
-        reminderCustomFieldValue
-      );
+    //  const dateMlscUntilNextReminder = await calculatingTimeUntilNextReminder(
+    //    reminderCustomFieldValue
+    //  );
 
-      const currentTime = moment().valueOf();
+    //  const currentTime = moment().valueOf();
 
-      await updateTrelloCard(trelloResponseAfterCreatingCard.id, {
-        due: +dateMlscUntilNextReminder + +currentTime,
-      });
-    }
+    //  await updateTrelloCard(trelloResponseAfterCreatingCard.id, {
+    //    due: +dateMlscUntilNextReminder + +currentTime,
+    //  });
+    //}
 
     await createNewLink(
       selfWorker.email,
       selfWorker.name,
-      selfWorker.nickname,
+      'shg',
+      //selfWorker.nickname,
       title,
       authorNickname,
       convertedLink,
       videoId,
-      trelloResponseAfterCreatingCard.url,
-      trelloResponseAfterCreatingCard.id
+      '8479586',
+      'gjhkfdg'
+      //trelloResponseAfterCreatingCard.url,
+      //trelloResponseAfterCreatingCard.id
     );
 
-    const { allWorkersWithRefreshStat, sumCountWorkersValue } =
-      await updateStatForAllResearchers();
+    const { allUsersWithRefreshStat, sumCountUsersValue } =
+      await updateStatForUsers(selfWorker.role);
 
     socketInstance.io().emit('changeUsersStatistics', {
-      allWorkersWithRefreshStat,
-      sumCountWorkersValue,
+      usersApiData: {
+        allUsersWithRefreshStat,
+        sumCountUsersValue,
+      },
+      userRole: selfWorker.role,
     });
 
     return res.status(200).json({

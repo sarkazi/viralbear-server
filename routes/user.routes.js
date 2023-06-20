@@ -403,15 +403,16 @@ router.patch(
 
 router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
   const { userId } = req.params;
+  const { roleUsersForResponse } = req.query;
   try {
     await deleteUser(userId);
 
-    allWorkers = await getWorkers();
+    users = await getAllUsers(true, null, roleUsersForResponse);
 
     return res.status(200).json({
       message: 'The user has been successfully deleted',
       status: 'success',
-      apiData: allWorkers,
+      apiData: users,
     });
   } catch (err) {
     console.log(err);
@@ -425,6 +426,8 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
 router.post('/topUpBalance', authMiddleware, async (req, res) => {
   try {
     const { balance, userId } = req.body;
+
+    const { roleUsersForResponse } = req.query;
 
     if (!balance || !userId) {
       return res.status(200).json({
@@ -461,15 +464,15 @@ router.post('/topUpBalance', authMiddleware, async (req, res) => {
 
     //await sendEmail(fromEmail, toEmail, subjectEmail, htmlEmail);
 
-    const { allWorkersWithRefreshStat, sumCountWorkersValue } =
-      await updateStatForAllResearchers();
+    const { allUsersWithRefreshStat, sumCountUsersValue } =
+      await updateStatForUsers(roleUsersForResponse);
 
     return res.status(200).json({
       message: 'The workers"s balance has been successfully replenished',
       status: 'success',
       apiData: {
-        allWorkersWithRefreshStat,
-        sumCountWorkersValue,
+        allUsersWithRefreshStat,
+        sumCountUsersValue,
       },
     });
   } catch (err) {
