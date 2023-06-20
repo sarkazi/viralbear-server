@@ -382,6 +382,8 @@ router.post(
 
       const vbForm = await findOne(objToSearchVbForm);
 
+      
+
       if (!vbForm) {
         return res.status(404).json({
           message: `Form with id "${formId}" not found`,

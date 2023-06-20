@@ -507,8 +507,6 @@ router.patch(
       reuters,
     } = req.body;
 
-    console.log(req.body, 8888);
-
     const { video: reqVideo, screen: reqScreen } = req.files;
 
     try {

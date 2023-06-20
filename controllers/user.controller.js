@@ -28,12 +28,17 @@ const sendEmailPassword = async (email, subjectText, textEmail, htmlText) => {
   });
 };
 
-const getWorkers = async (me, userId) => {
-  if (me === false) {
-    return await User.find({ _id: { $ne: userId }, role: 'worker' });
-  } else {
-    return await User.find({ role: 'worker' });
-  }
+const getAllUsers = async (me, userId, role) => {
+  return await User.find({
+    ...(me === false && { _id: { $ne: userId } }),
+    ...(role && { role }),
+  });
+
+  //if (me === false) {
+  //  return await User.find({ _id: { $ne: userId }, ...(role)role: 'worker' });
+  //} else {
+  //  return await User.find({ role: 'worker' });
+  //}
 };
 
 const getUserById = async (userId) => {
@@ -157,11 +162,13 @@ const updateUser = async (userId, objDB, objDBForIncrement) => {
   );
 };
 
-const updateStatForAllResearchers = async () => {
-  const allWorkers = await getWorkers(true, null);
+const updateStatForUsers = async (role) => {
+  const users = await getAllUsers(true, null, role);
+
+  //console.log(role);
 
   await Promise.all(
-    allWorkers.map(async (user) => {
+    users.map(async (user) => {
       const salesDateLimit = await getSalesByUserEmail(user.email, 30);
 
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
@@ -275,18 +282,18 @@ const updateStatForAllResearchers = async () => {
     })
   );
 
-  const allWorkersWithRefreshStat = await getWorkers(true, null);
+  const allUsersWithRefreshStat = await getAllUsers(true, null, role);
 
-  const sumCountWorkersValue = allWorkersWithRefreshStat.reduce(
-    (acc = {}, worker = {}) => {
+  const sumCountUsersValue = allUsersWithRefreshStat.reduce(
+    (acc = {}, user = {}) => {
       //суммарный баланс работников
-      acc.balance = parseFloat((acc.balance + worker.balance).toFixed(2));
+      acc.balance = parseFloat((acc.balance + user.balance).toFixed(2));
 
       //суммарный earnedTillNextPayment работников
       acc.earnedTillNextPayment = parseFloat(
         (
           acc.earnedTillNextPayment +
-          (worker.earnedForYourself.total - worker.balance)
+          (user.earnedForYourself.total - user.balance)
         ).toFixed(2)
       );
 
@@ -295,24 +302,24 @@ const updateStatForAllResearchers = async () => {
         //за 30 дней
         dateLimit: parseFloat(
           (
-            acc.earnedForYourself.dateLimit + worker.earnedForYourself.dateLimit
+            acc.earnedForYourself.dateLimit + user.earnedForYourself.dateLimit
           ).toFixed(2)
         ),
         //всего
         total: parseFloat(
-          (
-            acc.earnedForYourself.total + worker.earnedForYourself.total
-          ).toFixed(2)
+          (acc.earnedForYourself.total + user.earnedForYourself.total).toFixed(
+            2
+          )
         ),
       };
 
       //суммарный общий заработок работников
       acc.earnedTotal = parseFloat(
-        (acc.earnedTotal + worker.earnedTotal).toFixed(2)
+        (acc.earnedTotal + user.earnedTotal).toFixed(2)
       );
       //суммарный заработок компании
       acc.earnedForCompany = parseFloat(
-        (acc.earnedForCompany + worker.earnedForCompany).toFixed(2)
+        (acc.earnedForCompany + user.earnedForCompany).toFixed(2)
       );
 
       //суммарное количество отправленных работниками в трелло видео
@@ -320,12 +327,12 @@ const updateStatForAllResearchers = async () => {
         //за 30 дней
         dateLimit: parseFloat(
           (
-            acc.sentVideosCount.dateLimit + worker.sentVideosCount.dateLimit
+            acc.sentVideosCount.dateLimit + user.sentVideosCount.dateLimit
           ).toFixed(2)
         ),
         //общий
         total: parseFloat(
-          (acc.sentVideosCount.total + worker.sentVideosCount.total).toFixed(2)
+          (acc.sentVideosCount.total + user.sentVideosCount.total).toFixed(2)
         ),
       };
 
@@ -335,13 +342,13 @@ const updateStatForAllResearchers = async () => {
         dateLimit: parseFloat(
           (
             acc.acquiredVideosCount.dateLimit +
-            worker.acquiredVideosCount.dateLimit
+            user.acquiredVideosCount.dateLimit
           ).toFixed(2)
         ),
         //общий
         total: parseFloat(
           (
-            acc.acquiredVideosCount.total + worker.acquiredVideosCount.total
+            acc.acquiredVideosCount.total + user.acquiredVideosCount.total
           ).toFixed(2)
         ),
       };
@@ -352,13 +359,13 @@ const updateStatForAllResearchers = async () => {
         dateLimit: parseFloat(
           (
             acc.approvedVideosCount.dateLimit +
-            worker.approvedVideosCount.dateLimit
+            user.approvedVideosCount.dateLimit
           ).toFixed(2)
         ),
         //общий
         total: parseFloat(
           (
-            acc.approvedVideosCount.total + worker.approvedVideosCount.total
+            acc.approvedVideosCount.total + user.approvedVideosCount.total
           ).toFixed(2)
         ),
       };
@@ -390,8 +397,8 @@ const updateStatForAllResearchers = async () => {
   );
 
   return {
-    allWorkersWithRefreshStat,
-    sumCountWorkersValue,
+    allUsersWithRefreshStat,
+    sumCountUsersValue,
   };
 };
 
@@ -403,7 +410,7 @@ const updateUserByIncrement = async (field, emailsOfResearchers, objDB) => {
 };
 
 module.exports = {
-  getWorkers,
+  getAllUsers,
   deleteUser,
   sendPassword,
   createUser,
@@ -414,5 +421,5 @@ module.exports = {
   updateUser,
   findUsersByEmails,
   updateUserByIncrement,
-  updateStatForAllResearchers,
+  updateStatForUsers,
 };

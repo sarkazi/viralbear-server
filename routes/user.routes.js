@@ -6,7 +6,7 @@ const moment = require('moment');
 const authMiddleware = require('../middleware/auth.middleware');
 
 const {
-  getWorkers,
+  getAllUsers,
   deleteUser,
   sendPassword,
   createUser,
@@ -14,7 +14,7 @@ const {
   getUserById,
   updateUser,
   getUserByEmail,
-  updateStatForAllResearchers,
+  updateStatForUsers,
 } = require('../controllers/user.controller.js');
 
 const {
@@ -36,22 +36,16 @@ const {
   getCountAcquiredVideoByUserEmail,
 } = require('../controllers/video.controller');
 
-router.get('/getWorkers', authMiddleware, async (req, res) => {
+router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { me, nameWithCountry } = req.query;
+    const { me, nameWithCountry, role } = req.query;
 
     const userId = req.user.id;
 
-    let workers = await getWorkers(JSON.parse(me), userId);
-
-    if (!workers) {
-      return res
-        .status(404)
-        .json({ message: 'Workers not found', status: 'error', code: 404 });
-    }
+    let users = await getAllUsers(JSON.parse(me), userId, role);
 
     if (JSON.parse(nameWithCountry) === true) {
-      workers = workers.map((obj) => {
+      users = users.map((obj) => {
         return {
           ...obj._doc,
           name: `${obj.name}${obj.country ? ` | ${obj.country}` : ''}`,
@@ -62,11 +56,13 @@ router.get('/getWorkers', authMiddleware, async (req, res) => {
     return res.status(200).json({
       status: 'success',
       message: 'The list of workers has been received',
-      apiData: workers,
+      apiData: users,
     });
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ status: 'error' });
+    return res
+      .status(500)
+      .json({ status: 'error', message: 'Server side error' });
   }
 });
 
@@ -97,20 +93,38 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       percentage,
       amountPerVideo,
       country,
+      paymentInfo,
     } = req.body;
 
-    console.log(amountPerVideo, percentage);
+    const { roleUsersForResponse } = req.query;
 
-    if (!email || !password || !nickname || !name || !role || !country) {
+    if (!role) {
       return res
-        .status(404)
+        .status(200)
+        .json({ message: 'Missing value - "Role"', status: 'warning' });
+    }
+
+    if (
+      (role === 'worker' &&
+        (!email ||
+          !password ||
+          !nickname ||
+          !name ||
+          !country ||
+          !percentage ||
+          !amountPerVideo)) ||
+      (role === 'stringer' &&
+        (!email || !password || !name || !paymentInfo || !amountPerVideo))
+    ) {
+      return res
+        .status(200)
         .json({ message: 'Missing data to create a user', status: 'warning' });
     }
 
     const candidate = await getUserByEmail(email);
 
     if (candidate) {
-      return res.status(400).json({
+      return res.status(200).json({
         message: 'A user with this email already exists',
         status: 'warning',
       });
@@ -119,24 +133,31 @@ router.post('/createOne', authMiddleware, async (req, res) => {
     const salt = await genSalt(10);
 
     const objDB = {
-      nickname,
+      ...(nickname && { nickname }),
       name,
       email: email,
       password: await hashBcrypt(password, salt),
       role,
-      percentage,
+      ...(percentage && { percentage }),
       amountPerVideo,
-      country,
+      ...(country && { country }),
+      ...(paymentInfo && { paymentInfo }),
     };
 
-    const newUser = await createUser(objDB);
+    await createUser(objDB);
 
-    const allWorkers = await getWorkers();
+    let apiData;
+
+    if (roleUsersForResponse) {
+      apiData = await getAllUsers(true, null, roleUsersForResponse);
+    } else {
+      apiData = await getUserById(userId);
+    }
 
     return res.status(200).json({
       message: 'A new user has been successfully created',
       status: 'success',
-      apiData: allWorkers,
+      apiData,
     });
   } catch (err) {
     console.log(err);
@@ -230,6 +251,8 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
 
+    const { roleUsersForResponse } = req.query;
+
     const {
       name,
       nickname,
@@ -239,6 +262,7 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
       amountPerVideo,
       country,
       balance,
+      paymentInfo,
     } = req.body;
 
     objDB = {
@@ -249,6 +273,7 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
       ...(percentage && { percentage }),
       ...(amountPerVideo && { amountPerVideo }),
       ...(country && { country }),
+      ...(paymentInfo && { paymentInfo }),
       ...(balance && { lastPaymentDate: moment().toDate() }),
     };
 
@@ -258,12 +283,18 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
 
     await updateUser(userId, objDB, objDBForIncrement);
 
-    const allWorkers = await getWorkers();
+    let apiData;
+
+    if (roleUsersForResponse) {
+      apiData = await getAllUsers(true, null, roleUsersForResponse);
+    } else {
+      apiData = await getUserById(userId);
+    }
 
     return res.status(200).json({
       message: 'User data has been successfully updated',
       status: 'success',
-      apiData: allWorkers,
+      apiData,
     });
   } catch (err) {
     console.log(err);
@@ -274,31 +305,29 @@ router.patch('/updateOne/:userId', authMiddleware, async (req, res) => {
   }
 });
 
-router.patch(
-  '/updateStatisticsForAllResearchers',
-  authMiddleware,
-  async (req, res) => {
-    try {
-      const { allWorkersWithRefreshStat, sumCountWorkersValue } =
-        await updateStatForAllResearchers();
+router.patch('/updateStatisticsForUsers', authMiddleware, async (req, res) => {
+  const { role } = req.query;
 
-      return res.status(200).json({
-        message: 'Users with updated statistics received',
-        status: 'success',
-        apiData: {
-          workers: allWorkersWithRefreshStat,
-          sumValues: sumCountWorkersValue,
-        },
-      });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({
-        message: 'Server side error',
-        status: 'error',
-      });
-    }
+  try {
+    const { allUsersWithRefreshStat, sumCountUsersValue } =
+      await updateStatForUsers(role);
+
+    return res.status(200).json({
+      message: 'Users with updated statistics received',
+      status: 'success',
+      apiData: {
+        users: allUsersWithRefreshStat,
+        sumValues: sumCountUsersValue,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
   }
-);
+});
 
 router.patch(
   '/updateStatisticsForOneResearcher',

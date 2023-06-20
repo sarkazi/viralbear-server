@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 
-const roles = ['admin', 'worker', 'author', 'editor'];
+const roles = ['admin', 'worker', 'author', 'editor', 'stringer'];
 
 const schema = new Schema({
   email: {
@@ -46,6 +46,10 @@ const schema = new Schema({
     type: Number,
     required: true,
     default: 0,
+  },
+  paymentInfo: {
+    type: String,
+    required: false,
   },
   earnedForCompany: {
     type: Number,
@@ -120,4 +124,5 @@ const schema = new Schema({
     default: 0,
   },
 });
+
 module.exports = model('User', schema);
