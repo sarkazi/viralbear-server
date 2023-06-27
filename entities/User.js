@@ -41,6 +41,7 @@ const schema = new Schema({
     type: String,
     required: false,
   },
+  sales: [{ type: Schema.Types.ObjectId, ref: 'Sales' }],
   balance: {
     type: Number,
     required: false,

@@ -17,6 +17,7 @@ const {
   updateUser,
   getUserByEmail,
   updateStatForUsers,
+  getUserBySearchValue,
 } = require('../controllers/user.controller.js');
 
 const {
@@ -68,14 +69,18 @@ router.get('/getAll', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/getWorkerById', authMiddleware, async (req, res) => {
+//вернуть middleware
+
+router.get('/getById/:userId', async (req, res) => {
   try {
-    const user = await getUserById(req.user.id);
+    const { userId } = req.params;
+
+    const user = await getUserById(userId);
 
     if (!user) {
       return res
         .status(200)
-        .json({ message: 'Worker is not found', status: 'warning' });
+        .json({ message: 'User is not found', status: 'warning' });
     }
 
     return res.status(200).json(user);

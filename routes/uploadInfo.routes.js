@@ -359,8 +359,6 @@ router.post(
         });
       }
 
-    
-
       if (!pdf.length > 1) {
         return res.status(400).json({
           message: 'A maximum of 1 pdf file is expected',
@@ -381,8 +379,6 @@ router.post(
       };
 
       const vbForm = await findOne(objToSearchVbForm);
-
-      
 
       if (!vbForm) {
         return res.status(404).json({

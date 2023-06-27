@@ -268,7 +268,9 @@ router.post('/create', authMiddleware, async (req, res) => {
           //    return obj.name;
           //  }),
           //},
-
+          users: namesByUsers.map((el) => {
+            return el._id;
+          }),
           videoId: obj.videoId,
           amount,
           amountToResearcher: amountForAllResearchers,
