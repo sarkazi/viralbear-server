@@ -10,7 +10,7 @@ const schema = new Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: false,
   },
   name: {
     type: String,
@@ -24,10 +24,6 @@ const schema = new Schema({
     type: String,
     required: true,
     enum: roles,
-  },
-  referer: {
-    type: String,
-    required: false,
   },
   percentage: {
     type: Number,
@@ -91,6 +87,10 @@ const schema = new Schema({
   },
   lastPaymentDate: {
     type: Date,
+    required: false,
+  },
+  activatedTheAccount: {
+    type: Boolean,
     required: false,
   },
   //earnedForCompany: {

@@ -2,10 +2,10 @@ const UploadInfo = require('../entities/UploadInfo');
 const { renderToFile } = require('@react-pdf/renderer');
 
 const findOne = async (objDB) => {
-  const { searchBy, formId, refHash } = objDB;
+  const { searchBy, param } = objDB;
 
   return await UploadInfo.findOne({
-    [searchBy]: formId ? `VB${formId}` : refHash,
+    [searchBy]: param,
   });
 };
 

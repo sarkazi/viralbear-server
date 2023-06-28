@@ -18,7 +18,7 @@ const {
   findAuthorLinkByVideoId,
   deleteAuthorLink,
   createNewAuthorLink,
-  findOneByFormId,
+  findOneRefFormByParam,
 } = require('../controllers/authorLink.controller');
 
 router.post('/create', authMiddleware, async (req, res) => {
@@ -29,8 +29,6 @@ router.post('/create', authMiddleware, async (req, res) => {
     confirmDeletion,
     exclusivity,
   } = req.body;
-
-  console.log(req.body, 98897);
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(400).json({
@@ -81,17 +79,14 @@ router.post('/create', authMiddleware, async (req, res) => {
       }
     }
 
-    const formId = generateHash({ length: 13 });
+    const formHash = generateHash({ length: 13 });
 
     const bodyForNewAuthorLink = {
       ...(percentage && { percentage }),
       ...(advancePayment && { advancePayment }),
-      worker: {
-        nickname: user.nickname,
-        email: user.email,
-      },
-      formId,
-      formLink: `${process.env.CLIENT_URI}/submitVideo?unq=${formId}`,
+      researcher: user._id,
+      formHash,
+      formLink: `${process.env.CLIENT_URI}/submitVideo?unq=${formHash}`,
       videoLink,
       videoId,
       exclusivity,
@@ -113,28 +108,37 @@ router.post('/create', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/findOneByFormId/:formId', async (req, res) => {
-  const { formId } = req.params;
+router.get('/findOneByParam/:param', async (req, res) => {
+  const { param } = req.params;
+  const { searchBy } = req.query;
+  console.log(param, searchBy);
+
+  if (!param || !searchBy) {
+    return res.status(200).json({
+      message: `Missing parameters for form search`,
+      status: 'warning',
+    });
+  }
 
   try {
-    const authorLinkForm = await findOneByFormId(formId);
+    const authorLinkForm = await findOneRefFormByParam(searchBy, param);
 
     if (!authorLinkForm) {
-      return res.status(404).json({
-        message: `form with Form id "${formId}" not found in the database`,
+      return res.status(200).json({
+        message: `Form not found in the database`,
         status: 'warning',
         code: 404,
       });
     }
 
     return res.status(200).json({
-      message: `form with Form id ${formId} found in the database`,
+      message: `The referral form data is obtained from the database`,
       status: 'success',
       apiData: authorLinkForm,
     });
   } catch (err) {
     console.log(err);
-    return res.status(400).json({
+    return res.status(500).json({
       message: 'Server side error',
       status: 'error',
     });

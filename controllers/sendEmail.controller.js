@@ -2,8 +2,7 @@ const mailTransporter = require('../nodemailer.instance');
 
 const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
   const {
-    firstName,
-    lastName,
+    name,
     clientEmail,
     videoLinks,
     didYouRecord,
@@ -17,11 +16,10 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     submittedDate,
     advancePayment,
     percentage,
-    researcher,
+    researcherEmail,
     agreementLink,
     formId,
     refForm,
-    researcherEmail,
   } = dataForSendingMessage;
 
   const linkMarkup = videoLinks
@@ -45,8 +43,8 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     subject: `New video was submitted! ${formId}`,
     html: `
 
-   <b>Name: ${firstName ? firstName : '-'} ${lastName ? lastName : '-'}</b><br>
-   <b>Email: ${clientEmail ? clientEmail : '-'}</b><br>
+   <b>Name: ${name}</b><br>
+   <b>Email: ${clientEmail}</b><br>
    <b>Video link/s:</b><br>
    <ul style="list-style: none; padding: 0; margin: 0">${linkMarkup}</ul>
    <b>Did you record: ${didYouRecord === true ? 'Yes' : 'No'}</b><br>
@@ -69,7 +67,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
    <b>Didn’t give rights: ${didNotGiveRights === true ? 'Yes' : 'No'}</b><br>
    <b>Advance payment: ${advancePayment ? advancePayment : '-'}</b><br>
    <b>Percentage: ${percentage ? percentage : '-'}</b><br>
-   <b>Researcher: ${researcher ? researcher : '-'}</b><br>
+   <b>Researcher email: ${researcherEmail ? researcherEmail : '-'}</b><br>
    <b>IP: ${ip}</b><br>
    <b>Submitte date: ${submittedDate}</b><br>
    <b>Contract: ${agreementLink}</b><br>

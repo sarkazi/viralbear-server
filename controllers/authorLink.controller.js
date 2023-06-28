@@ -15,15 +15,15 @@ const createNewAuthorLink = async (body) => {
   return newAuthorLink;
 };
 
-const findOneByFormId = async (formId) => {
-  const authorLink = await AuthorLink.findOne({ formId });
+const findOneRefFormByParam = async (field, param) => {
+  const authorLink = await AuthorLink.findOne({ [field]: param });
   return authorLink;
 };
 
-const markAsUsed = async (formId, objDB) => {
+const markRefFormAsUsed = async (formId, objDB) => {
   const authorLink = await AuthorLink.updateOne(
     {
-      formId,
+      _id: formId,
     },
     {
       $set: objDB,
@@ -36,6 +36,6 @@ module.exports = {
   findAuthorLinkByVideoId,
   deleteAuthorLink,
   createNewAuthorLink,
-  findOneByFormId,
-  markAsUsed,
+  findOneRefFormByParam,
+  markRefFormAsUsed,
 };

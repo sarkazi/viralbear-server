@@ -15,8 +15,14 @@ const {
 } = require('../controllers/uploadInfo.controller');
 
 const {
-  markAsUsed,
-  findOneByFormId,
+  getUserByEmail,
+  createUser,
+  getUserById,
+} = require('../controllers/user.controller');
+
+const {
+  markRefFormAsUsed,
+  findOneRefFormByParam,
 } = require('../controllers/authorLink.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
@@ -122,18 +128,13 @@ router.post(
         agreedWithTerms,
         didNotGiveRights,
         ip,
-        advancePayment,
-        percentage,
-        researcherNickname,
-        researcherEmail,
-        hashLink,
-        exclusivity,
+        formHash,
       } = req?.body;
 
       const { videos } = req.files;
 
       if (!videos && !videoLink) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: 'Enter a link or upload a video',
           status: 'warning',
         });
@@ -151,28 +152,43 @@ router.post(
         didNotGiveRights === false ||
         !ip
       ) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: 'Missing parameter or non-inserted checkbox',
           status: 'warning',
         });
       }
 
-      if (hashLink) {
-        const authorLinkWithThisHash = await findOneByFormId(hashLink);
+      const authorLinkWithThisHash = await findOneRefFormByParam(
+        'formHash',
+        formHash
+      );
 
-        if (!authorLinkWithThisHash) {
-          return res.status(404).json({
-            message: 'Invalid link for the form. Request another one...',
-            status: 'warning',
-          });
-        }
+      if (formHash && !authorLinkWithThisHash) {
+        return res.status(200).json({
+          message: 'Invalid link for the form. Request another one...',
+          status: 'warning',
+        });
+      }
 
-        if (authorLinkWithThisHash.used === true) {
-          return res.status(400).json({
-            message: 'A video has already been added to this link',
-            status: 'warning',
-          });
-        }
+      if (formHash && authorLinkWithThisHash.used === true) {
+        return res.status(200).json({
+          message: 'A video has already been added to this link',
+          status: 'warning',
+        });
+      }
+
+      let author = await getUserByEmail(email);
+
+      if (!author) {
+        const objDbForCreateUser = {
+          name: `${name} ${lastName}`,
+          email,
+          role: 'author',
+          balance: 0,
+          activatedTheAccount: false,
+        };
+
+        author = await createUser(objDbForCreateUser);
       }
 
       const lastAddedVbForm = await findLastAddedVbForm();
@@ -231,9 +247,7 @@ router.post(
       }
 
       const objDB = {
-        name,
-        lastName,
-        email,
+        sender: author._id,
         videoLinks,
         didYouRecord,
         ...(operator && { operator }),
@@ -249,32 +263,34 @@ router.post(
         formId: `VB${vbCode}`,
         ip,
         submittedDate: moment().utc(),
-        ...(advancePayment && { advancePayment }),
-        ...(percentage && { percentage }),
-        ...((JSON.parse(exclusivity) === false ||
-          JSON.parse(exclusivity) === true) && { exclusivity }),
-        ...(researcherNickname &&
-          researcherEmail && {
-            researcher: {
-              email: researcherEmail,
-              nickname: researcherNickname,
-            },
-          }),
-        ...(hashLink && { refHash: hashLink }),
+        ...(formHash && { refFormId: authorLinkWithThisHash._id }),
       };
 
-      const newFVbForm = await createNewVbForm(objDB);
+      const newVbForm = await createNewVbForm(objDB);
 
-      const { _id, __v, updatedAt, agreementLink, ...resData } =
-        newFVbForm._doc;
+      const { _id, __v, updatedAt, agreementLink, ...resData } = newVbForm._doc;
 
-      if (hashLink) {
-        //await markAsUsed(hashLink, { used: true });
+      if (formHash) {
+        await markRefFormAsUsed(authorLinkWithThisHash._id, { used: true });
       }
 
       return res.status(200).send({
-        message: 'Data uploaded successfully',
-        apiData: resData,
+        message:
+          'The data has been uploaded successfully. The agreement has been sent to the post office.',
+        apiData: {
+          ...resData,
+          name,
+          lastName,
+          email,
+          ...(authorLinkWithThisHash &&
+            authorLinkWithThisHash.advancePayment && {
+              advancePayment: authorLinkWithThisHash.advancePayment,
+            }),
+          ...(authorLinkWithThisHash &&
+            authorLinkWithThisHash.percentage && {
+              percentage: authorLinkWithThisHash.percentage,
+            }),
+        },
         status: 'success',
       });
     } catch (err) {
@@ -289,52 +305,31 @@ router.post(
 
 router.get('/findOne', async (req, res) => {
   try {
-    const { searchBy, formId, refHash } = req.query;
+    const { searchBy, param } = req.query;
 
-    console.log(req.query);
-
-    if (!searchBy) {
+    if (!searchBy || !param) {
       return res.status(200).json({
-        message: `The search parameter is missing`,
-        status: 'warning',
-      });
-    }
-
-    if (!formId && !refHash) {
-      return res.status(200).json({
-        message: `Missing search value`,
-        status: 'warning',
-      });
-    }
-
-    if (formId && refHash) {
-      return res.status(200).json({
-        message: `There can only be one value to search for`,
+        message: `The missing parameter for searching`,
         status: 'warning',
       });
     }
 
     const objDB = {
       searchBy,
-      ...(formId && { formId }),
-      ...(refHash && { refHash }),
+      param,
     };
 
     const form = await findOne(objDB);
 
     if (!form) {
       return res.status(200).json({
-        message: formId
-          ? `The form with the vb code ${formId} was not found in the database`
-          : `The form with the referral hash ${refHash} was not found in the database`,
+        message: `Form found in the database`,
         status: 'warning',
       });
     }
 
     res.status(200).json({
-      message: formId
-        ? `Form with the vb code ${formId} found in the database`
-        : `Form with the referral hash ${refHash} found in the database`,
+      message: `Form found in the database`,
       status: 'success',
       apiData: form,
     });
@@ -375,7 +370,7 @@ router.post(
 
       const objToSearchVbForm = {
         searchBy: 'formId',
-        formId: formId.replace('VB', ''),
+        param: formId,
       };
 
       const vbForm = await findOne(objToSearchVbForm);
@@ -393,6 +388,18 @@ router.post(
           status: 'warning',
         });
       }
+
+      const author = await getUserById(vbForm.sender);
+
+      if (!author) {
+        return res.status(200).json({
+          message: 'The user with this id was not found',
+          status: 'warning',
+        });
+      }
+
+      const refForm = await findOneRefFormByParam('_id', vbForm.refFormId);
+      const referer = await getUserById(refForm.researcher);
 
       const resStorage = await new Promise(async (resolve, reject) => {
         await uploadFileToStorage(
@@ -423,9 +430,8 @@ router.post(
       });
 
       const dataForSendingMainInfo = {
-        firstName: vbForm.name,
-        lastName: vbForm.lastName,
-        clientEmail: vbForm.email,
+        name: author.name,
+        clientEmail: author.email,
         videoLinks: vbForm.videoLinks,
         didYouRecord: vbForm.didYouRecord,
         ...(vbForm.operator && { operator: vbForm.operator }),
@@ -436,27 +442,31 @@ router.post(
         didNotGiveRights: vbForm.didNotGiveRights,
         ip: vbForm.ip,
         submittedDate: vbForm.submittedDate,
-        ...(vbForm.advancePayment && { advancePayment: vbForm.advancePayment }),
-        ...(vbForm.percentage && { percentage: vbForm.percentage }),
-        ...(vbForm.researcher && { researcher: vbForm.researcher }),
+        ...(refForm &&
+          refForm.advancePayment && { advancePayment: refForm.advancePayment }),
+        ...(refForm &&
+          refForm.percentage && { percentage: refForm.percentage }),
+        ...(referer && {
+          researcherEmail: referer.email,
+        }),
         agreementLink: agreementLink,
         formId: vbForm.formId,
-        refForm: vbForm.refHash ? true : false,
-        ...(vbForm.refHash && { researcherEmail: vbForm.researcher.email }),
+        refForm: vbForm.refFormId ? true : false,
       };
 
+      console.log(dataForSendingMainInfo, 8888);
+
       const dataForSendingAgreement = {
-        name: vbForm.name,
-        agreementLink: agreementLink,
-        email: vbForm.email,
-        ...(vbForm.refHash && {
-          linkToPersonalAccount: `${process.env.CLIENT_URI}/licensors/?unq=${vbForm.refHash}`,
+        name: author.name,
+        agreementLink,
+        email: author.email,
+        ...(refForm && {
+          linkToPersonalAccount: `${process.env.CLIENT_URI}/licensors/?unq=${vbForm._id}`,
         }),
       };
 
-      if (vbForm.refHash) {
-        const authorLinkForm = await findOneByFormId(vbForm.refHash);
-        const linkData = await findLinkByVideoId(authorLinkForm.videoId);
+      if (vbForm.refFormId) {
+        const linkData = await findLinkByVideoId(refForm.videoId);
 
         if (linkData) {
           const trelloCard = await getCardDataByCardId(linkData.trelloCardId);

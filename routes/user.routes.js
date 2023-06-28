@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { genSalt, hash: hashBcrypt } = require('bcryptjs');
 const moment = require('moment');
+const jwt = require('jsonwebtoken');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -83,7 +84,7 @@ router.get('/getById/:userId', async (req, res) => {
         .json({ message: 'User is not found', status: 'warning' });
     }
 
-    return res.status(200).json(user);
+    return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
     console.log(err);
   }
@@ -170,9 +171,9 @@ router.post('/createOne', authMiddleware, async (req, res) => {
 
 router.post('/authorRegister', async (req, res) => {
   try {
-    const { refHash, password: reqPassword } = req.body;
+    const { vbFormId, password: reqPassword } = req.body;
 
-    if (!refHash) {
+    if (!vbFormId) {
       return res.status(200).json({
         message:
           'There is no referral hash. Contact your administrator or try again',
@@ -181,8 +182,8 @@ router.post('/authorRegister', async (req, res) => {
     }
 
     const objToSearchVbForm = {
-      searchBy: 'refHash',
-      refHash,
+      searchBy: '_id',
+      param: vbFormId,
     };
 
     const vbForm = await findOne(objToSearchVbForm);
@@ -195,43 +196,27 @@ router.post('/authorRegister', async (req, res) => {
       });
     }
 
-    const candidate = await getUserByEmail(vbForm.email);
+    const candidate = await getUserById(vbForm.sender);
 
-    if (candidate) {
+    if (!candidate) {
       return res.status(200).json({
-        message: 'A user with this email already exists',
+        message: 'A user with this email not found',
         status: 'warning',
       });
     }
 
     const salt = await genSalt(10);
 
-    const objForCreateUAuthor = {
-      name: vbForm.name,
-      email: vbForm.email,
+    const objForUpdateUAuthor = {
       password: await hashBcrypt(reqPassword, salt),
-      referer: vbForm.researcher.email,
-      role: 'author',
-      balance: 0,
+      activatedTheAccount: true,
     };
 
-    const newUser = await createUser(objForCreateUAuthor);
-
-    const objForUpdateVbForm = {
-      activatedPersonalAccount: true,
-    };
-
-    const refreshVbForm = await updateVbFormByFormId(
-      vbForm.formId,
-      objForUpdateVbForm
-    );
-
-    const { password, ...userData } = newUser._doc;
+    await updateUser(vbForm.sender, objForUpdateUAuthor, {});
 
     return res.status(200).json({
       message: 'Congratulations on registering on the service!',
       status: 'success',
-      apiData: userData,
     });
   } catch (err) {
     console.log(err);

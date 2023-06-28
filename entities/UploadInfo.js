@@ -1,16 +1,9 @@
 const { Schema, model, now } = require('mongoose');
 const schema = new Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
-    lastName: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
+    sender: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
       required: true,
     },
     videoLinks: {
@@ -78,35 +71,10 @@ const schema = new Schema(
       type: String,
       required: false,
     },
-    advancePayment: {
-      type: Number,
+    refFormId: {
+      type: Schema.Types.ObjectId,
+      ref: 'AuthorLink',
       required: false,
-    },
-    percentage: {
-      type: Number,
-      required: false,
-    },
-    researcher: {
-      nickname: {
-        type: String,
-        required: false,
-      },
-      email: {
-        type: String,
-        required: false,
-      },
-    },
-    refHash: {
-      type: String,
-      required: false,
-    },
-    activatedPersonalAccount: {
-      type: Boolean,
-      default: false,
-    },
-    exclusivity: {
-      type: Boolean,
-      default: true,
     },
     submittedDate: {
       type: String,
