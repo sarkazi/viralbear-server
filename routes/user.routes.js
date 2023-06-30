@@ -51,7 +51,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       me: JSON.parse(me),
       userId,
       role,
-      ...(JSON.parse(canBeAssigned) &&
+      ...(canBeAssigned !== undefined &&
         (JSON.parse(canBeAssigned) === true ||
           JSON.parse(canBeAssigned) === false) && {
           canBeAssigned: JSON.parse(canBeAssigned),
