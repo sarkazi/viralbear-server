@@ -36,6 +36,8 @@ const { findWorkersForCard } = require('../controllers/user.controller');
 router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
   const { list, workers, reminders, title, authorNickname, link } = req.body;
 
+  console.log(req.body, 888);
+
   const convertedLink = conversionIncorrectLinks(link);
 
   try {
@@ -77,7 +79,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
         .json({ message: 'Worker not found', status: 'error' });
     }
 
-    const foundWorkers = await findWorkersForCard(workers, selfWorker);
+    const foundWorkers = await findWorkersForCard(workers, selfWorker.name);
 
     if (!foundWorkers.length) {
       return res.status(404).json({
@@ -86,22 +88,22 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       });
     }
 
-    //const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
+    const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
 
-    //if (!foundWorkersTrelloIds.length) {
-    //  return res.status(404).json({
-    //    message: 'Not a single employee was found in trello',
-    //    status: 'error',
-    //  });
-    //}
+    if (!foundWorkersTrelloIds.length) {
+      return res.status(404).json({
+        message: 'Not a single employee was found in trello',
+        status: 'error',
+      });
+    }
 
-    //const trelloResponseAfterCreatingCard = await createCardInTrello(
-    //  authorNickname,
-    //  title,
-    //  convertedLink,
-    //  list,
-    //  foundWorkersTrelloIds
-    //);
+    const trelloResponseAfterCreatingCard = await createCardInTrello(
+      authorNickname,
+      title,
+      convertedLink,
+      list,
+      foundWorkersTrelloIds
+    );
 
     //if (reminders) {
     //  const reminderCustomFieldValue =
@@ -130,28 +132,14 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
     await createNewLink(
       selfWorker.email,
       selfWorker.name,
-      'shg',
-      //selfWorker.nickname,
+      selfWorker.nickname,
       title,
       authorNickname,
       convertedLink,
       videoId,
-      '8479586',
-      'gjhkfdg'
-      //trelloResponseAfterCreatingCard.url,
-      //trelloResponseAfterCreatingCard.id
+      trelloResponseAfterCreatingCard.url,
+      trelloResponseAfterCreatingCard.id
     );
-
-    const { allUsersWithRefreshStat, sumCountUsersValue } =
-      await updateStatForUsers(selfWorker.role);
-
-    socketInstance.io().emit('changeUsersStatistics', {
-      usersApiData: {
-        allUsersWithRefreshStat,
-        sumCountUsersValue,
-      },
-      userRole: selfWorker.role,
-    });
 
     return res.status(200).json({
       status: 'success',

@@ -15,8 +15,6 @@ const findLastAddedVbForm = async () => {
     .limit(1)
     .select({ formId: true });
 
-  console.log(lastAddedVbForm, 111);
-
   return lastAddedVbForm;
 };
 

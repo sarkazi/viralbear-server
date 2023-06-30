@@ -45,7 +45,7 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
       .map((comment) => {
         return {
           actionId: comment.id,
-          textOfComment: comment.data.text,
+          textOfComment: comment.data.text.replace(user.nickname, ''),
           cardId: comment.data.card.id,
           cardUrl: `https://trello.com/c/${comment.data.card.shortLink}/`,
         };

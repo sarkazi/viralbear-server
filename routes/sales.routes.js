@@ -16,6 +16,8 @@ const {
   updateUserByIncrement,
 } = require('../controllers/user.controller');
 
+const { findOne } = require('../controllers/uploadInfo.controller');
+
 const determinationCompanyDataBasedOnPairedReport = require('../utils/determinationCompanyDataBasedOnPairedReport');
 
 const storage = multer.memoryStorage();
@@ -137,6 +139,11 @@ router.post(
             } else {
               const videoDb = await findById(obj.videoId);
 
+              const vbForm = await findOne({
+                searchBy: 'formId',
+                param: videoDb.uploadData.vbCode,
+              });
+
               if (!videoDb) {
                 return {
                   videoId: obj.videoId,
@@ -150,6 +157,9 @@ router.post(
                 return {
                   researchers: emailsOfResearchers,
                   videoId: obj.videoId,
+                  ...(vbForm && {
+                    vbForm: vbForm._id,
+                  }),
                   ...(obj.usage && { usage: obj.usage }),
                   amount,
                   videoTitle: videoDb.videoData.title,
@@ -166,6 +176,13 @@ router.post(
             }
           } else {
             const videoDb = await findVideoByTitle(obj.title);
+
+            const vbForm = await findOne({
+              searchBy: 'formId',
+              param: videoDb.uploadData.vbCode,
+            });
+
+            console.log(vbForm);
 
             if (!videoDb) {
               return {
@@ -186,6 +203,9 @@ router.post(
                 return {
                   researchers: emailsOfResearchers,
                   videoId: videoDb.videoData.videoId,
+                  ...(vbForm && {
+                    vbForm: vbForm._id,
+                  }),
                   ...(obj.usage && { usage: obj.usage }),
                   amount,
                   videoTitle: obj.title,
@@ -249,7 +269,6 @@ router.post('/create', authMiddleware, async (req, res) => {
     const promiseAfterCreated = await Promise.all(
       body.map(async (obj) => {
         const namesByUsers = await findUsersByEmails(obj.researchers);
-        console.log(namesByUsers, 8897987);
 
         const emailsOfResearchers = obj.researchers;
         const amount = +obj.amount;
@@ -272,6 +291,7 @@ router.post('/create', authMiddleware, async (req, res) => {
             return el._id;
           }),
           videoId: obj.videoId,
+          ...(obj.vbForm && { vbForm: obj.vbForm }),
           amount,
           amountToResearcher: amountForAllResearchers,
           date: moment().format('ll'),

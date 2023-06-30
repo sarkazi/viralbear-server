@@ -31,7 +31,6 @@ const { createNewMove } = require('./controllers/moveFromReview.controller');
 const {
   updateUserByIncrement,
   getWorkers,
-  updateStatForAllResearchers,
 } = require('./controllers/user.controller');
 
 mongoose.set('strictQuery', false);
@@ -73,7 +72,7 @@ socketInstance.initialize(socketServer);
 socketInstance.io().sockets.on('connection', (socket) => {
   socket.on('createRoom', (data) => {
     socket.join(data.userId);
-    console.log(socketInstance.io().sockets.adapter.rooms, 'rooms');
+    //console.log(socketInstance.io().sockets.adapter.rooms, 'rooms');
   });
 });
 
@@ -341,14 +340,6 @@ app.post('/trelloCallback', async (req, res) => {
       };
 
       await createNewMove(objDB);
-
-      const { allWorkersWithRefreshStat, sumCountWorkersValue } =
-        await updateStatForAllResearchers();
-
-      socketInstance.io().emit('changeUsersStatistics', {
-        allWorkersWithRefreshStat,
-        sumCountWorkersValue,
-      });
     }
 
     //ловим архивирование карточки в листе "done"

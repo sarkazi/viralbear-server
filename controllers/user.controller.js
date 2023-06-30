@@ -28,17 +28,26 @@ const sendEmailPassword = async (email, subjectText, textEmail, htmlText) => {
   });
 };
 
-const getAllUsers = async (me, userId, role) => {
-  return await User.find({
-    ...(me === false && { _id: { $ne: userId } }),
-    ...(role && { role }),
-  });
-
-  //if (me === false) {
-  //  return await User.find({ _id: { $ne: userId }, ...(role)role: 'worker' });
-  //} else {
-  //  return await User.find({ role: 'worker' });
-  //}
+const getAllUsers = async ({
+  me,
+  userId,
+  role,
+  canBeAssigned,
+  fieldsInTheResponse,
+}) => {
+  return await User.find(
+    {
+      ...(me === false && { _id: { $ne: userId } }),
+      ...(role && { role }),
+      ...((canBeAssigned === true || canBeAssigned === false) && {
+        canBeAssigned,
+      }),
+    },
+    {
+      ...(fieldsInTheResponse &&
+        fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
+    }
+  );
 };
 
 const getUserById = async (userId) => {
@@ -144,9 +153,9 @@ const createUser = async (objDB) => {
   return User.create(objDB);
 };
 
-const findWorkersForCard = async (workers, selfWorker) => {
+const findWorkersForCard = async (workers, selfWorkerName) => {
   return await User.find({
-    name: { $in: [...workers, selfWorker.name] },
+    name: { $in: [...workers, selfWorkerName] },
   });
 };
 
@@ -163,7 +172,11 @@ const updateUser = async (userId, objDB, objDBForIncrement) => {
 };
 
 const updateStatForUsers = async (role) => {
-  const users = await getAllUsers(true, null, role);
+  const users = await getAllUsers({
+    me: true,
+    userId: null,
+    role: 'worker',
+  });
 
   await Promise.all(
     users.map(async (user) => {
@@ -177,8 +190,6 @@ const updateStatForUsers = async (role) => {
       }, 0);
 
       const sales = await getSalesByUserId(user._id, null);
-
-      console.log(sales, 9999);
 
       const earnedForYourself = sales.reduce(
         (a, sale) => a + +(sale.amountToResearcher / sale?.researchers?.length),
@@ -283,7 +294,11 @@ const updateStatForUsers = async (role) => {
     })
   );
 
-  const allUsersWithRefreshStat = await getAllUsers(true, null, role);
+  const allUsersWithRefreshStat = await getAllUsers({
+    me: true,
+    userId: null,
+    role: 'worker',
+  });
 
   const sumCountUsersValue = allUsersWithRefreshStat.reduce(
     (acc = {}, user = {}) => {

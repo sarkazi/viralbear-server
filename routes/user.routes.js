@@ -28,7 +28,7 @@ const {
 
 const { getCountLinksByUserEmail } = require('../controllers/links.controller');
 
-const { getSalesByUserEmail } = require('../controllers/sales.controller');
+const { getSalesByUserId } = require('../controllers/sales.controller');
 
 const {
   getCountApprovedTrelloCardByNickname,
@@ -42,11 +42,24 @@ const {
 
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { me, nameWithCountry, role } = req.query;
+    const { me, nameWithCountry, role, canBeAssigned, fieldsInTheResponse } =
+      req.query;
 
     const userId = req.user.id;
 
-    let users = await getAllUsers(JSON.parse(me), userId, role);
+    let users = await getAllUsers({
+      me: JSON.parse(me),
+      userId,
+      role,
+      ...(JSON.parse(canBeAssigned) &&
+        (JSON.parse(canBeAssigned) === true ||
+          JSON.parse(canBeAssigned) === false) && {
+          canBeAssigned: JSON.parse(canBeAssigned),
+        }),
+      ...(fieldsInTheResponse && {
+        fieldsInTheResponse,
+      }),
+    });
 
     if (JSON.parse(nameWithCountry) === true) {
       users = users.map((obj) => {
@@ -233,7 +246,7 @@ router.post('/recoveryPassword', recoveryPassword);
 
 router.patch('/updateOne', authMiddleware, async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, roleUsersForResponse } = req.query;
 
     const userIdToUpdate = userId ? userId : req.user.id;
 
@@ -246,8 +259,6 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       });
     }
 
-    const { roleUsersForResponse } = req.query;
-
     const {
       name,
       nickname,
@@ -258,9 +269,8 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       country,
       balance,
       paymentInfo,
+      canBeAssigned,
     } = req.body;
-
-    console.log(req.body, 999);
 
     if (user.role === 'author') {
       const isValidate = validationForRequiredInputDataInUserModel(
@@ -286,8 +296,13 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       ...(amountPerVideo && { amountPerVideo }),
       ...(country && { country }),
       ...(paymentInfo && { paymentInfo }),
+      ...((canBeAssigned === true || canBeAssigned === false) && {
+        canBeAssigned,
+      }),
       ...(balance && { lastPaymentDate: moment().toDate() }),
     };
+
+    console.log(objDB, 444);
 
     objDBForIncrement = {
       ...(balance && { balance }),
@@ -298,7 +313,11 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
     let apiData;
 
     if (roleUsersForResponse) {
-      apiData = await getAllUsers(true, null, roleUsersForResponse);
+      apiData = await getAllUsers({
+        me: true,
+        userId: null,
+        role: roleUsersForResponse,
+      });
     } else {
       apiData = await getUserById(userId);
     }
@@ -356,20 +375,19 @@ router.patch(
         });
       }
 
-      const salesDateLimit = await getSalesByUserEmail(user.email, 30);
+      const salesDateLimit = await getSalesByUserId(user._id, 30);
 
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
         return +(
           acc +
-          sale.amountToResearcher / sale.researchers.emails.length
+          sale.amountToResearcher / sale.researchers.length
         ).toFixed(2);
       }, 0);
 
-      const sales = await getSalesByUserEmail(user.email, null);
+      const sales = await getSalesByUserId(user._id, null);
 
       const earnedForYourself = sales.reduce(
-        (a, sale) =>
-          a + +(sale.amountToResearcher / sale?.researchers?.emails?.length),
+        (a, sale) => a + +(sale.amountToResearcher / sale?.researchers?.length),
         0
       );
 
@@ -393,6 +411,8 @@ router.patch(
         'approvedVideosCount.total': approvedTrelloCardCount,
         earnedTillNextPayment: +earnedTillNextPayment.toFixed(2),
       };
+
+      console.log(dataDBForUpdateUser, 999);
 
       await updateUser(user._id, dataDBForUpdateUser, {});
 

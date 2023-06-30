@@ -14,7 +14,7 @@ module.exports = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    console.log(error);
+    //console.log(error);
     return res
       .status(401)
       .json({ message: 'Access denied', status: 'error', code: 401 });

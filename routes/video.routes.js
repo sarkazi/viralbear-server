@@ -17,13 +17,6 @@ const { generateVideoId } = require('../utils/generateVideoId');
 
 const { getDurationFromBuffer } = require('fancy-video-duration');
 
-const {
-  getUserById,
-  getWorkers,
-  updateUserByIncrement,
-  updateStatForAllResearchers,
-} = require('../controllers/user.controller');
-
 const { findOne } = require('../controllers/uploadInfo.controller');
 
 var Mutex = require('async-mutex').Mutex;
@@ -1623,14 +1616,6 @@ router.patch(
           videosReadyForPublication,
         },
         event: 'published',
-      });
-
-      const { allWorkersWithRefreshStat, sumCountWorkersValue } =
-        await updateStatForAllResearchers();
-
-      socketInstance.io().emit('changeUsersStatistics', {
-        allWorkersWithRefreshStat,
-        sumCountWorkersValue,
       });
 
       //const videosForSocialMedia = await findByIsBrandSafe();
