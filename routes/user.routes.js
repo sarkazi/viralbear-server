@@ -260,6 +260,8 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       paymentInfo,
     } = req.body;
 
+    console.log(req.body, 999);
+
     if (user.role === 'author') {
       const isValidate = validationForRequiredInputDataInUserModel(
         user.role,

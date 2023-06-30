@@ -40,9 +40,11 @@ const schema = new Schema({
   sales: [{ type: Schema.Types.ObjectId, ref: 'Sales' }],
   balance: {
     type: Number,
-    required: false,
+    required: true,
+    default: 0,
   },
   paymentInfo: {
+    required: false,
     variant: {
       type: String,
       enum: paymentMethods,
@@ -93,75 +95,75 @@ const schema = new Schema({
     type: Boolean,
     required: false,
   },
-  //earnedForCompany: {
-  //  type: Number,
-  //  //required: true,
-  //  //default: 0,
-  //},
-  //earnedTotal: {
-  //  type: Number,
-  //  //required: true,
-  //  //default: 0,
-  //},
-  //earnedForYourself: {
-  //  total: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //},
-  //sentVideosCount: {
-  //  total: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //},
-  //approvedVideosCount: {
-  //  total: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //},
-  //acquiredVideosCount: {
-  //  total: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    //required: true,
-  //    //default: 0,
-  //  },
-  //},
+  earnedForCompany: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  earnedTotal: {
+    type: Number,
+    //required: true,
+    //default: 0,
+  },
+  earnedForYourself: {
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+  },
+  sentVideosCount: {
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+  },
+  approvedVideosCount: {
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+  },
+  acquiredVideosCount: {
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    dateLimit: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+  },
 
-  //defaultPaymentAmount: {
-  //  type: Number,
-  //  //required: true,
-  //  //default: 0,
-  //},
-  //earnedTillNextPayment: {
-  //  type: Number,
-  //  //required: true,
-  //  //default: 0,
-  //},
+  defaultPaymentAmount: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  earnedTillNextPayment: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
 });
 
 module.exports = model('User', schema);

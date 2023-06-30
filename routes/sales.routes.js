@@ -268,7 +268,7 @@ router.post('/create', authMiddleware, async (req, res) => {
           //    return obj.name;
           //  }),
           //},
-          users: namesByUsers.map((el) => {
+          researchers: namesByUsers.map((el) => {
             return el._id;
           }),
           videoId: obj.videoId,
@@ -365,8 +365,8 @@ router.get('/getAll', authMiddleware, async (req, res) => {
 
     const apiData = {
       sales,
-      sumAmount,
-      sumAmountResearcher,
+      sumAmount: sumAmount.toFixed(2),
+      sumAmountResearcher: sumAmountResearcher.toFixed(2),
     };
 
     return res.status(200).json({

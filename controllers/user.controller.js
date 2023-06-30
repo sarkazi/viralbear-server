@@ -6,7 +6,7 @@ const { genSalt, hash: hashBcrypt } = require('bcryptjs');
 
 const mailTransporter = require('../nodemailer.instance');
 
-const { getSalesByUserEmail } = require('../controllers/sales.controller');
+const { getSalesByUserId } = require('../controllers/sales.controller');
 
 const { getCountLinksByUserEmail } = require('../controllers/links.controller');
 
@@ -167,24 +167,25 @@ const updateStatForUsers = async (role) => {
 
   await Promise.all(
     users.map(async (user) => {
-      const salesDateLimit = await getSalesByUserEmail(user.email, 30);
+      const salesDateLimit = await getSalesByUserId(user._id, 30);
 
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
         return +(
           acc +
-          sale.amountToResearcher / sale.researchers.emails.length
+          sale.amountToResearcher / sale.researchers.length
         ).toFixed(2);
       }, 0);
 
-      const sales = await getSalesByUserEmail(user.email, null);
+      const sales = await getSalesByUserId(user._id, null);
+
+      console.log(sales, 9999);
 
       const earnedForYourself = sales.reduce(
-        (a, sale) =>
-          a + +(sale.amountToResearcher / sale?.researchers?.emails?.length),
+        (a, sale) => a + +(sale.amountToResearcher / sale?.researchers?.length),
         0
       );
       const earnedTotal = sales.reduce(
-        (a, sale) => a + +(sale.amount / sale?.researchers?.emails?.length),
+        (a, sale) => a + +(sale.amount / sale?.researchers?.length),
         0
       );
 
@@ -192,15 +193,11 @@ const updateStatForUsers = async (role) => {
         (a, sale) =>
           a +
           +(
-            sale.amount / sale?.researchers?.emails?.length -
-            sale.amountToResearcher / sale?.researchers?.emails?.length
+            sale.amount / sale?.researchers?.length -
+            sale.amountToResearcher / sale?.researchers?.length
           ),
         0
       );
-
-      if (user.name === 'ViralBear') {
-        console.log(earnedTotal, earnedForCompany, 898);
-      }
 
       let earnedTillNextPayment = earnedForYourself - user.balance;
 

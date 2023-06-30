@@ -30,9 +30,9 @@ const findSaleById = async (saleId) => {
   return Sales.findById(saleId);
 };
 
-const getSalesByUserEmail = async (userValue, dateLimit) => {
+const getSalesByUserId = async (userId, dateLimit) => {
   return Sales.find({
-    'researchers.emails': userValue,
+    researchers: userId,
     ...(dateLimit && {
       createdAt: {
         $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),
@@ -46,5 +46,5 @@ module.exports = {
   deleteSaleById,
   getAllSales,
   findSaleById,
-  getSalesByUserEmail,
+  getSalesByUserId,
 };

@@ -1,16 +1,6 @@
 const { Schema, model } = require('mongoose');
 const schema = new Schema(
   {
-    researchers: {
-      names: {
-        type: Array,
-        required: true,
-      },
-      emails: {
-        type: Array,
-        required: true,
-      },
-    },
     videoId: {
       type: String,
       required: true,
@@ -19,7 +9,7 @@ const schema = new Schema(
       type: String,
       required: true,
     },
-    users: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    researchers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     videoTitle: {
       type: String,
       required: true,
