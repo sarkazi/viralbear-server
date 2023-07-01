@@ -42,8 +42,7 @@ const {
 
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { me, nameWithCountry, role, canBeAssigned, fieldsInTheResponse } =
-      req.query;
+    const { me, role, canBeAssigned, fieldsInTheResponse } = req.query;
 
     const userId = req.user.id;
 
@@ -61,14 +60,14 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       }),
     });
 
-    if (JSON.parse(nameWithCountry) === true) {
-      users = users.map((obj) => {
-        return {
-          ...obj._doc,
-          name: `${obj.name}${obj.country ? ` | ${obj.country}` : ''}`,
-        };
-      });
-    }
+    //if (JSON.parse(nameWithCountry) === true) {
+    //  users = users.map((obj) => {
+    //    return {
+    //      ...obj._doc,
+    //      name: `${obj.name}${obj.country ? ` | ${obj.country}` : ''}`,
+    //    };
+    //  });
+    //}
 
     return res.status(200).json({
       status: 'success',
@@ -115,13 +114,15 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       amountPerVideo,
       country,
       paymentInfo,
+      canBeAssigned,
     } = req.body;
 
     const { roleUsersForResponse } = req.query;
 
     const isValidate = validationForRequiredInputDataInUserModel(
       role,
-      req.body
+      req.body,
+      null
     );
 
     if (!isValidate) {
@@ -156,17 +157,25 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       ...((role === 'author' || role === 'worker' || role === 'stringer') && {
         balance: 0,
       }),
+      ...(typeof canBeAssigned === 'boolean' && {
+        canBeAssigned,
+      }),
     };
 
     await createUser(objDB);
 
     let apiData;
 
-    //if (roleUsersForResponse) {
-    //  apiData = await getAllUsers(true, null, roleUsersForResponse);
-    //} else {
-    //  apiData = await getUserById(userId);
-    //}
+    if (roleUsersForResponse) {
+      apiData = await getAllUsers({
+        me: true,
+        userId: null,
+        role: roleUsersForResponse,
+        canBeAssigned: null,
+      });
+    } else {
+      apiData = await getUserById(userId);
+    }
 
     return res.status(200).json({
       message: 'A new user has been successfully created',
@@ -296,13 +305,11 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       ...(amountPerVideo && { amountPerVideo }),
       ...(country && { country }),
       ...(paymentInfo && { paymentInfo }),
-      ...((canBeAssigned === true || canBeAssigned === false) && {
+      ...(typeof canBeAssigned === 'boolean' && {
         canBeAssigned,
       }),
       ...(balance && { lastPaymentDate: moment().toDate() }),
     };
-
-    console.log(objDB, 444);
 
     objDBForIncrement = {
       ...(balance && { balance }),
@@ -377,6 +384,8 @@ router.patch(
 
       const salesDateLimit = await getSalesByUserId(user._id, 30);
 
+      console.log(salesDateLimit, 867878);
+
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
         return +(
           acc +
@@ -411,8 +420,6 @@ router.patch(
         'approvedVideosCount.total': approvedTrelloCardCount,
         earnedTillNextPayment: +earnedTillNextPayment.toFixed(2),
       };
-
-      console.log(dataDBForUpdateUser, 999);
 
       await updateUser(user._id, dataDBForUpdateUser, {});
 

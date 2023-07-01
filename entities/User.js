@@ -31,7 +31,7 @@ const schema = new Schema({
   },
   canBeAssigned: {
     type: Boolean,
-    default: true,
+    required: false,
   },
   amountPerVideo: {
     type: Number,

@@ -6,9 +6,9 @@ const createNewSale = async (body) => {
   return newSales;
 };
 
-const getAllSales = async ({ count, company, date, videoId, researcher }) => {
+const getAllSales = async ({ count, company, date, videoId, userId }) => {
   return await Sales.find({
-    ...(researcher && { 'researchers.names': { $in: [researcher] } }),
+    ...(userId && { researchers: { $in: [userId] } }),
     ...(company && { company }),
     ...(videoId && { videoId }),
     ...(date && {

@@ -14,6 +14,7 @@ const {
 const {
   findUsersByEmails,
   updateUserByIncrement,
+  getUserBy,
 } = require('../controllers/user.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
@@ -177,12 +178,12 @@ router.post(
           } else {
             const videoDb = await findVideoByTitle(obj.title);
 
+            console.log(obj.title);
+
             const vbForm = await findOne({
               searchBy: 'formId',
-              param: videoDb.uploadData.vbCode,
+              param: videoDb?.uploadData?.vbCode,
             });
-
-            console.log(vbForm);
 
             if (!videoDb) {
               return {
@@ -362,14 +363,26 @@ router.post('/create', authMiddleware, async (req, res) => {
 
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { count, company, date, videoId, researcher } = req.query;
+    const { count, company, date, videoId, researcher, personal } = req.query;
 
-    const sales = await getAllSales({
+    let userId = null;
+
+    if (researcher) {
+      const user = await getUserBy('name', researcher);
+
+      userId = user._id;
+    }
+
+    if (personal && JSON.parse(personal) === true) {
+      userId = req.user.id;
+    }
+
+    let sales = await getAllSales({
       count,
       ...(company && { company }),
       ...(date && { date }),
       ...(videoId && { videoId }),
-      ...(researcher && { researcher }),
+      ...(userId && { userId }),
       ...(date && {
         date: date[0] === 'null' || date[1] === 'null' ? null : date,
       }),

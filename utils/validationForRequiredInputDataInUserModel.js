@@ -8,12 +8,13 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
       !data.name ||
       !data.password ||
       !data.nickname ||
-      !data.percentage ||
-      !data.amountPerVideo ||
-      !data.country ||
+      //!data.percentage ||
+      //!data.amountPerVideo ||
+      //!data.country ||
       !data.role ||
-      !data.paymentInfo.variant ||
-      !data.paymentInfo.value
+      //!data.paymentInfo.variant ||
+      //!data.paymentInfo.value ||
+      typeof data.canBeAssigned !== 'boolean'
     ) {
       return false;
     } else {
@@ -51,10 +52,11 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
       !data.email ||
       !data.name ||
       !data.password ||
-      !data.amountPerVideo ||
+      //!data.amountPerVideo ||
       !data.role ||
-      !data.paymentInfo.variant ||
-      !data.paymentInfo.value
+      //!data.paymentInfo.variant ||
+      //!data.paymentInfo.value ||
+      typeof data.canBeAssigned !== 'boolean'
     ) {
       return false;
     } else {
@@ -86,20 +88,20 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
         !data.email ||
         !data.name ||
         !data.password ||
-        !data.amountPerVideo ||
-        !data.role ||
-        !data.paymentInfo.variant ||
-        (data.paymentInfo.variant === 'bankTransfer' &&
-          (!data.paymentInfo.email ||
-            !data.paymentInfo.fullName ||
-            !data.paymentInfo.address ||
-            !data.paymentInfo.phoneNumber ||
-            !data.paymentInfo.zipCode ||
-            !data.paymentInfo.bankName ||
-            !data.paymentInfo.iban)) ||
-        (data.paymentInfo.variant === 'payPal' &&
-          !data.paymentInfo.payPalEmail) ||
-        (data.paymentInfo.variant === 'other' && !data.paymentInfo.value)
+        //!data.amountPerVideo ||
+        !data.role
+        //!data.paymentInfo.variant ||
+        //(data.paymentInfo.variant === 'bankTransfer' &&
+        //  (!data.paymentInfo.email ||
+        //    !data.paymentInfo.fullName ||
+        //    !data.paymentInfo.address ||
+        //    !data.paymentInfo.phoneNumber ||
+        //    !data.paymentInfo.zipCode ||
+        //    !data.paymentInfo.bankName ||
+        //    !data.paymentInfo.iban)) ||
+        //(data.paymentInfo.variant === 'payPal' &&
+        //  !data.paymentInfo.payPalEmail) ||
+        //(data.paymentInfo.variant === 'other' && !data.paymentInfo.value)
       ) {
         return false;
       } else {

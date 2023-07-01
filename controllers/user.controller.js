@@ -71,6 +71,10 @@ const deleteUser = async (userId) => {
   await User.deleteOne({ _id: userId });
 };
 
+const getUserBy = async (param, value) => {
+  return await User.findOne({ [param]: value });
+};
+
 const sendPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -446,4 +450,5 @@ module.exports = {
   findUsersByEmails,
   updateUserByIncrement,
   updateStatForUsers,
+  getUserBy,
 };
