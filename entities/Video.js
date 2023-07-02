@@ -75,10 +75,26 @@ const schema = new Schema(
         type: String,
         required: true,
       },
-      researchers: {
-        type: [String],
-        required: true,
-      },
+      researchers: [
+        {
+          id: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+          },
+          name: {
+            type: String,
+            required: true,
+          },
+          main: {
+            type: Boolean,
+            required: true,
+          },
+          type: Object,
+          required: true,
+        },
+      ],
+
       priority: {
         type: Boolean,
         required: true,

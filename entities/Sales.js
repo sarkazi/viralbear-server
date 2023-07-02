@@ -10,7 +10,18 @@ const schema = new Schema(
       type: String,
       required: true,
     },
-    researchers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    researchers: [
+      {
+        id: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        name: {
+          name: String,
+        },
+        type: Object,
+      },
+    ],
     videoTitle: {
       type: String,
       required: true,

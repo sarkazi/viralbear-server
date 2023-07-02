@@ -6,9 +6,16 @@ const createNewSale = async (body) => {
   return newSales;
 };
 
-const getAllSales = async ({ count, company, date, videoId, userId }) => {
+const getAllSales = async ({
+  count,
+  company,
+  date,
+  videoId,
+  userId,
+  relatedToTheVbForm,
+}) => {
   return await Sales.find({
-    ...(userId && { researchers: { $in: [userId] } }),
+    ...(userId && { researchers: { $elemMatch: { id: userId } } }),
     ...(company && { company }),
     ...(videoId && { videoId }),
     ...(date && {
@@ -16,6 +23,9 @@ const getAllSales = async ({ count, company, date, videoId, userId }) => {
         $gte: date[0],
         $lt: date[1],
       },
+    }),
+    ...(relatedToTheVbForm && {
+      vbForm: { $exists: true },
     }),
   })
     .limit(count ? count : null)
@@ -32,7 +42,7 @@ const findSaleById = async (saleId) => {
 
 const getSalesByUserId = async (userId, dateLimit) => {
   return Sales.find({
-    researchers: userId,
+    researchers: { $elemMatch: { id: userId } },
     ...(dateLimit && {
       createdAt: {
         $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),

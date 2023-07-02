@@ -19,6 +19,7 @@ const {
   getUserByEmail,
   updateStatForUsers,
   getUserBySearchValue,
+  findUsersByValueList,
 } = require('../controllers/user.controller.js');
 
 const {
@@ -29,10 +30,6 @@ const {
 const { getCountLinksByUserEmail } = require('../controllers/links.controller');
 
 const { getSalesByUserId } = require('../controllers/sales.controller');
-
-const {
-  getCountApprovedTrelloCardByNickname,
-} = require('../controllers/moveFromReview.controller');
 
 const { sendEmail } = require('../controllers/sendEmail.controller');
 
@@ -59,15 +56,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         fieldsInTheResponse,
       }),
     });
-
-    //if (JSON.parse(nameWithCountry) === true) {
-    //  users = users.map((obj) => {
-    //    return {
-    //      ...obj._doc,
-    //      name: `${obj.name}${obj.country ? ` | ${obj.country}` : ''}`,
-    //    };
-    //  });
-    //}
 
     return res.status(200).json({
       status: 'success',
@@ -409,15 +397,15 @@ router.patch(
         null
       );
 
-      const approvedTrelloCardCount =
-        await getCountApprovedTrelloCardByNickname(user.nickname, null);
+      //const approvedTrelloCardCount =
+      //  await getCountApprovedTrelloCardByNickname(user.nickname, null);
 
       const dataDBForUpdateUser = {
         'sentVideosCount.total': linksCount,
         'earnedForYourself.dateLimit': +salesSumAmountDateLimit.toFixed(2),
         'earnedForYourself.total': +earnedForYourself.toFixed(2),
         'acquiredVideosCount.total': acquiredVideoCount,
-        'approvedVideosCount.total': approvedTrelloCardCount,
+        //'approvedVideosCount.total': approvedTrelloCardCount,
         earnedTillNextPayment: +earnedTillNextPayment.toFixed(2),
       };
 
@@ -446,7 +434,11 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
   try {
     await deleteUser(userId);
 
-    users = await getAllUsers(true, null, roleUsersForResponse);
+    users = await getAllUsers({
+      me: true,
+      userId: null,
+      role: roleUsersForResponse,
+    });
 
     return res.status(200).json({
       message: 'The user has been successfully deleted',
@@ -513,6 +505,29 @@ router.post('/topUpBalance', authMiddleware, async (req, res) => {
         allUsersWithRefreshStat,
         sumCountUsersValue,
       },
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
+
+router.post('/findByValueList', async (req, res) => {
+  try {
+    const { emailList } = req.body;
+
+    const users = await findUsersByValueList({
+      param: 'email',
+      valueList: emailList,
+    });
+
+    return res.status(200).json({
+      message: 'The workers"s balance has been successfully replenished',
+      status: 'success',
+      apiData: users,
     });
   } catch (err) {
     console.log(err);

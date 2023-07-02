@@ -15,6 +15,7 @@ const {
   findUsersByEmails,
   updateUserByIncrement,
   getUserBy,
+  findUsersByValueList,
 } = require('../controllers/user.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
@@ -151,12 +152,17 @@ router.post(
                   status: 'notFound',
                 };
               } else {
-                const emailsOfResearchers = videoDb.trelloData.researchers;
+                const videoResearchers = videoDb.trelloData.researchers;
                 const amount = +(+obj.amount).toFixed(2);
                 const amountToResearchers = +(amount * 0.4).toFixed(2);
 
                 return {
-                  researchers: emailsOfResearchers,
+                  researchers: videoResearchers.map((researcher) => {
+                    return {
+                      email: researcher.email,
+                      name: researcher.name,
+                    };
+                  }),
                   videoId: obj.videoId,
                   ...(vbForm && {
                     vbForm: vbForm._id,
@@ -178,8 +184,6 @@ router.post(
           } else {
             const videoDb = await findVideoByTitle(obj.title);
 
-            console.log(obj.title);
-
             const vbForm = await findOne({
               searchBy: 'formId',
               param: videoDb?.uploadData?.vbCode,
@@ -197,12 +201,17 @@ router.post(
                   status: 'lessThen1460',
                 };
               } else {
-                const emailsOfResearchers = videoDb.trelloData.researchers;
+                const videoResearchers = videoDb.trelloData.researchers;
                 const amount = +(+obj.amount).toFixed(2);
                 const amountToResearchers = +(amount * 0.4).toFixed(2);
 
                 return {
-                  researchers: emailsOfResearchers,
+                  researchers: videoResearchers.map((researcher) => {
+                    return {
+                      email: researcher.email,
+                      name: researcher.name,
+                    };
+                  }),
                   videoId: videoDb.videoData.videoId,
                   ...(vbForm && {
                     vbForm: vbForm._id,
@@ -269,27 +278,24 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     const promiseAfterCreated = await Promise.all(
       body.map(async (obj) => {
-        const namesByUsers = await findUsersByEmails(obj.researchers);
+        console.log(obj.researchers);
 
-        const emailsOfResearchers = obj.researchers;
+        const users = await findUsersByValueList({
+          param: 'email',
+          valueList: obj.researchers.map((researcher) => {
+            return researcher.email;
+          }),
+        });
+
         const amount = +obj.amount;
         const amountForAllResearchers = obj.amountToResearcher;
-        //const researcherEarnedForCompany = +(
-        //  amount / emailsOfResearchers.length
-        //).toFixed(2);
-        //const researcherEarnedForYourself = +(
-        //  amountForAllResearchers / emailsOfResearchers.length
-        //).toFixed(2);
 
         const objDB = {
-          //researchers: {
-          //  emails: emailsOfResearchers,
-          //  names: namesByUsers.map((obj) => {
-          //    return obj.name;
-          //  }),
-          //},
-          researchers: namesByUsers.map((el) => {
-            return el._id;
+          researchers: users.map((el) => {
+            return {
+              id: el._id,
+              name: el.name,
+            };
           }),
           videoId: obj.videoId,
           ...(obj.vbForm && { vbForm: obj.vbForm }),
@@ -303,17 +309,6 @@ router.post('/create', authMiddleware, async (req, res) => {
         };
 
         await createNewSale(objDB);
-
-        //const dataDBForUpdate = {
-        //  earnedForCompany: researcherEarnedForCompany,
-        //  'earnedForYourself.total': researcherEarnedForYourself,
-        //};
-
-        //await updateUserByIncrement(
-        //  'email',
-        //  emailsOfResearchers,
-        //  dataDBForUpdate
-        //);
 
         return {
           status: 'created',
@@ -363,7 +358,15 @@ router.post('/create', authMiddleware, async (req, res) => {
 
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { count, company, date, videoId, researcher, personal } = req.query;
+    const {
+      count,
+      company,
+      date,
+      videoId,
+      researcher,
+      personal,
+      relatedToTheVbForm,
+    } = req.query;
 
     let userId = null;
 
@@ -386,6 +389,10 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       ...(date && {
         date: date[0] === 'null' || date[1] === 'null' ? null : date,
       }),
+      ...(relatedToTheVbForm &&
+        typeof JSON.parse(relatedToTheVbForm) === 'boolean' && {
+          relatedToTheVbForm: JSON.parse(relatedToTheVbForm),
+        }),
     });
 
     const sumAmount = sales.reduce((acc, item) => {
@@ -408,6 +415,51 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         ? `The last ${count} sales have been received`
         : 'All sales have been received',
       apiData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      message: err?.message ? err.message : 'Server side error',
+    });
+  }
+});
+
+router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
+  try {
+    const salesRelatedToTheVbForm = await getAllSales({
+      relatedToTheVbForm: true,
+    });
+
+    let authorsSalesStatistics = await Promise.all(
+      salesRelatedToTheVbForm.map(async (sale) => {
+        const vbForm = await findOne({ searchBy: '_id', param: sale.vbForm });
+
+        const authorRelatedWithVbForm = await getUserBy('_id', vbForm.sender);
+
+        return {
+          authorEmail: authorRelatedWithVbForm.email,
+          videoId: sale.videoId,
+          videoTitle: sale.videoTitle,
+          advance: authorRelatedWithVbForm.amountPerVideo,
+          percentage: authorRelatedWithVbForm.percentage,
+          paymentInfo:
+            authorRelatedWithVbForm.paymentInfo &&
+            Object.keys(authorRelatedWithVbForm.paymentInfo) > 0
+              ? 'yes'
+              : 'no',
+          amount: sale.amount,
+          saleId: sale._id,
+        };
+      })
+    );
+
+    console.log(authorsSalesStatistics);
+
+    return res.status(200).json({
+      status: 'success',
+      message: "authors' sales statistics are obtained",
+      apiData: authorsSalesStatistics,
     });
   } catch (err) {
     console.log(err);

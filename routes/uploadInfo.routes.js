@@ -316,7 +316,8 @@ router.get('/findOne', async (req, res) => {
 
     const objDB = {
       searchBy,
-      param,
+      param:
+        searchBy === 'formId' && !param.includes('VB') ? `VB${param}` : param,
     };
 
     const form = await findOne(objDB);

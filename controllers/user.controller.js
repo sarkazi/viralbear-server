@@ -11,10 +11,6 @@ const { getSalesByUserId } = require('../controllers/sales.controller');
 const { getCountLinksByUserEmail } = require('../controllers/links.controller');
 
 const {
-  getCountApprovedTrelloCardByNickname,
-} = require('../controllers/moveFromReview.controller');
-
-const {
   getCountAcquiredVideoByUserEmail,
 } = require('../controllers/video.controller');
 
@@ -179,7 +175,7 @@ const updateStatForUsers = async (role) => {
   const users = await getAllUsers({
     me: true,
     userId: null,
-    role: 'worker',
+    role,
   });
 
   await Promise.all(
@@ -231,11 +227,11 @@ const updateStatForUsers = async (role) => {
         null
       );
 
-      const approvedTrelloCardCountDateLimit =
-        await getCountApprovedTrelloCardByNickname(user.nickname, 30);
+      //const approvedTrelloCardCountDateLimit =
+      //  await getCountApprovedTrelloCardByNickname(user.nickname, 30);
 
-      const approvedTrelloCardCount =
-        await getCountApprovedTrelloCardByNickname(user.nickname, null);
+      //const approvedTrelloCardCount =
+      //  await getCountApprovedTrelloCardByNickname(user.nickname, null);
 
       const defineDefaultValueForPayingInput = async () => {
         if (role === 'worker') {
@@ -281,8 +277,8 @@ const updateStatForUsers = async (role) => {
         earnedForCompany: +earnedForCompany.toFixed(2),
         'acquiredVideosCount.dateLimit': acquiredVideoCountDateLimit,
         'acquiredVideosCount.total': acquiredVideoCount,
-        'approvedVideosCount.dateLimit': approvedTrelloCardCountDateLimit,
-        'approvedVideosCount.total': approvedTrelloCardCount,
+        //'approvedVideosCount.dateLimit': approvedTrelloCardCountDateLimit,
+        //'approvedVideosCount.total': approvedTrelloCardCount,
         earnedTillNextPayment:
           role === 'worker'
             ? +earnedTillNextPayment.toFixed(2)
@@ -301,7 +297,7 @@ const updateStatForUsers = async (role) => {
   const allUsersWithRefreshStat = await getAllUsers({
     me: true,
     userId: null,
-    role: 'worker',
+    role,
   });
 
   const sumCountUsersValue = allUsersWithRefreshStat.reduce(
@@ -437,6 +433,23 @@ const updateUserByIncrement = async (field, emailsOfResearchers, objDB) => {
   );
 };
 
+const findWorkerEmailByWorkerName = async (decodeResearchers) => {
+  const workers = await User.find({ role: 'worker' });
+
+  const workersEmailsList = decodeResearchers
+    .map((el) => {
+      const nameRespond = workers.find((worker) => worker.name === el);
+      return nameRespond.email;
+    })
+    .filter((el) => el);
+
+  return workersEmailsList;
+};
+
+const findUsersByValueList = async ({ param, valueList }) => {
+  return await User.find({ [param]: { $in: valueList } });
+};
+
 module.exports = {
   getAllUsers,
   deleteUser,
@@ -451,4 +464,6 @@ module.exports = {
   updateUserByIncrement,
   updateStatForUsers,
   getUserBy,
+  findWorkerEmailByWorkerName,
+  findUsersByValueList,
 };

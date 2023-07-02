@@ -51,6 +51,11 @@ const {
 } = require('../controllers/video.controller');
 
 const {
+  findUsersByValueList,
+  getUserBy,
+} = require('../controllers/user.controller');
+
+const {
   uploadFileToStorage,
   removeFileFromStorage,
 } = require('../controllers/storage.controller');
@@ -59,11 +64,15 @@ const {
   getTrelloCardsFromDoneListByApprovedAndNot,
 } = require('../controllers/trello.controller');
 
+const {
+  findTheRecordOfTheCardMovedToDone,
+} = require('../controllers/movedToDoneList.controller');
+
 const socketInstance = require('../socket.instance');
 
 const {
-  findWorkerEmailByWorkerName,
-} = require('../utils/findWorkerEmailByWorkerName');
+  defineResearchersListForCreatingVideo,
+} = require('../utils/defineResearchersListForCreatingVideo');
 
 const storage = multer.memoryStorage();
 
@@ -148,8 +157,6 @@ router.post(
           status: 'warning',
         });
       }
-
-      console.log(!researchers, researchers);
 
       try {
         if (vbCode) {
@@ -268,6 +275,25 @@ router.post(
           videoId = +reqVideoId;
         }
 
+        const researchersList = await findUsersByValueList({
+          param: 'name',
+          valueList: JSON.parse(researchers),
+        });
+
+        const recordInTheDatabaseAboutTheMovedCard =
+          await findTheRecordOfTheCardMovedToDone(trelloCardId);
+
+        const userWhoDraggedTheCard = await getUserBy(
+          '_id',
+          recordInTheDatabaseAboutTheMovedCard.researcherId
+        );
+
+        const researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: userWhoDraggedTheCard,
+            allResearchersList: researchersList,
+          });
+
         const bodyForNewVideo = {
           videoId,
           originalLink,
@@ -290,9 +316,7 @@ router.post(
           trelloCardUrl,
           trelloCardId,
           trelloCardName,
-          researchers: await findWorkerEmailByWorkerName(
-            JSON.parse(researchers)
-          ),
+          researchers: researchersListForCreatingVideo,
           priority: JSON.parse(priority),
           ...(agreementLink && {
             agreementLink,
@@ -771,6 +795,27 @@ router.patch(
         );
       }
 
+      const trelloCardId = video.trelloData.trelloCardId;
+
+      const researchersList = await findUsersByValueList({
+        param: 'name',
+        valueList: JSON.parse(researchers),
+      });
+
+      const recordInTheDatabaseAboutTheMovedCard =
+        await findTheRecordOfTheCardMovedToDone(trelloCardId);
+
+      const userWhoDraggedTheCard = await getUserBy(
+        '_id',
+        recordInTheDatabaseAboutTheMovedCard.researcherId
+      );
+
+      const researchersListForCreatingVideo =
+        await defineResearchersListForCreatingVideo({
+          mainResearcher: userWhoDraggedTheCard,
+          allResearchersList: researchersList,
+        });
+
       await updateVideoById(
         +videoId,
         {
@@ -796,9 +841,7 @@ router.patch(
           ...(reuters && { reuters }),
           ...(date && { 'videoData.date': JSON.parse(date) }),
           ...(researchers && {
-            'trelloData.researchers': await findWorkerEmailByWorkerName(
-              JSON.parse(researchers)
-            ),
+            'trelloData.researchers': researchersListForCreatingVideo,
           }),
         },
         { creditTo: creditTo ? creditTo : null }
@@ -1154,6 +1197,27 @@ router.patch(
         );
       }
 
+      const trelloCardId = video.trelloData.trelloCardId;
+
+      const researchersList = await findUsersByValueList({
+        param: 'name',
+        valueList: JSON.parse(researchers),
+      });
+
+      const recordInTheDatabaseAboutTheMovedCard =
+        await findTheRecordOfTheCardMovedToDone(trelloCardId);
+
+      const userWhoDraggedTheCard = await getUserBy(
+        '_id',
+        recordInTheDatabaseAboutTheMovedCard.researcherId
+      );
+
+      const researchersListForCreatingVideo =
+        await defineResearchersListForCreatingVideo({
+          mainResearcher: userWhoDraggedTheCard,
+          allResearchersList: researchersList,
+        });
+
       await updateVideoById(
         +videoId,
         {
@@ -1180,9 +1244,7 @@ router.patch(
           ...(reuters && { reuters }),
           ...(date && { 'videoData.date': JSON.parse(date) }),
           ...(researchers && {
-            'trelloData.researchers': await findWorkerEmailByWorkerName(
-              JSON.parse(researchers)
-            ),
+            'trelloData.researchers': researchersListForCreatingVideo,
           }),
         },
         { creditTo: creditTo ? creditTo : null }
@@ -1560,6 +1622,27 @@ router.patch(
         );
       }
 
+      const trelloCardId = video.trelloData.trelloCardId;
+
+      const researchersList = await findUsersByValueList({
+        param: 'name',
+        valueList: JSON.parse(researchers),
+      });
+
+      const recordInTheDatabaseAboutTheMovedCard =
+        await findTheRecordOfTheCardMovedToDone(trelloCardId);
+
+      const userWhoDraggedTheCard = await getUserBy(
+        '_id',
+        recordInTheDatabaseAboutTheMovedCard.researcherId
+      );
+
+      const researchersListForCreatingVideo =
+        await defineResearchersListForCreatingVideo({
+          mainResearcher: userWhoDraggedTheCard,
+          allResearchersList: researchersList,
+        });
+
       await updateVideoById(
         +videoId,
         {
@@ -1586,9 +1669,7 @@ router.patch(
           ...(reuters && { reuters }),
           ...(date && { 'videoData.date': JSON.parse(date) }),
           ...(researchers && {
-            'trelloData.researchers': await findWorkerEmailByWorkerName(
-              JSON.parse(researchers)
-            ),
+            'trelloData.researchers': researchersListForCreatingVideo,
           }),
           isApproved: true,
           pubDate: moment('2023-06-03').valueOf(),
