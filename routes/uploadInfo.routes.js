@@ -184,8 +184,15 @@ router.post(
           name: `${name} ${lastName}`,
           email,
           role: 'author',
+          ...(authorLinkWithThisHash.percentage && {
+            percentage: authorLinkWithThisHash.percentage,
+          }),
+          ...(authorLinkWithThisHash.advancePayment && {
+            amountPerVideo: authorLinkWithThisHash.advancePayment,
+          }),
           balance: 0,
           activatedTheAccount: false,
+          specifiedPaymentDetails: false,
         };
 
         author = await createUser(objDbForCreateUser);
@@ -260,6 +267,9 @@ router.post(
         over18YearOld,
         agreedWithTerms,
         didNotGiveRights,
+        ...(authorLinkWithThisHash.advancePayment && {
+          advancePaymentReceived: false,
+        }),
         formId: `VB${vbCode}`,
         ip,
         submittedDate: moment().utc(),

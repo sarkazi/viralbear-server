@@ -20,6 +20,7 @@ const {
   updateStatForUsers,
   getUserBySearchValue,
   findUsersByValueList,
+  getUserBy,
 } = require('../controllers/user.controller.js');
 
 const {
@@ -87,6 +88,35 @@ router.get('/getById/:userId', async (req, res) => {
     return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
     console.log(err);
+  }
+});
+
+router.get('/getBy/:value', authMiddleware, async (req, res) => {
+  try {
+    const { param, fieldsInTheResponse } = req.query;
+    const { value } = req.params;
+
+    const user = await getUserBy({
+      param,
+      value,
+      ...(fieldsInTheResponse && {
+        fieldsInTheResponse,
+      }),
+    });
+
+    if (!user) {
+      return res
+        .status(200)
+        .json({ message: 'User is not found', status: 'warning' });
+    }
+
+    return res.status(200).json({ apiData: user, status: 'success' });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
   }
 });
 
@@ -377,14 +407,15 @@ router.patch(
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
         return +(
           acc +
-          sale.amountToResearcher / sale.researchers.length
+          sale.amountToResearchers / sale.researchers.length
         ).toFixed(2);
       }, 0);
 
       const sales = await getSalesByUserId(user._id, null);
 
       const earnedForYourself = sales.reduce(
-        (a, sale) => a + +(sale.amountToResearcher / sale?.researchers?.length),
+        (a, sale) =>
+          a + +(sale.amountToResearchers / sale?.researchers?.length),
         0
       );
 

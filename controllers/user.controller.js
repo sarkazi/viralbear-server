@@ -67,8 +67,14 @@ const deleteUser = async (userId) => {
   await User.deleteOne({ _id: userId });
 };
 
-const getUserBy = async (param, value) => {
-  return await User.findOne({ [param]: value });
+const getUserBy = async ({ param, value, fieldsInTheResponse }) => {
+  return await User.findOne(
+    { [param]: value },
+    {
+      ...(fieldsInTheResponse &&
+        fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
+    }
+  );
 };
 
 const sendPassword = async (req, res) => {
@@ -185,14 +191,15 @@ const updateStatForUsers = async (role) => {
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
         return +(
           acc +
-          sale.amountToResearcher / sale.researchers.length
+          sale.amountToResearchers / sale.researchers.length
         ).toFixed(2);
       }, 0);
 
       const sales = await getSalesByUserId(user._id, null);
 
       const earnedForYourself = sales.reduce(
-        (a, sale) => a + +(sale.amountToResearcher / sale?.researchers?.length),
+        (a, sale) =>
+          a + +(sale.amountToResearchers / sale?.researchers?.length),
         0
       );
       const earnedTotal = sales.reduce(
@@ -205,7 +212,7 @@ const updateStatForUsers = async (role) => {
           a +
           +(
             sale.amount / sale?.researchers?.length -
-            sale.amountToResearcher / sale?.researchers?.length
+            sale.amountToResearchers / sale?.researchers?.length
           ),
         0
       );

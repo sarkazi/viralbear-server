@@ -18,6 +18,10 @@ const schema = new Schema(
       type: String,
       required: false,
     },
+    advancePaymentReceived: {
+      type: Boolean,
+      required: false,
+    },
     noSubmitAnywhere: {
       type: Boolean,
       required: true,

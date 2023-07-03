@@ -2,7 +2,7 @@ const { Schema, model } = require('mongoose');
 const schema = new Schema(
   {
     videoId: {
-      type: String,
+      type: Number,
       required: true,
     },
     vbForm: { type: Schema.Types.ObjectId, ref: 'UploadInfo' },
@@ -42,7 +42,7 @@ const schema = new Schema(
       type: Boolean,
       required: true,
     },
-    amountToResearcher: {
+    amountToResearchers: {
       type: Number,
       required: true,
     },

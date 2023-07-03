@@ -283,10 +283,10 @@ router.post(
         const recordInTheDatabaseAboutTheMovedCard =
           await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-        const userWhoDraggedTheCard = await getUserBy(
-          '_id',
-          recordInTheDatabaseAboutTheMovedCard.researcherId
-        );
+        const userWhoDraggedTheCard = await getUserBy({
+          parm: '_id',
+          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+        });
 
         const researchersListForCreatingVideo =
           await defineResearchersListForCreatingVideo({
@@ -805,10 +805,10 @@ router.patch(
       const recordInTheDatabaseAboutTheMovedCard =
         await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-      const userWhoDraggedTheCard = await getUserBy(
-        '_id',
-        recordInTheDatabaseAboutTheMovedCard.researcherId
-      );
+      const userWhoDraggedTheCard = await getUserBy({
+        param: '_id',
+        value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+      });
 
       const researchersListForCreatingVideo =
         await defineResearchersListForCreatingVideo({
@@ -1207,10 +1207,10 @@ router.patch(
       const recordInTheDatabaseAboutTheMovedCard =
         await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-      const userWhoDraggedTheCard = await getUserBy(
-        '_id',
-        recordInTheDatabaseAboutTheMovedCard.researcherId
-      );
+      const userWhoDraggedTheCard = await getUserBy({
+        param: '_id',
+        value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+      });
 
       const researchersListForCreatingVideo =
         await defineResearchersListForCreatingVideo({
@@ -1632,10 +1632,10 @@ router.patch(
       const recordInTheDatabaseAboutTheMovedCard =
         await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-      const userWhoDraggedTheCard = await getUserBy(
-        '_id',
-        recordInTheDatabaseAboutTheMovedCard.researcherId
-      );
+      const userWhoDraggedTheCard = await getUserBy({
+        param: '_id',
+        value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+      });
 
       const researchersListForCreatingVideo =
         await defineResearchersListForCreatingVideo({

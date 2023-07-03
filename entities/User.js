@@ -41,6 +41,10 @@ const schema = new Schema({
     type: String,
     required: false,
   },
+  specifiedPaymentDetails: {
+    type: Boolean,
+    required: false,
+  },
   sales: [{ type: Schema.Types.ObjectId, ref: 'Sales' }],
   balance: {
     type: Number,

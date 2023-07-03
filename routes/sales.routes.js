@@ -62,7 +62,7 @@ router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
           amount,
           videoTitle: videoDb.videoData.title,
           company,
-          amountToResearcher: (amount * 0.4).toFixed(2),
+          amountToResearchers: (amount * 0.4).toFixed(2),
           date: moment().toString(),
           author: null,
           advance: null,
@@ -143,7 +143,9 @@ router.post(
 
               const vbForm = await findOne({
                 searchBy: 'formId',
-                param: videoDb.uploadData.vbCode,
+                param: videoDb?.uploadData?.vbCode
+                  ? videoDb.uploadData.vbCode
+                  : null,
               });
 
               if (!videoDb) {
@@ -171,7 +173,7 @@ router.post(
                   amount,
                   videoTitle: videoDb.videoData.title,
                   company: resCompany,
-                  amountToResearcher: amountToResearchers,
+                  amountToResearchers: amountToResearchers,
                   date: moment().toString(),
                   status: 'found',
                   author: null,
@@ -220,7 +222,7 @@ router.post(
                   amount,
                   videoTitle: obj.title,
                   company: resCompany,
-                  amountToResearcher: amountToResearchers,
+                  amountToResearchers: amountToResearchers,
                   date: moment().format('ll'),
                   status: 'found',
                   author: null,
@@ -288,7 +290,7 @@ router.post('/create', authMiddleware, async (req, res) => {
         });
 
         const amount = +obj.amount;
-        const amountForAllResearchers = obj.amountToResearcher;
+        const amountForAllResearchers = obj.amountToResearchers;
 
         const objDB = {
           researchers: users.map((el) => {
@@ -300,7 +302,7 @@ router.post('/create', authMiddleware, async (req, res) => {
           videoId: obj.videoId,
           ...(obj.vbForm && { vbForm: obj.vbForm }),
           amount,
-          amountToResearcher: amountForAllResearchers,
+          amountToResearchers: amountForAllResearchers,
           date: moment().format('ll'),
           ...(obj.usage && { usage: obj.usage }),
           manual: obj.saleId ? false : true,
@@ -371,7 +373,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     let userId = null;
 
     if (researcher) {
-      const user = await getUserBy('name', researcher);
+      const user = await getUserBy({ param: 'name', value: researcher });
 
       userId = user._id;
     }
@@ -400,7 +402,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     }, 0);
 
     const sumAmountResearcher = sales.reduce((acc, item) => {
-      return acc + item.amountToResearcher;
+      return acc + item.amountToResearchers;
     }, 0);
 
     const apiData = {
@@ -426,6 +428,8 @@ router.get('/getAll', authMiddleware, async (req, res) => {
 });
 
 router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
+  const { group } = req.query;
+
   try {
     const salesRelatedToTheVbForm = await getAllSales({
       relatedToTheVbForm: true,
@@ -435,31 +439,119 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
       salesRelatedToTheVbForm.map(async (sale) => {
         const vbForm = await findOne({ searchBy: '_id', param: sale.vbForm });
 
-        const authorRelatedWithVbForm = await getUserBy('_id', vbForm.sender);
+        const authorRelatedWithVbForm = await getUserBy({
+          param: '_id',
+          value: vbForm.sender,
+        });
 
         return {
           authorEmail: authorRelatedWithVbForm.email,
+          ...(authorRelatedWithVbForm.percentage && {
+            percentage: authorRelatedWithVbForm.percentage,
+          }),
+          ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
+            authorRelatedWithVbForm.amountPerVideo && {
+              advance:
+                vbForm.advancePaymentReceived === false
+                  ? authorRelatedWithVbForm.amountPerVideo
+                  : 0,
+            }),
           videoId: sale.videoId,
           videoTitle: sale.videoTitle,
-          advance: authorRelatedWithVbForm.amountPerVideo,
-          percentage: authorRelatedWithVbForm.percentage,
           paymentInfo:
-            authorRelatedWithVbForm.paymentInfo &&
-            Object.keys(authorRelatedWithVbForm.paymentInfo) > 0
-              ? 'yes'
-              : 'no',
-          amount: sale.amount,
-          saleId: sale._id,
+            authorRelatedWithVbForm.paymentInfo.variant === undefined
+              ? false
+              : true,
+          amount: authorRelatedWithVbForm.percentage
+            ? (sale.amount * authorRelatedWithVbForm.percentage) / 100
+            : 0,
+          ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
+            authorRelatedWithVbForm.amountPerVideo && {
+              advancePaymentReceived: vbForm.advancePaymentReceived,
+            }),
         };
       })
     );
 
-    console.log(authorsSalesStatistics);
+    let groupedStatisticsByAuthor = [];
+
+    authorsSalesStatistics.reduce((res, saleData) => {
+      if (!res[saleData.videoId]) {
+        res[saleData.videoId] = {
+          videoId: saleData.videoId,
+          amount: 0,
+          authorEmail: saleData.authorEmail,
+          percentage: saleData.percentage ? saleData.percentage : 0,
+          advance: {
+            value: saleData.advance ? saleData.advance : 0,
+            ...(typeof saleData.advancePaymentReceived === 'boolean' && {
+              paid: saleData.advancePaymentReceived,
+            }),
+          },
+          authorEmail: saleData.authorEmail,
+          sales: 0,
+          paymentInfo: saleData.paymentInfo,
+          videoTitle: saleData.videoTitle,
+        };
+        groupedStatisticsByAuthor.push(res[saleData.videoId]);
+      }
+      res[saleData.videoId].amount += +saleData.amount.toFixed(2);
+      res[saleData.videoId].sales += 1;
+      return res;
+    }, {});
+
+    groupedStatisticsByAuthor = groupedStatisticsByAuthor.map(
+      (videoSaleData) => {
+        if (videoSaleData.advance.value) {
+          return {
+            ...videoSaleData,
+            amount: +(
+              videoSaleData.amount + videoSaleData.advance.value
+            ).toFixed(2),
+          };
+        } else {
+          return videoSaleData;
+        }
+      }
+    );
+
+    groupedStatisticsByAuthor = groupedStatisticsByAuthor.reduce(
+      (res, videoSaleData) => {
+        if (
+          videoSaleData.paymentInfo &&
+          ((videoSaleData.advance.paid &&
+            videoSaleData.advance.paid === false) ||
+            videoSaleData.amount > 75)
+        ) {
+          res['ready'].push(videoSaleData);
+        }
+        if (
+          !videoSaleData.paymentInfo &&
+          ((videoSaleData.advance.paid &&
+            videoSaleData.advance.paid === false) ||
+            videoSaleData.amount > 75)
+        ) {
+          res['noPayment'].push(videoSaleData);
+        }
+        if (videoSaleData.advance.value === 0 || videoSaleData.amount <= 75) {
+          res['other'].push(videoSaleData);
+        }
+        return res;
+      },
+      { ready: [], noPayment: [], other: [] }
+    );
+
+    console.log(groupedStatisticsByAuthor, 989);
 
     return res.status(200).json({
       status: 'success',
       message: "authors' sales statistics are obtained",
-      apiData: authorsSalesStatistics,
+      apiData:
+        group === 'ready'
+          ? groupedStatisticsByAuthor.ready
+          : group === 'noPayment'
+          ? groupedStatisticsByAuthor.noPayment
+          : groupedStatisticsByAuthor.other,
     });
   } catch (err) {
     console.log(err);
@@ -562,7 +654,7 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
     }, 0);
 
     const sumAmountResearcher = sales.reduce((acc, item) => {
-      return acc + item.amountToResearcher;
+      return acc + item.amountToResearchers;
     }, 0);
 
     const apiData = {
