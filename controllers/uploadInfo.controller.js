@@ -33,9 +33,21 @@ const updateVbFormByFormId = async (formId, objDB) => {
   );
 };
 
+const updateVbFormBy = async ({ updateBy, value, dataForUpdate }) => {
+  return await UploadInfo.updateOne(
+    {
+      [updateBy]: value,
+    },
+    {
+      $set: dataForUpdate,
+    }
+  );
+};
+
 module.exports = {
   findOne,
   findLastAddedVbForm,
   createNewVbForm,
   updateVbFormByFormId,
+  updateVbFormBy,
 };

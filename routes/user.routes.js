@@ -26,11 +26,18 @@ const {
 const {
   findOne,
   updateVbFormByFormId,
+  updateVbFormBy,
 } = require('../controllers/uploadInfo.controller');
 
 const { getCountLinksByUserEmail } = require('../controllers/links.controller');
 
-const { getSalesByUserId } = require('../controllers/sales.controller');
+const {
+  getSalesByUserId,
+  getAllSales,
+  updateSalesBy,
+  updateSaleBy,
+  findSaleById,
+} = require('../controllers/sales.controller');
 
 const { sendEmail } = require('../controllers/sendEmail.controller');
 
@@ -536,6 +543,128 @@ router.post('/topUpBalance', authMiddleware, async (req, res) => {
         allUsersWithRefreshStat,
         sumCountUsersValue,
       },
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
+
+router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
+  try {
+    const { vbFormUid, authorEmail, videoId, amountToTopUp } = req.body;
+
+    if (!vbFormUid || !authorEmail || !videoId) {
+      return res.status(200).json({
+        message: "Missing parameter to top up the author's balance",
+        status: 'warning',
+      });
+    }
+
+    const vbForm = await findOne({ searchBy: 'formId', param: vbFormUid });
+
+    if (!vbForm) {
+      return res.status(200).json({
+        message: `VB form with id "${vbFormUid}" not found`,
+        status: 'warning',
+      });
+    }
+
+    const author = await getUserBy({ param: 'email', value: authorEmail });
+
+    if (!author) {
+      return res.status(200).json({
+        message: `Author with email "${authorEmail}" not found`,
+        status: 'warning',
+      });
+    }
+
+    if (vbForm.sender.toString() !== author._id.toString()) {
+      return res.status(200).json({
+        message: `The sender of the vb form and the author differ`,
+        status: 'warning',
+      });
+    }
+
+    const salesWithThisVideoId = await getAllSales({ videoId });
+
+    if (!salesWithThisVideoId.length) {
+      return res.status(200).json({
+        message: `No sales to pay for`,
+        status: 'warning',
+      });
+    }
+
+    let totalAmount = 0;
+
+    if (author.amountPerVideo && vbForm.advancePaymentReceived === false) {
+      await updateVbFormBy({
+        updateBy: '_id',
+        value: vbForm._id,
+        dataForUpdate: { advancePaymentReceived: true },
+      });
+
+      totalAmount = author.amountPerVideo;
+    }
+
+    if (author.percentage) {
+      const authorEarnedAmountForVideoSales = salesWithThisVideoId.reduce(
+        (acc, sale) => acc + (sale.amount * author.percentage) / 100,
+        0
+      );
+
+      totalAmount += authorEarnedAmountForVideoSales;
+    }
+
+    if (Math.ceil(totalAmount) !== Math.ceil(amountToTopUp)) {
+      return res.status(200).json({
+        message: `The totals for the payment do not converge`,
+        status: 'warning',
+      });
+    }
+
+    const dataForUpdateSale = {
+      $set: { videoTitle: '777777777777777777777777777777777' },
+    };
+
+    const resAfterUpdateSale = await Promise.all(
+      salesWithThisVideoId.map(async (sale) => {
+        return await updateSaleBy({
+          updateBy: 'videoId',
+          value: +videoId,
+          dataForUpdate: dataForUpdateSale,
+        });
+      })
+    );
+
+    console.log(resAfterUpdateSale, 888);
+
+    //const dataForUpdateSales = {
+    //  $set: { 'vbFormInfo.paidFor': true },
+    //};
+
+    //await updateSalesBy({
+    //  updateBy: 'videoId',
+    //  value: videoId,
+    //  dataForUpdate: dataForUpdateSales,
+    //});
+
+    const dataForUpdateUser = {
+      lastPaymentDate: moment().toDate(),
+    };
+
+    const dataForUpdateUserInc = {
+      balance: amountToTopUp,
+    };
+
+    await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+
+    return res.status(200).json({
+      message: `the author's balance has been successfully replenished by $${amountToTopUp}`,
+      status: 'success',
     });
   } catch (err) {
     console.log(err);

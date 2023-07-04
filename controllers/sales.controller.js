@@ -51,10 +51,34 @@ const getSalesByUserId = async (userId, dateLimit) => {
   }).sort({ createdAt: -1 });
 };
 
+const updateSalesBy = async ({ updateBy, value, dataForUpdate }) => {
+  return Sales.updateMany(
+    {
+      [updateBy]: value,
+    },
+    {
+      dataForUpdate,
+    }
+  );
+};
+
+const updateSaleBy = async ({ updateBy, value, dataForUpdate }) => {
+  return Sales.updateOne(
+    {
+      [updateBy]: value,
+    },
+    {
+      dataForUpdate,
+    }
+  );
+};
+
 module.exports = {
   createNewSale,
   deleteSaleById,
   getAllSales,
   findSaleById,
   getSalesByUserId,
+  updateSalesBy,
+  updateSaleBy,
 };

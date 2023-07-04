@@ -292,6 +292,8 @@ router.post('/create', authMiddleware, async (req, res) => {
         const amount = +obj.amount;
         const amountForAllResearchers = obj.amountToResearchers;
 
+        console.log(obj.vbForm);
+
         const objDB = {
           researchers: users.map((el) => {
             return {
@@ -300,7 +302,12 @@ router.post('/create', authMiddleware, async (req, res) => {
             };
           }),
           videoId: obj.videoId,
-          ...(obj.vbForm && { vbForm: obj.vbForm }),
+          ...(obj.vbForm && {
+            vbFormInfo: {
+              uid: obj.vbForm,
+              paidFor: false,
+            },
+          }),
           amount,
           amountToResearchers: amountForAllResearchers,
           date: moment().format('ll'),
@@ -437,7 +444,10 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
 
     let authorsSalesStatistics = await Promise.all(
       salesRelatedToTheVbForm.map(async (sale) => {
-        const vbForm = await findOne({ searchBy: '_id', param: sale.vbForm });
+        const vbForm = await findOne({
+          searchBy: '_id',
+          param: sale.vbFormInfo.uid,
+        });
 
         const authorRelatedWithVbForm = await getUserBy({
           param: '_id',
@@ -469,6 +479,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
             authorRelatedWithVbForm.amountPerVideo && {
               advancePaymentReceived: vbForm.advancePaymentReceived,
             }),
+          vbFormUid: vbForm.formId,
         };
       })
     );
@@ -492,6 +503,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
           sales: 0,
           paymentInfo: saleData.paymentInfo,
           videoTitle: saleData.videoTitle,
+          vbFormUid: saleData.vbFormUid,
         };
         groupedStatisticsByAuthor.push(res[saleData.videoId]);
       }
@@ -540,8 +552,6 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
       },
       { ready: [], noPayment: [], other: [] }
     );
-
-    console.log(groupedStatisticsByAuthor, 989);
 
     return res.status(200).json({
       status: 'success',
@@ -618,6 +628,8 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
   const { saleId } = req.params;
 
   const { count, company, date, videoId, researcher } = req.query;
+
+  console.log(saleId, videoId);
 
   if (!saleId) {
     return res.status(200).json({

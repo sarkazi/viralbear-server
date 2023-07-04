@@ -5,7 +5,17 @@ const schema = new Schema(
       type: Number,
       required: true,
     },
-    vbForm: { type: Schema.Types.ObjectId, ref: 'UploadInfo' },
+    vbFormInfo: {
+      uid: {
+        type: Schema.Types.ObjectId,
+        ref: 'UploadInfo',
+        required: true,
+      },
+      paidFor: {
+        type: Boolean,
+        required: true,
+      },
+    },
     company: {
       type: String,
       required: true,

@@ -510,4 +510,6 @@ router.post(
   }
 );
 
+router.patch;
+
 module.exports = router;
