@@ -507,128 +507,136 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
       relatedToTheVbForm: true,
     });
 
-    let authorsSalesStatistics = await Promise.all(
-      salesRelatedToTheVbForm.map(async (sale) => {
-        const vbForm = await findOne({
-          searchBy: '_id',
-          param: sale.vbFormInfo.uid,
-        });
+    if (salesRelatedToTheVbForm.length) {
+      let authorsSalesStatistics = await Promise.all(
+        salesRelatedToTheVbForm.map(async (sale) => {
+          const vbForm = await findOne({
+            searchBy: '_id',
+            param: sale.vbFormInfo.uid,
+          });
 
-        const authorRelatedWithVbForm = await getUserBy({
-          param: '_id',
-          value: vbForm.sender,
-        });
+          const authorRelatedWithVbForm = await getUserBy({
+            param: '_id',
+            value: vbForm.sender,
+          });
 
-        return {
-          authorEmail: authorRelatedWithVbForm.email,
-          ...(authorRelatedWithVbForm.percentage && {
-            percentage: authorRelatedWithVbForm.percentage,
-          }),
-          ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
-            authorRelatedWithVbForm.amountPerVideo && {
-              advance: authorRelatedWithVbForm.amountPerVideo,
-              advancePaymentReceived: vbForm.advancePaymentReceived,
-            }),
-          videoId: sale.videoId,
-          videoTitle: sale.videoTitle,
-          paymentInfo:
-            authorRelatedWithVbForm.paymentInfo.variant === undefined
-              ? false
-              : true,
-          amount:
-            sale.vbFormInfo.paidFor === true
-              ? 0
-              : authorRelatedWithVbForm.percentage
-              ? (sale.amount * authorRelatedWithVbForm.percentage) / 100
-              : 0,
-
-          vbFormUid: vbForm.formId,
-        };
-      })
-    );
-
-    let groupedStatisticsByAuthor = [];
-
-    authorsSalesStatistics.reduce((res, saleData) => {
-      if (!res[saleData.videoId]) {
-        res[saleData.videoId] = {
-          videoId: saleData.videoId,
-          amount: 0,
-          authorEmail: saleData.authorEmail,
-          percentage: saleData.percentage ? saleData.percentage : 0,
-          advance: {
-            value: saleData.advance ? saleData.advance : 0,
-            ...(typeof saleData.advancePaymentReceived === 'boolean' && {
-              paid: saleData.advancePaymentReceived,
-            }),
-          },
-          authorEmail: saleData.authorEmail,
-          sales: 0,
-          paymentInfo: saleData.paymentInfo,
-          videoTitle: saleData.videoTitle,
-          vbFormUid: saleData.vbFormUid,
-        };
-        groupedStatisticsByAuthor.push(res[saleData.videoId]);
-      }
-      res[saleData.videoId].amount += +saleData.amount.toFixed(2);
-      res[saleData.videoId].sales += 1;
-      return res;
-    }, {});
-
-    groupedStatisticsByAuthor = groupedStatisticsByAuthor.map(
-      (videoSaleData) => {
-        if (
-          videoSaleData.advance.value &&
-          videoSaleData.advance.paid === false
-        ) {
           return {
-            ...videoSaleData,
-            amount: +(
-              videoSaleData.amount + videoSaleData.advance.value
-            ).toFixed(2),
+            authorEmail: authorRelatedWithVbForm.email,
+            ...(authorRelatedWithVbForm.percentage && {
+              percentage: authorRelatedWithVbForm.percentage,
+            }),
+            ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
+              authorRelatedWithVbForm.amountPerVideo && {
+                advance: authorRelatedWithVbForm.amountPerVideo,
+                advancePaymentReceived: vbForm.advancePaymentReceived,
+              }),
+            videoId: sale.videoId,
+            videoTitle: sale.videoTitle,
+            paymentInfo:
+              authorRelatedWithVbForm.paymentInfo.variant === undefined
+                ? false
+                : true,
+            amount:
+              sale.vbFormInfo.paidFor === true
+                ? 0
+                : authorRelatedWithVbForm.percentage
+                ? (sale.amount * authorRelatedWithVbForm.percentage) / 100
+                : 0,
+
+            vbFormUid: vbForm.formId,
           };
-        } else {
-          return videoSaleData;
-        }
-      }
-    );
+        })
+      );
 
-    groupedStatisticsByAuthor = groupedStatisticsByAuthor.reduce(
-      (res, videoSaleData) => {
-        if (
-          videoSaleData.paymentInfo &&
-          ((videoSaleData.advance.paid &&
-            videoSaleData.advance.paid === false) ||
-            videoSaleData.amount > 75)
-        ) {
-          res['ready'].push(videoSaleData);
+      let groupedStatisticsByAuthor = [];
+
+      authorsSalesStatistics.reduce((res, saleData) => {
+        if (!res[saleData.videoId]) {
+          res[saleData.videoId] = {
+            videoId: saleData.videoId,
+            amount: 0,
+            authorEmail: saleData.authorEmail,
+            percentage: saleData.percentage ? saleData.percentage : 0,
+            advance: {
+              value: saleData.advance ? saleData.advance : 0,
+              ...(typeof saleData.advancePaymentReceived === 'boolean' && {
+                paid: saleData.advancePaymentReceived,
+              }),
+            },
+            authorEmail: saleData.authorEmail,
+            sales: 0,
+            paymentInfo: saleData.paymentInfo,
+            videoTitle: saleData.videoTitle,
+            vbFormUid: saleData.vbFormUid,
+          };
+          groupedStatisticsByAuthor.push(res[saleData.videoId]);
         }
-        if (
-          !videoSaleData.paymentInfo &&
-          ((videoSaleData.advance.paid &&
-            videoSaleData.advance.paid === false) ||
-            videoSaleData.amount > 75)
-        ) {
-          res['noPayment'].push(videoSaleData);
-        }
-        if (videoSaleData.advance.value === 0 || videoSaleData.amount <= 75) {
-          res['other'].push(videoSaleData);
-        }
+        res[saleData.videoId].amount += +saleData.amount.toFixed(2);
+        res[saleData.videoId].sales += 1;
         return res;
-      },
-      { ready: [], noPayment: [], other: [] }
-    );
+      }, {});
 
-    return res.status(200).json({
-      status: 'success',
-      message: "authors' sales statistics are obtained",
-      apiData:
-        group === 'ready'
-          ? groupedStatisticsByAuthor.ready
-          : group === 'noPayment'
-          ? groupedStatisticsByAuthor.noPayment
-          : groupedStatisticsByAuthor.other,
-    });
+      groupedStatisticsByAuthor = groupedStatisticsByAuthor.map(
+        (videoSaleData) => {
+          if (
+            videoSaleData.advance.value &&
+            videoSaleData.advance.paid === false
+          ) {
+            return {
+              ...videoSaleData,
+              amount: +(
+                videoSaleData.amount + videoSaleData.advance.value
+              ).toFixed(2),
+            };
+          } else {
+            return videoSaleData;
+          }
+        }
+      );
+
+      groupedStatisticsByAuthor = groupedStatisticsByAuthor.reduce(
+        (res, videoSaleData) => {
+          if (
+            videoSaleData.paymentInfo &&
+            ((videoSaleData.advance.paid &&
+              videoSaleData.advance.paid === false) ||
+              videoSaleData.amount > 75)
+          ) {
+            res['ready'].push(videoSaleData);
+          }
+          if (
+            !videoSaleData.paymentInfo &&
+            ((videoSaleData.advance.paid &&
+              videoSaleData.advance.paid === false) ||
+              videoSaleData.amount > 75)
+          ) {
+            res['noPayment'].push(videoSaleData);
+          }
+          if (videoSaleData.advance.value === 0 || videoSaleData.amount <= 75) {
+            res['other'].push(videoSaleData);
+          }
+          return res;
+        },
+        { ready: [], noPayment: [], other: [] }
+      );
+
+      return res.status(200).json({
+        status: 'success',
+        message: "authors' sales statistics are obtained",
+        apiData:
+          group === 'ready'
+            ? groupedStatisticsByAuthor.ready
+            : group === 'noPayment'
+            ? groupedStatisticsByAuthor.noPayment
+            : groupedStatisticsByAuthor.other,
+      });
+    } else {
+      return res.status(200).json({
+        status: 'success',
+        message: "authors' sales statistics are obtained",
+        apiData: [],
+      });
+    }
   } catch (err) {
     console.log(err);
     return res.status(500).json({

@@ -283,16 +283,26 @@ router.post(
         const recordInTheDatabaseAboutTheMovedCard =
           await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-        const userWhoDraggedTheCard = await getUserBy({
-          parm: '_id',
-          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
-        });
+        let researchersListForCreatingVideo;
 
-        const researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: userWhoDraggedTheCard,
-            allResearchersList: researchersList,
+        if (recordInTheDatabaseAboutTheMovedCard) {
+          const userWhoDraggedTheCard = await getUserBy({
+            param: '_id',
+            value: recordInTheDatabaseAboutTheMovedCard.researcherId,
           });
+
+          researchersListForCreatingVideo =
+            await defineResearchersListForCreatingVideo({
+              mainResearcher: userWhoDraggedTheCard,
+              allResearchersList: researchersList,
+            });
+        } else {
+          researchersListForCreatingVideo =
+            await defineResearchersListForCreatingVideo({
+              mainResearcher: null,
+              allResearchersList: researchersList,
+            });
+        }
 
         const bodyForNewVideo = {
           videoId,
@@ -805,16 +815,26 @@ router.patch(
       const recordInTheDatabaseAboutTheMovedCard =
         await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-      const userWhoDraggedTheCard = await getUserBy({
-        param: '_id',
-        value: recordInTheDatabaseAboutTheMovedCard.researcherId,
-      });
+      let researchersListForCreatingVideo;
 
-      const researchersListForCreatingVideo =
-        await defineResearchersListForCreatingVideo({
-          mainResearcher: userWhoDraggedTheCard,
-          allResearchersList: researchersList,
+      if (recordInTheDatabaseAboutTheMovedCard) {
+        const userWhoDraggedTheCard = await getUserBy({
+          param: '_id',
+          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
         });
+
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: userWhoDraggedTheCard,
+            allResearchersList: researchersList,
+          });
+      } else {
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: null,
+            allResearchersList: researchersList,
+          });
+      }
 
       await updateVideoById(
         +videoId,
@@ -1207,16 +1227,26 @@ router.patch(
       const recordInTheDatabaseAboutTheMovedCard =
         await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-      const userWhoDraggedTheCard = await getUserBy({
-        param: '_id',
-        value: recordInTheDatabaseAboutTheMovedCard.researcherId,
-      });
+      let researchersListForCreatingVideo;
 
-      const researchersListForCreatingVideo =
-        await defineResearchersListForCreatingVideo({
-          mainResearcher: userWhoDraggedTheCard,
-          allResearchersList: researchersList,
+      if (recordInTheDatabaseAboutTheMovedCard) {
+        const userWhoDraggedTheCard = await getUserBy({
+          param: '_id',
+          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
         });
+
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: userWhoDraggedTheCard,
+            allResearchersList: researchersList,
+          });
+      } else {
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: null,
+            allResearchersList: researchersList,
+          });
+      }
 
       await updateVideoById(
         +videoId,
@@ -1632,16 +1662,26 @@ router.patch(
       const recordInTheDatabaseAboutTheMovedCard =
         await findTheRecordOfTheCardMovedToDone(trelloCardId);
 
-      const userWhoDraggedTheCard = await getUserBy({
-        param: '_id',
-        value: recordInTheDatabaseAboutTheMovedCard.researcherId,
-      });
+      let researchersListForCreatingVideo;
 
-      const researchersListForCreatingVideo =
-        await defineResearchersListForCreatingVideo({
-          mainResearcher: userWhoDraggedTheCard,
-          allResearchersList: researchersList,
+      if (recordInTheDatabaseAboutTheMovedCard) {
+        const userWhoDraggedTheCard = await getUserBy({
+          param: '_id',
+          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
         });
+
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: userWhoDraggedTheCard,
+            allResearchersList: researchersList,
+          });
+      } else {
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: null,
+            allResearchersList: researchersList,
+          });
+      }
 
       await updateVideoById(
         +videoId,

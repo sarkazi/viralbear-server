@@ -27,7 +27,7 @@ const getAllSales = async ({
       },
     }),
     ...(relatedToTheVbForm && {
-      vbForm: { $exists: true },
+      vbFormInfo: { $exists: true },
     }),
   })
     .limit(count ? count : null)
