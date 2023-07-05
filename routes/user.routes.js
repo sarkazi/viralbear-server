@@ -589,9 +589,16 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
       });
     }
 
-    const salesWithThisVideoId = await getAllSales({ videoId });
+    const salesWithThisVideoId = await getAllSales({
+      videoId,
+      paidFor: { 'vbFormInfo.paidFor': false },
+    });
 
-    if (!salesWithThisVideoId.length) {
+    if (
+      !salesWithThisVideoId.length &&
+      vbForm.advancePaymentReceived &&
+      vbForm.advancePaymentReceived === true
+    ) {
       return res.status(200).json({
         message: `No sales to pay for`,
         status: 'warning',
@@ -619,6 +626,8 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
       totalAmount += authorEarnedAmountForVideoSales;
     }
 
+    console.log(Math.ceil(totalAmount), Math.ceil(amountToTopUp));
+
     if (Math.ceil(totalAmount) !== Math.ceil(amountToTopUp)) {
       return res.status(200).json({
         message: `The totals for the payment do not converge`,
@@ -626,31 +635,17 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
       });
     }
 
-    const dataForUpdateSale = {
-      $set: { videoTitle: '777777777777777777777777777777777' },
-    };
+    if (salesWithThisVideoId.length) {
+      const dataForUpdateSales = {
+        $set: { 'vbFormInfo.paidFor': true },
+      };
 
-    const resAfterUpdateSale = await Promise.all(
-      salesWithThisVideoId.map(async (sale) => {
-        return await updateSaleBy({
-          updateBy: 'videoId',
-          value: +videoId,
-          dataForUpdate: dataForUpdateSale,
-        });
-      })
-    );
-
-    console.log(resAfterUpdateSale, 888);
-
-    //const dataForUpdateSales = {
-    //  $set: { 'vbFormInfo.paidFor': true },
-    //};
-
-    //await updateSalesBy({
-    //  updateBy: 'videoId',
-    //  value: videoId,
-    //  dataForUpdate: dataForUpdateSales,
-    //});
+      await updateSalesBy({
+        updateBy: 'videoId',
+        value: videoId,
+        dataForUpdate: dataForUpdateSales,
+      });
+    }
 
     const dataForUpdateUser = {
       lastPaymentDate: moment().toDate(),

@@ -377,7 +377,19 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       relatedToTheVbForm,
     } = req.query;
 
+    if (
+      relatedToTheVbForm &&
+      typeof JSON.parse(relatedToTheVbForm) === 'boolean' &&
+      !videoId
+    ) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'missing parameter "videoId"',
+      });
+    }
+
     let userId = null;
+    let sumAmountAuthor = null;
 
     if (researcher) {
       const user = await getUserBy({ param: 'name', value: researcher });
@@ -404,6 +416,54 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         }),
     });
 
+    if (
+      relatedToTheVbForm &&
+      typeof JSON.parse(relatedToTheVbForm) === 'boolean' &&
+      JSON.parse(relatedToTheVbForm) === true
+    ) {
+      sales = await Promise.all(
+        sales.map(async (sale) => {
+          const vbForm = await findOne({
+            searchBy: '_id',
+            param: sale._doc.vbFormInfo.uid,
+          });
+
+          const authorRelatedWithVbForm = await getUserBy({
+            param: '_id',
+            value: vbForm.sender,
+          });
+
+          return {
+            ...sale._doc,
+            authorEmail: authorRelatedWithVbForm.email,
+            advance: {
+              value: authorRelatedWithVbForm.amountPerVideo
+                ? authorRelatedWithVbForm.amountPerVideo
+                : 0,
+              paidFor:
+                typeof vbForm.advancePaymentReceived === 'boolean' &&
+                authorRelatedWithVbForm.amountPerVideo
+                  ? vbForm.advancePaymentReceived
+                  : '-',
+            },
+            percentage: authorRelatedWithVbForm.percentage
+              ? authorRelatedWithVbForm.percentage
+              : 0,
+            authorEarnings: authorRelatedWithVbForm.percentage
+              ? +(
+                  (sale.amount * authorRelatedWithVbForm.percentage) /
+                  100
+                ).toFixed(2)
+              : 0,
+          };
+        })
+      );
+
+      sumAmountAuthor = sales.reduce((acc, item) => {
+        return acc + item.authorEarnings;
+      }, 0);
+    }
+
     const sumAmount = sales.reduce((acc, item) => {
       return acc + item.amount;
     }, 0);
@@ -412,10 +472,15 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       return acc + item.amountToResearchers;
     }, 0);
 
+    console.log(sales, sumAmountAuthor);
+
     const apiData = {
       sales,
-      sumAmount: sumAmount.toFixed(2),
-      sumAmountResearcher: sumAmountResearcher.toFixed(2),
+      sumAmount: +sumAmount.toFixed(2),
+      sumAmountResearcher: +sumAmountResearcher.toFixed(2),
+      ...(typeof sumAmountAuthor === 'number' && {
+        sumAmountAuthor: +sumAmountAuthor.toFixed(2),
+      }),
     };
 
     return res.status(200).json({
@@ -461,10 +526,8 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
           }),
           ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
             authorRelatedWithVbForm.amountPerVideo && {
-              advance:
-                vbForm.advancePaymentReceived === false
-                  ? authorRelatedWithVbForm.amountPerVideo
-                  : 0,
+              advance: authorRelatedWithVbForm.amountPerVideo,
+              advancePaymentReceived: vbForm.advancePaymentReceived,
             }),
           videoId: sale.videoId,
           videoTitle: sale.videoTitle,
@@ -472,13 +535,13 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
             authorRelatedWithVbForm.paymentInfo.variant === undefined
               ? false
               : true,
-          amount: authorRelatedWithVbForm.percentage
-            ? (sale.amount * authorRelatedWithVbForm.percentage) / 100
-            : 0,
-          ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
-            authorRelatedWithVbForm.amountPerVideo && {
-              advancePaymentReceived: vbForm.advancePaymentReceived,
-            }),
+          amount:
+            sale.vbFormInfo.paidFor === true
+              ? 0
+              : authorRelatedWithVbForm.percentage
+              ? (sale.amount * authorRelatedWithVbForm.percentage) / 100
+              : 0,
+
           vbFormUid: vbForm.formId,
         };
       })
@@ -514,7 +577,10 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
 
     groupedStatisticsByAuthor = groupedStatisticsByAuthor.map(
       (videoSaleData) => {
-        if (videoSaleData.advance.value) {
+        if (
+          videoSaleData.advance.value &&
+          videoSaleData.advance.paid === false
+        ) {
           return {
             ...videoSaleData,
             amount: +(

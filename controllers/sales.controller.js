@@ -13,11 +13,13 @@ const getAllSales = async ({
   videoId,
   userId,
   relatedToTheVbForm,
+  paidFor,
 }) => {
   return await Sales.find({
     ...(userId && { researchers: { $elemMatch: { id: userId } } }),
     ...(company && { company }),
     ...(videoId && { videoId }),
+    ...(paidFor && paidFor),
     ...(date && {
       createdAt: {
         $gte: date[0],
@@ -56,9 +58,7 @@ const updateSalesBy = async ({ updateBy, value, dataForUpdate }) => {
     {
       [updateBy]: value,
     },
-    {
-      dataForUpdate,
-    }
+    dataForUpdate
   );
 };
 
@@ -67,9 +67,7 @@ const updateSaleBy = async ({ updateBy, value, dataForUpdate }) => {
     {
       [updateBy]: value,
     },
-    {
-      dataForUpdate,
-    }
+    dataForUpdate
   );
 };
 
