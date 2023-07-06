@@ -683,6 +683,13 @@ const findById = async (id) => {
   return await Video.findOne({ 'videoData.videoId': +id });
 };
 
+const getAllVideos = async ({ vbCode, isApproved }) => {
+  return Video.find({
+    ...(vbCode && vbCode),
+    ...(isApproved && isApproved),
+  });
+};
+
 const addCommentForFixed = async (req, res) => {
   try {
     const { comment, videoId } = req.body;
@@ -1103,6 +1110,10 @@ const convertingVideoToHorizontal = async (video, userId) => {
   return response;
 };
 
+const findVideoByValue = async ({ searchBy, value }) => {
+  return Video.findOne({ [searchBy]: value });
+};
+
 module.exports = {
   findLastVideo,
   findByIsBrandSafe,
@@ -1131,4 +1142,6 @@ module.exports = {
   findByNotApproved,
   findVideoByTitle,
   getCountAcquiredVideoByUserEmail,
+  getAllVideos,
+  findVideoByValue,
 };

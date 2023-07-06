@@ -43,6 +43,8 @@ const { sendEmail } = require('../controllers/sendEmail.controller');
 
 const {
   getCountAcquiredVideoByUserEmail,
+  getAllVideos,
+  findVideoByValue,
 } = require('../controllers/video.controller');
 
 router.get('/getAll', authMiddleware, async (req, res) => {
@@ -555,87 +557,139 @@ router.post('/topUpBalance', authMiddleware, async (req, res) => {
 
 router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
   try {
-    const { vbFormUid, authorEmail, videoId, amountToTopUp } = req.body;
+    const { videoId, amountToTopUp } = req.body;
+    const { paymentFor } = req.query;
 
-    if (!vbFormUid || !authorEmail || !videoId) {
+    console.log(videoId, amountToTopUp, paymentFor);
+
+    if (!paymentFor) {
+      return res.status(200).json({
+        message: 'missing parameter "paymentFor"',
+        status: 'warning',
+      });
+    }
+
+    if (!videoId) {
       return res.status(200).json({
         message: "Missing parameter to top up the author's balance",
         status: 'warning',
       });
     }
 
-    const vbForm = await findOne({ searchBy: 'formId', param: vbFormUid });
+    const video = await findVideoByValue({
+      searchBy: 'videoData.videoId',
+      value: videoId,
+    });
+
+    if (!video) {
+      return res.status(200).json({
+        message: `Video with id "${videoId}" not found`,
+        status: 'warning',
+      });
+    }
+
+    const vbForm = await findOne({
+      searchBy: 'formId',
+      param: video.uploadData.vbCode,
+    });
 
     if (!vbForm) {
       return res.status(200).json({
-        message: `VB form with id "${vbFormUid}" not found`,
+        message: `VB form with id "${video.uploadData.vbCode}" not found`,
         status: 'warning',
       });
     }
 
-    const author = await getUserBy({ param: 'email', value: authorEmail });
+    const author = await getUserBy({ param: '_id', value: vbForm.sender });
 
     if (!author) {
       return res.status(200).json({
-        message: `Author with email "${authorEmail}" not found`,
+        message: `Author with id "${vbForm.sender}" not found`,
         status: 'warning',
       });
     }
 
-    if (vbForm.sender.toString() !== author._id.toString()) {
-      return res.status(200).json({
-        message: `The sender of the vb form and the author differ`,
-        status: 'warning',
-      });
-    }
+    if (paymentFor === 'advance') {
+      if (author.amountPerVideo && vbForm.advancePaymentReceived === true) {
+        return res.status(200).json({
+          message: `An advance has already been paid for this vb form`,
+          status: 'warning',
+        });
+      }
 
-    const salesWithThisVideoId = await getAllSales({
-      videoId,
-      paidFor: { 'vbFormInfo.paidFor': false },
-    });
+      if (
+        !author.amountPerVideo ||
+        typeof vbForm.advancePaymentReceived !== 'boolean'
+      ) {
+        return res.status(200).json({
+          message: `There is no advance payment for this vb form`,
+          status: 'warning',
+        });
+      }
 
-    if (
-      !salesWithThisVideoId.length &&
-      vbForm.advancePaymentReceived &&
-      vbForm.advancePaymentReceived === true
-    ) {
-      return res.status(200).json({
-        message: `No sales to pay for`,
-        status: 'warning',
-      });
-    }
+      advanceAmount = author.amountPerVideo;
 
-    let totalAmount = 0;
+      if (Math.ceil(advanceAmount) !== Math.ceil(amountToTopUp)) {
+        return res.status(200).json({
+          message: `The totals for the payment do not converge`,
+          status: 'warning',
+        });
+      }
 
-    if (author.amountPerVideo && vbForm.advancePaymentReceived === false) {
       await updateVbFormBy({
         updateBy: '_id',
         value: vbForm._id,
         dataForUpdate: { advancePaymentReceived: true },
       });
 
-      totalAmount = author.amountPerVideo;
+      const dataForUpdateUser = {
+        lastPaymentDate: moment().toDate(),
+      };
+
+      const dataForUpdateUserInc = {
+        balance: amountToTopUp,
+      };
+
+      await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+
+      return res.status(200).json({
+        message: `Percentage of $${advanceAmount} was credited to the author's balance`,
+        status: 'success',
+      });
     }
 
-    if (author.percentage) {
-      const authorEarnedAmountForVideoSales = salesWithThisVideoId.reduce(
+    if (paymentFor === 'percent') {
+      const salesWithThisVideoId = await getAllSales({
+        videoId,
+        paidFor: { 'vbFormInfo.paidFor': false },
+      });
+
+      if (!salesWithThisVideoId.length) {
+        return res.status(200).json({
+          message: `The video sales list is empty`,
+          status: 'warning',
+        });
+      }
+
+      if (!author.percentage) {
+        return res.status(200).json({
+          message: `There is no percentage provided for this vb form`,
+          status: 'warning',
+        });
+      }
+
+      const percentAmount = salesWithThisVideoId.reduce(
         (acc, sale) => acc + (sale.amount * author.percentage) / 100,
         0
       );
 
-      totalAmount += authorEarnedAmountForVideoSales;
-    }
+      if (Math.ceil(percentAmount) !== Math.ceil(amountToTopUp)) {
+        return res.status(200).json({
+          message: `The totals for the payment do not converge`,
+          status: 'warning',
+        });
+      }
 
-    console.log(Math.ceil(totalAmount), Math.ceil(amountToTopUp));
-
-    if (Math.ceil(totalAmount) !== Math.ceil(amountToTopUp)) {
-      return res.status(200).json({
-        message: `The totals for the payment do not converge`,
-        status: 'warning',
-      });
-    }
-
-    if (salesWithThisVideoId.length) {
       const dataForUpdateSales = {
         $set: { 'vbFormInfo.paidFor': true },
       };
@@ -645,22 +699,107 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
         value: videoId,
         dataForUpdate: dataForUpdateSales,
       });
+
+      const dataForUpdateUser = {
+        lastPaymentDate: moment().toDate(),
+      };
+
+      const dataForUpdateUserInc = {
+        balance: amountToTopUp,
+      };
+
+      await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+
+      return res.status(200).json({
+        message: `Percentage of $${percentAmount} was credited to the author's balance`,
+        status: 'success',
+      });
     }
 
-    const dataForUpdateUser = {
-      lastPaymentDate: moment().toDate(),
-    };
+    if (paymentFor === 'mixed') {
+      const salesWithThisVideoId = await getAllSales({
+        videoId,
+        paidFor: { 'vbFormInfo.paidFor': false },
+      });
 
-    const dataForUpdateUserInc = {
-      balance: amountToTopUp,
-    };
+      if (!salesWithThisVideoId.length) {
+        return res.status(200).json({
+          message: `The video sales list is empty`,
+          status: 'warning',
+        });
+      }
 
-    await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+      if (!author.percentage) {
+        return res.status(200).json({
+          message: `There is no percentage provided for this vb form`,
+          status: 'warning',
+        });
+      }
 
-    return res.status(200).json({
-      message: `the author's balance has been successfully replenished by $${amountToTopUp}`,
-      status: 'success',
-    });
+      if (author.amountPerVideo && vbForm.advancePaymentReceived === true) {
+        return res.status(200).json({
+          message: `An advance has already been paid for this vb form`,
+          status: 'warning',
+        });
+      }
+
+      if (
+        !author.amountPerVideo ||
+        typeof vbForm.advancePaymentReceived !== 'boolean'
+      ) {
+        return res.status(200).json({
+          message: `There is no advance payment for this vb form`,
+          status: 'warning',
+        });
+      }
+
+      advanceAmount = author.amountPerVideo;
+
+      percentAmount = salesWithThisVideoId.reduce(
+        (acc, sale) => acc + (sale.amount * author.percentage) / 100,
+        0
+      );
+
+      if (
+        Math.ceil(advanceAmount + percentAmount) !== Math.ceil(amountToTopUp)
+      ) {
+        return res.status(200).json({
+          message: `The totals for the payment do not converge`,
+          status: 'warning',
+        });
+      }
+
+      await updateVbFormBy({
+        updateBy: '_id',
+        value: vbForm._id,
+        dataForUpdate: { advancePaymentReceived: true },
+      });
+
+      const dataForUpdateUser = {
+        lastPaymentDate: moment().toDate(),
+      };
+
+      const dataForUpdateUserInc = {
+        balance: amountToTopUp,
+      };
+
+      await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+
+      const dataForUpdateSales = {
+        $set: { 'vbFormInfo.paidFor': true },
+      };
+
+      await updateSalesBy({
+        updateBy: 'videoId',
+        value: videoId,
+        dataForUpdate: dataForUpdateSales,
+      });
+
+      return res.status(200).json({
+        message: `An advance of $${advanceAmount} and a percentage of $${percentAmount} was credited to the author's balance`,
+        status: 'success',
+      });
+    }
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -690,6 +829,162 @@ router.post('/findByValueList', async (req, res) => {
       message: 'Server side error',
       status: 'error',
     });
+  }
+});
+
+router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
+  try {
+    const { group } = req.query;
+
+    const videosWithVbCode = await getAllVideos({
+      vbCode: {
+        'uploadData.vbCode': { $exists: true, $ne: '' },
+      },
+      isApproved: { isApproved: false },
+    });
+
+    if (videosWithVbCode.length) {
+      let authorsVideoStatistics = await Promise.all(
+        videosWithVbCode.map(async (video) => {
+          const vbForm = await findOne({
+            searchBy: 'formId',
+            param: video.uploadData.vbCode,
+          });
+
+          const authorRelatedWithVbForm = await getUserBy({
+            param: '_id',
+            value: vbForm.sender,
+          });
+
+          const salesOfThisVideo = await getAllSales({
+            videoId: video.videoData.videoId,
+          });
+
+          let percentAmount = 0;
+          let advanceAmount = 0;
+          let toBePaid = 0;
+          let totalBalance = 0;
+
+          if (
+            authorRelatedWithVbForm.amountPerVideo &&
+            typeof vbForm.advancePaymentReceived === 'boolean' &&
+            !vbForm.advancePaymentReceived
+          ) {
+            advanceAmount = authorRelatedWithVbForm.amountPerVideo;
+            toBePaid = authorRelatedWithVbForm.amountPerVideo;
+          }
+
+          if (
+            authorRelatedWithVbForm.amountPerVideo &&
+            typeof vbForm.advancePaymentReceived === 'boolean' &&
+            vbForm.advancePaymentReceived
+          ) {
+            totalBalance = authorRelatedWithVbForm.amountPerVideo * -1;
+          }
+
+          if (authorRelatedWithVbForm.percentage) {
+            salesOfThisVideo.map((sale) => {
+              if (sale.vbFormInfo.paidFor === false) {
+                percentAmount +=
+                  (sale.amount * authorRelatedWithVbForm.percentage) / 100;
+                toBePaid +=
+                  (sale.amount * authorRelatedWithVbForm.percentage) / 100;
+              } else {
+                totalBalance +=
+                  (sale.amount * authorRelatedWithVbForm.percentage) / 100;
+              }
+            });
+          }
+
+          return {
+            authorEmail: authorRelatedWithVbForm.email,
+            percentage: authorRelatedWithVbForm.percentage
+              ? authorRelatedWithVbForm.percentage
+              : 0,
+            advance: {
+              value:
+                typeof vbForm.advancePaymentReceived === 'boolean' &&
+                authorRelatedWithVbForm.amountPerVideo
+                  ? authorRelatedWithVbForm.amountPerVideo
+                  : 0,
+              paid:
+                typeof vbForm.advancePaymentReceived !== 'boolean' &&
+                !authorRelatedWithVbForm.amountPerVideo
+                  ? '-'
+                  : vbForm.advancePaymentReceived === true
+                  ? 'yes'
+                  : 'no',
+            },
+            videoId: video.videoData.videoId,
+            videoTitle: video.videoData.title,
+            paymentInfo:
+              authorRelatedWithVbForm.paymentInfo.variant === undefined
+                ? 'no'
+                : 'yes',
+            amount: {
+              percent: +percentAmount.toFixed(2),
+              advance: +advanceAmount.toFixed(2),
+              toBePaid: +toBePaid.toFixed(2),
+              totalBalance: +totalBalance.toFixed(2),
+            },
+            vbFormUid: vbForm.formId,
+            salesCount: salesOfThisVideo.length,
+          };
+        })
+      );
+
+      authorsVideoStatistics = authorsVideoStatistics.reduce(
+        (res, videoData) => {
+          if (
+            videoData.paymentInfo &&
+            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
+          ) {
+            res['ready'].push(videoData);
+          }
+          if (
+            !videoData.paymentInfo &&
+            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
+          ) {
+            res['noPayment'].push(videoData);
+          }
+          if (
+            videoData.advance.value === 0 ||
+            videoData.amount.toBePaid <= 75
+          ) {
+            res['other'].push(videoData);
+          }
+          return res;
+        },
+        { ready: [], noPayment: [], other: [] }
+      );
+
+      console.log(authorsVideoStatistics, 89988);
+
+      const defineApiData = () => {
+        switch (group) {
+          case 'ready':
+            return authorsVideoStatistics.ready;
+          case 'noPayment':
+            return authorsVideoStatistics.noPayment;
+          case 'other':
+            return authorsVideoStatistics.other;
+        }
+      };
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Statistics on authors have been successfully collected',
+        apiData: defineApiData(),
+      });
+    } else {
+      return res.status(200).json({
+        status: 'success',
+        message: 'Statistics on authors have been successfully collected',
+        apiData: [],
+      });
+    }
+  } catch (err) {
+    console.log(err);
   }
 });
 

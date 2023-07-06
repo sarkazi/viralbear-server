@@ -48,6 +48,7 @@ const {
   updateVideoById,
   deleteVideoById,
   writingFileToDisk,
+  getAllVideos,
 } = require('../controllers/video.controller');
 
 const {
@@ -73,6 +74,7 @@ const socketInstance = require('../socket.instance');
 const {
   defineResearchersListForCreatingVideo,
 } = require('../utils/defineResearchersListForCreatingVideo');
+const { getAllSales } = require('../controllers/sales.controller');
 
 const storage = multer.memoryStorage();
 
