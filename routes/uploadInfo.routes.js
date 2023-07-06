@@ -184,12 +184,14 @@ router.post(
           name: `${name} ${lastName}`,
           email,
           role: 'author',
-          ...(authorLinkWithThisHash.percentage && {
-            percentage: authorLinkWithThisHash.percentage,
-          }),
-          ...(authorLinkWithThisHash.advancePayment && {
-            amountPerVideo: authorLinkWithThisHash.advancePayment,
-          }),
+          ...(authorLinkWithThisHash &&
+            authorLinkWithThisHash.percentage && {
+              percentage: authorLinkWithThisHash.percentage,
+            }),
+          ...(authorLinkWithThisHash &&
+            authorLinkWithThisHash?.advancePayment && {
+              amountPerVideo: authorLinkWithThisHash?.advancePayment,
+            }),
           balance: 0,
           activatedTheAccount: false,
           specifiedPaymentDetails: false,
@@ -267,9 +269,10 @@ router.post(
         over18YearOld,
         agreedWithTerms,
         didNotGiveRights,
-        ...(authorLinkWithThisHash.advancePayment && {
-          advancePaymentReceived: false,
-        }),
+        ...(authorLinkWithThisHash &&
+          authorLinkWithThisHash.advancePayment && {
+            advancePaymentReceived: false,
+          }),
         formId: `VB${vbCode}`,
         ip,
         submittedDate: moment().utc(),
@@ -410,7 +413,7 @@ router.post(
       }
 
       const refForm = await findOneRefFormByParam('_id', vbForm.refFormId);
-      const referer = await getUserById(refForm.researcher);
+      const referer = await getUserById(refForm?.researcher);
 
       const resStorage = await new Promise(async (resolve, reject) => {
         await uploadFileToStorage(
