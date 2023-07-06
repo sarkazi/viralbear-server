@@ -958,8 +958,6 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
         { ready: [], noPayment: [], other: [] }
       );
 
-      console.log(authorsVideoStatistics, 89988);
-
       const defineApiData = () => {
         switch (group) {
           case 'ready':
