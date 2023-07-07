@@ -18,7 +18,10 @@ const calcOfIncrement = (prevLine) => {
   if (!prevLine) {
     return '001';
   } else {
-    const prevFormId = prevLine?.formId?.split('B')[1];
+    console.log(prevLine.formId, 9898);
+
+    const prevFormId = prevLine.formId.split('B')[1];
+
     return utilIncFormId(prevFormId);
   }
 };

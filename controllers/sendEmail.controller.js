@@ -13,7 +13,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     noSubmitAnywhere,
     didNotGiveRights,
     ip,
-    submittedDate,
+    createdAt,
     advancePayment,
     percentage,
     researcherEmail,
@@ -69,7 +69,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
    <b>Percentage: ${percentage ? percentage : '-'}</b><br>
    <b>Researcher email: ${researcherEmail ? researcherEmail : '-'}</b><br>
    <b>IP: ${ip}</b><br>
-   <b>Submitte date: ${submittedDate}</b><br>
+   <b>Submitte date: ${createdAt}</b><br>
    <b>Contract: ${agreementLink}</b><br>
    <b>Form id: ${formId}</b><br>
 

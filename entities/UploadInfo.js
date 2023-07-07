@@ -80,12 +80,8 @@ const schema = new Schema(
       ref: 'AuthorLink',
       required: false,
     },
-    submittedDate: {
-      type: String,
-      required: true,
-    },
   },
-  { timestamps: false }
+  { timestamps: true }
 );
 
 module.exports = model('UploadInfo', schema);

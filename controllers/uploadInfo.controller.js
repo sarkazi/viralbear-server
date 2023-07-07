@@ -11,7 +11,7 @@ const findOne = async (objDB) => {
 
 const findLastAddedVbForm = async () => {
   const lastAddedVbForm = await UploadInfo.findOne({})
-    .sort({ submittedDate: -1 })
+    .sort({ createdAt: -1 })
     .limit(1)
     .select({ formId: true });
 

@@ -202,7 +202,11 @@ router.post(
 
       const lastAddedVbForm = await findLastAddedVbForm();
 
+      console.log(lastAddedVbForm, 8988989);
+
       const vbCode = calcVbCode(lastAddedVbForm);
+
+      console.log(vbCode, 8988989);
 
       let videoLinks = [];
 
@@ -275,7 +279,6 @@ router.post(
           }),
         formId: `VB${vbCode}`,
         ip,
-        submittedDate: moment().utc(),
         ...(formHash && { refFormId: authorLinkWithThisHash._id }),
       };
 
@@ -412,8 +415,13 @@ router.post(
         });
       }
 
+      let referer = null;
+
       const refForm = await findOneRefFormByParam('_id', vbForm.refFormId);
-      const referer = await getUserById(refForm?.researcher);
+
+      if (refForm) {
+        referer = await getUserById(refForm?.researcher);
+      }
 
       const resStorage = await new Promise(async (resolve, reject) => {
         await uploadFileToStorage(
@@ -455,7 +463,7 @@ router.post(
         noSubmitAnywhere: vbForm.noSubmitAnywhere,
         didNotGiveRights: vbForm.didNotGiveRights,
         ip: vbForm.ip,
-        submittedDate: vbForm.submittedDate,
+        createdAt: vbForm.createdAt,
         ...(refForm &&
           refForm.advancePayment && { advancePayment: refForm.advancePayment }),
         ...(refForm &&
@@ -467,8 +475,6 @@ router.post(
         formId: vbForm.formId,
         refForm: vbForm.refFormId ? true : false,
       };
-
-      console.log(dataForSendingMainInfo, 8888);
 
       const dataForSendingAgreement = {
         name: author.name,
