@@ -9,11 +9,11 @@ const schema = new Schema(
       uid: {
         type: Schema.Types.ObjectId,
         ref: 'UploadInfo',
-        required: true,
+        required: false,
       },
       paidFor: {
         type: Boolean,
-        required: true,
+        required: false,
       },
     },
     company: {
@@ -52,7 +52,7 @@ const schema = new Schema(
       type: Boolean,
       required: true,
     },
-    amountToResearchers: {
+    amountToResearcher: {
       type: Number,
       required: true,
     },

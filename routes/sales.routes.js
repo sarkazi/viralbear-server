@@ -156,7 +156,9 @@ router.post(
               } else {
                 const videoResearchers = videoDb.trelloData.researchers;
                 const amount = +(+obj.amount).toFixed(2);
-                const amountToResearchers = +(amount * 0.4).toFixed(2);
+                const amountToResearcher = videoResearchers.length
+                  ? +(amount * (0.4 / videoResearchers.length)).toFixed(2)
+                  : 0;
 
                 return {
                   researchers: videoResearchers.map((researcher) => {
@@ -173,7 +175,7 @@ router.post(
                   amount,
                   videoTitle: videoDb.videoData.title,
                   company: resCompany,
-                  amountToResearchers: amountToResearchers,
+                  amountToResearcher: amountToResearcher,
                   date: moment().toString(),
                   status: 'found',
                   author: null,
@@ -205,7 +207,9 @@ router.post(
               } else {
                 const videoResearchers = videoDb.trelloData.researchers;
                 const amount = +(+obj.amount).toFixed(2);
-                const amountToResearchers = +(amount * 0.4).toFixed(2);
+                const amountToResearcher = videoResearchers.length
+                  ? +(amount * (0.4 / videoResearchers.length)).toFixed(2)
+                  : 0;
 
                 return {
                   researchers: videoResearchers.map((researcher) => {
@@ -222,7 +226,7 @@ router.post(
                   amount,
                   videoTitle: obj.title,
                   company: resCompany,
-                  amountToResearchers: amountToResearchers,
+                  amountToResearcher: amountToResearcher,
                   date: moment().format('ll'),
                   status: 'found',
                   author: null,
@@ -290,7 +294,7 @@ router.post('/create', authMiddleware, async (req, res) => {
         });
 
         const amount = +obj.amount;
-        const amountForAllResearchers = obj.amountToResearchers;
+        const amountToResearcher = obj.amountToResearcher;
 
         console.log(obj.vbForm);
 
@@ -309,7 +313,7 @@ router.post('/create', authMiddleware, async (req, res) => {
             },
           }),
           amount,
-          amountToResearchers: amountForAllResearchers,
+          amountToResearcher,
           date: moment().format('ll'),
           ...(obj.usage && { usage: obj.usage }),
           manual: obj.saleId ? false : true,
@@ -461,6 +465,8 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         })
       );
 
+      console.log(sales, 87878);
+
       sumAmountAuthor = sales.reduce((acc, item) => {
         return acc + item.authorEarnings;
       }, 0);
@@ -471,10 +477,8 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     }, 0);
 
     const sumAmountResearcher = sales.reduce((acc, item) => {
-      return acc + item.amountToResearchers;
+      return acc + item.amountToResearcher;
     }, 0);
-
-    console.log(sales, sumAmountAuthor);
 
     const apiData = {
       sales,
@@ -742,7 +746,7 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
     }, 0);
 
     const sumAmountResearcher = sales.reduce((acc, item) => {
-      return acc + item.amountToResearchers;
+      return acc + item.amountToResearcher;
     }, 0);
 
     const apiData = {

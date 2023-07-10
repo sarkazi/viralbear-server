@@ -23,6 +23,8 @@ const {
   getUserBy,
 } = require('../controllers/user.controller.js');
 
+const { generateTokens } = require('../controllers/auth.controllers');
+
 const {
   findOne,
   updateVbFormByFormId,
@@ -49,14 +51,14 @@ const {
 
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { me, role, canBeAssigned, fieldsInTheResponse } = req.query;
+    const { me, roles, canBeAssigned, fieldsInTheResponse } = req.query;
 
     const userId = req.user.id;
 
     let users = await getAllUsers({
       me: JSON.parse(me),
       userId,
-      role,
+      roles,
       ...(canBeAssigned !== undefined &&
         (JSON.parse(canBeAssigned) === true ||
           JSON.parse(canBeAssigned) === false) && {
@@ -263,9 +265,12 @@ router.post('/authorRegister', async (req, res) => {
 
     await updateUser(vbForm.sender, objForUpdateUAuthor, {});
 
+    const { accessToken, refreshToken } = generateTokens(candidate);
+
     return res.status(200).json({
-      message: 'Congratulations on registering on the service!',
+      apiData: { accessToken, refreshToken, role: candidate.role },
       status: 'success',
+      message: 'Congratulations on registering on the service!',
     });
   } catch (err) {
     console.log(err);
@@ -414,17 +419,13 @@ router.patch(
       console.log(salesDateLimit, 867878);
 
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
-        return +(
-          acc +
-          sale.amountToResearchers / sale.researchers.length
-        ).toFixed(2);
+        return +(acc + sale.amountToResearcher).toFixed(2);
       }, 0);
 
       const sales = await getSalesByUserId(user._id, null);
 
       const earnedForYourself = sales.reduce(
-        (a, sale) =>
-          a + +(sale.amountToResearchers / sale?.researchers?.length),
+        (a, sale) => a + +sale.amountToResearcher,
         0
       );
 

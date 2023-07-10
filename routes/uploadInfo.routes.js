@@ -18,6 +18,8 @@ const {
   getUserByEmail,
   createUser,
   getUserById,
+  getAllUsers,
+  getUserBy,
 } = require('../controllers/user.controller');
 
 const {
@@ -56,8 +58,8 @@ router.patch('/addAdditionalInfo', async (req, res) => {
     } = req.body;
 
     if (!formId) {
-      return res.status(404).json({
-        message: 'Responses can only be uploaded once',
+      return res.status(200).json({
+        message: "It looks like you've already filled out this form...",
         status: 'warning',
       });
     }
@@ -78,7 +80,7 @@ router.patch('/addAdditionalInfo', async (req, res) => {
     const vbForm = await findOne(formId.replace('VB', ''));
 
     if (!vbForm) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: `No such form was found`,
         status: 'warning',
       });
@@ -158,6 +160,18 @@ router.post(
         });
       }
 
+      const users = await getAllUsers({
+        roles: ['worker', 'admin', 'editor'],
+        fieldsInTheResponse: ['email'],
+      });
+
+      if (users.find((value) => value.email === email)) {
+        return res.status(200).json({
+          message: 'this email is not allowed',
+          status: 'warning',
+        });
+      }
+
       const authorLinkWithThisHash = await findOneRefFormByParam(
         'formHash',
         formHash
@@ -202,11 +216,7 @@ router.post(
 
       const lastAddedVbForm = await findLastAddedVbForm();
 
-      console.log(lastAddedVbForm, 8988989);
-
       const vbCode = calcVbCode(lastAddedVbForm);
-
-      console.log(vbCode, 8988989);
 
       let videoLinks = [];
 
@@ -306,6 +316,9 @@ router.post(
             authorLinkWithThisHash.percentage && {
               percentage: authorLinkWithThisHash.percentage,
             }),
+          ...(authorLinkWithThisHash && {
+            exclusivity: authorLinkWithThisHash.exclusivity,
+          }),
         },
         status: 'success',
       });
@@ -345,10 +358,25 @@ router.get('/findOne', async (req, res) => {
       });
     }
 
+    const refForm = form.refFormId
+      ? await findOneRefFormByParam({ searchBy: '_id', value: form.refFormId })
+      : null;
+
+    const author = refForm
+      ? await getUserBy({ param: '_id', value: refForm.researcher })
+      : null;
+
     res.status(200).json({
       message: `Form found in the database`,
       status: 'success',
-      apiData: form,
+      apiData: {
+        ...form._doc,
+        ...(refForm && author && { authorEmail: author.email }),
+        ...(refForm &&
+          refForm.percentage && { percentage: refForm.percentage }),
+        ...(refForm &&
+          refForm.advancePayment && { advancePayment: refForm.advancePayment }),
+      },
     });
   } catch (err) {
     console.log(err);
@@ -447,8 +475,15 @@ router.post(
         });
       }
 
+      const accountActivationLink = refForm
+        ? `${process.env.CLIENT_URI}/licensors/?unq=${vbForm._id}`
+        : '';
+
       await updateVbFormByFormId(formId, {
         agreementLink,
+        ...(accountActivationLink && {
+          accountActivationLink,
+        }),
       });
 
       const dataForSendingMainInfo = {
@@ -480,8 +515,8 @@ router.post(
         name: author.name,
         agreementLink,
         email: author.email,
-        ...(refForm && {
-          linkToPersonalAccount: `${process.env.CLIENT_URI}/licensors/?unq=${vbForm._id}`,
+        ...(accountActivationLink && {
+          accountActivationLink,
         }),
       };
 
@@ -503,8 +538,12 @@ router.post(
         }
       }
 
-      await sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
-      await sendAgreementToClientMail(dataForSendingAgreement);
+      const resAfterSendingMainInfo = await sendMainInfoByVBToServiceMail(
+        dataForSendingMainInfo
+      );
+      const resAfterSendingAgreement = await sendAgreementToClientMail(
+        dataForSendingAgreement
+      );
 
       return res.status(200).json({
         message: `The agreement was uploaded to the storage and sent to "${vbForm.email}"`,

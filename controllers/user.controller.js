@@ -27,14 +27,14 @@ const sendEmailPassword = async (email, subjectText, textEmail, htmlText) => {
 const getAllUsers = async ({
   me,
   userId,
-  role,
+  roles,
   canBeAssigned,
   fieldsInTheResponse,
 }) => {
   return await User.find(
     {
       ...(me === false && { _id: { $ne: userId } }),
-      ...(role && { role }),
+      ...(roles && roles.length && { role: { $in: roles } }),
       ...((canBeAssigned === true || canBeAssigned === false) && {
         canBeAssigned,
       }),
@@ -191,7 +191,7 @@ const updateStatForUsers = async (role) => {
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
         return +(
           acc +
-          sale.amountToResearchers / sale.researchers.length
+          sale.amountToResearcher
         ).toFixed(2);
       }, 0);
 
@@ -199,7 +199,7 @@ const updateStatForUsers = async (role) => {
 
       const earnedForYourself = sales.reduce(
         (a, sale) =>
-          a + +(sale.amountToResearchers / sale?.researchers?.length),
+          a + +sale.amountToResearcher,
         0
       );
       const earnedTotal = sales.reduce(
@@ -212,7 +212,7 @@ const updateStatForUsers = async (role) => {
           a +
           +(
             sale.amount / sale?.researchers?.length -
-            sale.amountToResearchers / sale?.researchers?.length
+            sale.amountToResearcher
           ),
         0
       );

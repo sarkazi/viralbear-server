@@ -45,6 +45,7 @@ const authorLinkRouter = require('./routes/authorLink.routes');
 const salesRouter = require('./routes/sales.routes');
 const locationRouter = require('./routes/location.routes');
 const webhookRouter = require('./routes/webhook.routes');
+const publicUsersRouter = require('./routes/public.users.routes');
 
 app.use(cors());
 
@@ -93,6 +94,7 @@ app.use('/authorLink', authorLinkRouter);
 app.use('/sales', salesRouter);
 app.use('/location', locationRouter);
 app.use('/webhook', webhookRouter);
+app.use('/public/users', publicUsersRouter);
 
 app.post('/trelloCallback', async (req, res) => {
   const allNecessaryLabelsForDoneCard = [

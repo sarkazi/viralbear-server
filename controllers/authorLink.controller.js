@@ -15,8 +15,8 @@ const createNewAuthorLink = async (body) => {
   return newAuthorLink;
 };
 
-const findOneRefFormByParam = async (field, param) => {
-  const authorLink = await AuthorLink.findOne({ [field]: param });
+const findOneRefFormByParam = async ({ searchBy, value }) => {
+  const authorLink = await AuthorLink.findOne({ [searchBy]: value });
   return authorLink;
 };
 

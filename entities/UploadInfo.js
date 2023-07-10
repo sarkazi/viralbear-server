@@ -50,6 +50,10 @@ const schema = new Schema(
       type: String,
       required: true,
     },
+    accountActivationLink: {
+      type: String,
+      required: false,
+    },
     agreementLink: {
       type: String,
       required: false,
