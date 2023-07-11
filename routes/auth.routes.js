@@ -58,7 +58,13 @@ router.post(
       const { accessToken, refreshToken } = generateTokens(user);
 
       return res.status(200).json({
-        apiData: { accessToken, refreshToken, role: user.role },
+        apiData: {
+          accessToken,
+          refreshToken,
+          role: user.role,
+          name: user.name,
+          id: user._id,
+        },
         status: 'success',
         code: 200,
       });
@@ -95,10 +101,12 @@ router.post('/getMe', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/authenticate', authMiddleware, (req, res) => {
+router.post('/authenticate', authMiddleware, async (req, res) => {
   if (req?.user?.role) {
+    const user = await getUserById(req?.user?.id);
+
     return res.status(200).json({
-      apiData: { role: req.user.role, userId: req.user.id },
+      apiData: { role: req.user.role, userId: req.user.id, name: user.name },
       status: 'success',
       code: 200,
     });

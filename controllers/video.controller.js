@@ -542,20 +542,16 @@ const findVideoByTitle = async (title) => {
   return video;
 };
 
-const findAllVideo = async (req, res) => {
-  const ITEMS_PER_PAGE = 10;
-
-  const { category, tag, duration, location, postedDate, occured, page } =
-    req.query;
-
-  if (duration) {
-    var durationPoints = findStartEndPointOfDuration(duration);
-  }
-
-  try {
-    const skip = (page - 1) * ITEMS_PER_PAGE;
-
-    let items = await Video.find({
+const findAllVideos = async ({
+  durationPoints,
+  category,
+  tag,
+  location,
+  isApproved,
+  fieldsInTheResponse,
+}) => {
+  return Video.find(
+    {
       ...(durationPoints && {
         'videoData.duration': {
           $gte: durationPoints?.start,
@@ -574,109 +570,13 @@ const findAllVideo = async (req, res) => {
           },
         ],
       }),
-      isApproved: true,
-    }).collation({ locale: 'en', strength: 2 });
-
-    if (postedDate) {
-      if (typeof postedDate !== 'string') {
-        const dateFrom = moment(postedDate[0])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-        const dateTo = moment(postedDate[1])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-
-        items = items.filter((video) => {
-          const date = moment(video.createdAt).utc().startOf('d').toDate();
-
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      } else {
-        const { dateFrom, dateTo } = findTimestampsBySearch(postedDate);
-
-        items = items.filter((video) => {
-          const date = moment(video.createdAt).utc().startOf('d').toDate();
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      }
+      ...(isApproved && { isApproved }),
+    },
+    {
+      ...(fieldsInTheResponse &&
+        fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
     }
-
-    if (occured) {
-      if (typeof occured !== 'string') {
-        const dateFrom = moment(occured[0])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-        const dateTo = moment(occured[1])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-
-        items = items.filter((video) => {
-          const date = moment(video.videoData.date).utc().startOf('d').toDate();
-
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      } else {
-        const { dateFrom, dateTo } = findTimestampsBySearch(occured);
-
-        items = items.filter((video) => {
-          const date = moment(video.videoData.date).utc().startOf('d').toDate();
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      }
-    }
-
-    const count = items.length;
-
-    pageCount = Math.ceil(count / ITEMS_PER_PAGE);
-
-    const itemsId = await Promise.all(
-      items.map(async (el) => {
-        return await el.videoData.videoId;
-      })
-    );
-
-    const videos = await Video.find(
-      {
-        'videoData.videoId': { $in: itemsId },
-        isApproved: true,
-      },
-      { __v: 0, updatedAt: 0, _id: 0 }
-    )
-      .sort({ 'videoData.videoId': -1 })
-      .collation({ locale: 'en_US', numericOrdering: true })
-      .limit(ITEMS_PER_PAGE)
-      .skip(skip);
-
-    res.json({
-      pagination: {
-        count,
-        pageCount,
-      },
-      videos,
-    });
-  } catch (err) {
-    console.error(err);
-  }
+  ).collation({ locale: 'en', strength: 2 });
 };
 
 const findById = async (id) => {
@@ -1122,7 +1022,6 @@ module.exports = {
   addCommentForFixed,
   generateExcelFile,
   findRelated,
-  findAllVideo,
   publishingVideoInSocialMedia,
   findNextVideoInFeed,
   findPrevVideoInFeed,
@@ -1144,4 +1043,5 @@ module.exports = {
   getCountAcquiredVideoByUserEmail,
   getAllVideos,
   findVideoByValue,
+  findAllVideos,
 };

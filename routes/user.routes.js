@@ -416,8 +416,6 @@ router.patch(
 
       const salesDateLimit = await getSalesByUserId(user._id, 30);
 
-      console.log(salesDateLimit, 867878);
-
       const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
         return +(acc + sale.amountToResearcher).toFixed(2);
       }, 0);

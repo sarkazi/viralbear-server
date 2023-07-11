@@ -448,7 +448,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
                 typeof vbForm.advancePaymentReceived !== 'boolean' ||
                 !authorRelatedWithVbForm.amountPerVideo
                   ? '-'
-                  : authorRelatedWithVbForm.amountPerVideo
+                  : vbForm.advancePaymentReceived
                   ? 'yes'
                   : 'no',
             },

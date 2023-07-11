@@ -283,10 +283,11 @@ router.post(
         over18YearOld,
         agreedWithTerms,
         didNotGiveRights,
-        ...(authorLinkWithThisHash &&
-          authorLinkWithThisHash.advancePayment && {
-            advancePaymentReceived: false,
-          }),
+        ...((authorLinkWithThisHash && authorLinkWithThisHash.advancePayment) ||
+          (author &&
+            author.amountPerVideo && {
+              advancePaymentReceived: false,
+            })),
         formId: `VB${vbCode}`,
         ip,
         ...(formHash && { refFormId: authorLinkWithThisHash._id }),

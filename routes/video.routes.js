@@ -49,6 +49,7 @@ const {
   deleteVideoById,
   writingFileToDisk,
   getAllVideos,
+  findAllVideos,
 } = require('../controllers/video.controller');
 
 const {
@@ -414,7 +415,227 @@ router.post('/generateExcelFile', authMiddleware, generateExcelFile);
 
 router.get('/findOne', authMiddleware, findLastVideo);
 
-router.get('/findAll', findAllVideo);
+router.get('/findAll', async (req, res) => {
+  const {
+    category,
+    tag,
+    duration,
+    location,
+    postedDate,
+    occured,
+    page,
+    isApproved,
+    limit,
+    fieldsInTheResponse,
+    pullUpVbFormData,
+  } = req.query;
+
+  let durationPoints = null;
+
+  if (duration) {
+    durationPoints = findStartEndPointOfDuration(duration);
+  }
+  try {
+    let videos = await findAllVideos({
+      durationPoints,
+      category,
+      tag,
+      location,
+      isApproved,
+      fieldsInTheResponse,
+    });
+
+    let count = 0;
+    let pageCount = 0;
+
+    if (postedDate) {
+      if (typeof postedDate !== 'string') {
+        const dateFrom = moment(postedDate[0])
+          .utc()
+          .add(1, 'd')
+          .startOf('d')
+          .toDate();
+        const dateTo = moment(postedDate[1])
+          .utc()
+          .add(1, 'd')
+          .startOf('d')
+          .toDate();
+        videos = videos.filter((video) => {
+          const date = moment(video.createdAt).utc().startOf('d').toDate();
+          return (
+            date.getTime() >= dateFrom.getTime() &&
+            date.getTime() <= dateTo.getTime()
+          );
+        });
+      } else {
+        const { dateFrom, dateTo } = findTimestampsBySearch(postedDate);
+        videos = videos.filter((video) => {
+          const date = moment(video.createdAt).utc().startOf('d').toDate();
+          return (
+            date.getTime() >= dateFrom.getTime() &&
+            date.getTime() <= dateTo.getTime()
+          );
+        });
+      }
+    }
+    if (occured) {
+      if (typeof occured !== 'string') {
+        const dateFrom = moment(occured[0])
+          .utc()
+          .add(1, 'd')
+          .startOf('d')
+          .toDate();
+        const dateTo = moment(occured[1])
+          .utc()
+          .add(1, 'd')
+          .startOf('d')
+          .toDate();
+        videos = videos.filter((video) => {
+          const date = moment(video.videoData.date).utc().startOf('d').toDate();
+          return (
+            date.getTime() >= dateFrom.getTime() &&
+            date.getTime() <= dateTo.getTime()
+          );
+        });
+      } else {
+        const { dateFrom, dateTo } = findTimestampsBySearch(occured);
+        videos = videos.filter((video) => {
+          const date = moment(video.videoData.date).utc().startOf('d').toDate();
+          return (
+            date.getTime() >= dateFrom.getTime() &&
+            date.getTime() <= dateTo.getTime()
+          );
+        });
+      }
+    }
+
+    if (limit && page) {
+      count = videos.length;
+      pageCount = Math.ceil(count / limit);
+      const videosId = await Promise.all(
+        videos.map(async (el) => {
+          return await el.videoData.videoId;
+        })
+      );
+
+      const skip = (page - 1) * limit;
+
+      videos = await Video.find(
+        {
+          'videoData.videoId': { $in: videosId },
+          isApproved: true,
+        },
+        { __v: 0, updatedAt: 0, _id: 0 }
+      )
+        .sort({ 'videoData.videoId': -1 })
+        .collation({ locale: 'en_US', numericOrdering: true })
+        .limit(limit)
+        .skip(skip);
+    }
+
+    if (pullUpVbFormData && JSON.parse(pullUpVbFormData) === true) {
+      videos = await Promise.all(
+        videos.map(async (video) => {
+          if (video.uploadData.vbCode) {
+            const vbForm = await findOne({
+              searchBy: 'formId',
+              param: video.uploadData.vbCode,
+            });
+
+            if (vbForm.sender) {
+              const authorRelatedWithVbForm = await getUserBy({
+                param: '_id',
+                value: vbForm.sender,
+              });
+
+              const salesOfThisVideo = await getAllSales({
+                videoId: video.videoData.videoId,
+              });
+
+              return {
+                videoTitle: video.videoData.title,
+                videoId: video.videoData.videoId,
+                authorEmail: authorRelatedWithVbForm.email,
+                percentage: authorRelatedWithVbForm.percentage
+                  ? authorRelatedWithVbForm.percentage
+                  : 0,
+                advance: {
+                  value:
+                    typeof vbForm.advancePaymentReceived === 'boolean' &&
+                    authorRelatedWithVbForm.amountPerVideo
+                      ? authorRelatedWithVbForm.amountPerVideo
+                      : 0,
+                  paid:
+                    typeof vbForm.advancePaymentReceived !== 'boolean' &&
+                    !authorRelatedWithVbForm.amountPerVideo
+                      ? '-'
+                      : vbForm.advancePaymentReceived === true
+                      ? 'yes'
+                      : 'no',
+                },
+                paymentInfo:
+                  authorRelatedWithVbForm.paymentInfo.variant === undefined
+                    ? 'no'
+                    : 'yes',
+                salesCount: salesOfThisVideo.length,
+              };
+            } else {
+              return {
+                videoTitle: video.videoData.title,
+                videoId: video.videoData.videoId,
+                authorEmail: '-',
+                percentage: '-',
+                advance: {
+                  value: '-',
+                  paid: '-',
+                },
+                paymentInfo: '-',
+                salesCount: '-',
+              };
+            }
+          } else {
+            return {
+              videoTitle: video.videoData.title,
+              videoId: video.videoData.videoId,
+              authorEmail: '-',
+              percentage: '-',
+              advance: {
+                value: '-',
+                paid: '-',
+              },
+              paymentInfo: '-',
+              salesCount: '-',
+            };
+          }
+        })
+      );
+    }
+
+    const apiData = {
+      ...(count &&
+        pageCount && {
+          pagination: {
+            count,
+            pageCount,
+          },
+        }),
+      videos,
+    };
+
+    return res.status(200).json({
+      apiData,
+      status: 'success',
+      message: 'The list of videos is received',
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server side error',
+    });
+  }
+});
 
 router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
   try {
