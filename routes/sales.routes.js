@@ -46,6 +46,8 @@ router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
 
     const videoDb = await findById(videoId);
 
+    const researchers = videoDb.trelloData.researchers;
+
     if (!videoDb) {
       return res.status(200).json({
         status: 'warning',
@@ -53,20 +55,47 @@ router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
       });
     }
 
+    let author = null;
+
+    if (videoDb.uploadData.vbCode) {
+      const vbForm = await findOne({
+        searchBy: 'formId',
+        param: videoDb.uploadData.vbCode,
+      });
+
+      if (vbForm && vbForm.sender) {
+        author = await getUserBy({ param: '_id', value: vbForm.sender });
+      }
+    }
+
     const apiData = {
       suitable: [
         {
-          researchers: videoDb.trelloData.researchers,
+          ...(researchers.length && {
+            researchers: researchers.map((researcher) => {
+              return {
+                email: researcher.email,
+                name: researcher.name,
+              };
+            }),
+          }),
+
           videoId,
           usage,
           amount,
           videoTitle: videoDb.videoData.title,
           company,
-          amountToResearchers: (amount * 0.4).toFixed(2),
+          amountToResearcher: researchers.length
+            ? +((amount * 0.4) / researchers.length).toFixed(2)
+            : '-',
           date: moment().toString(),
-          author: null,
-          advance: null,
-          percentage: null,
+          authorEmail: author ? author.email : '-',
+          advance: !author
+            ? '-'
+            : author.amountPerVideo
+            ? author.amountPerVideo
+            : 0,
+          percentage: !author ? '-' : author.percentage ? author.percentage : 0,
         },
       ],
       type: 'manual',

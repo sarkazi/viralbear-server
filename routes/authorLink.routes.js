@@ -108,12 +108,11 @@ router.post('/create', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/findOneByParam/:param', async (req, res) => {
-  const { param } = req.params;
+router.get('/findOne/:value', async (req, res) => {
+  const { value } = req.params;
   const { searchBy } = req.query;
-  console.log(param, searchBy);
 
-  if (!param || !searchBy) {
+  if (!value || !searchBy) {
     return res.status(200).json({
       message: `Missing parameters for form search`,
       status: 'warning',
@@ -121,7 +120,7 @@ router.get('/findOneByParam/:param', async (req, res) => {
   }
 
   try {
-    const authorLinkForm = await findOneRefFormByParam(searchBy, param);
+    const authorLinkForm = await findOneRefFormByParam({ searchBy, value });
 
     if (!authorLinkForm) {
       return res.status(200).json({

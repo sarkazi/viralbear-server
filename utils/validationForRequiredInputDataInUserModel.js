@@ -2,7 +2,7 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
   if (!role) {
     return false;
   }
-  if (role === 'worker') {
+  if (role === 'researcher') {
     if (
       !data.email ||
       !data.name ||

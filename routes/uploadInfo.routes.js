@@ -161,7 +161,7 @@ router.post(
       }
 
       const users = await getAllUsers({
-        roles: ['worker', 'admin', 'editor'],
+        roles: ['researcher', 'admin', 'editor'],
         fieldsInTheResponse: ['email'],
       });
 

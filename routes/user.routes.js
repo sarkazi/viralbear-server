@@ -146,7 +146,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       canBeAssigned,
     } = req.body;
 
-    const { roleUsersForResponse } = req.query;
+    const { rolesUsersForResponse } = req.query;
 
     const isValidate = validationForRequiredInputDataInUserModel(
       role,
@@ -183,7 +183,9 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       ...(paymentInfo && {
         paymentInfo,
       }),
-      ...((role === 'author' || role === 'worker' || role === 'stringer') && {
+      ...((role === 'author' ||
+        role === 'researcher' ||
+        role === 'stringer') && {
         balance: 0,
       }),
       ...(typeof canBeAssigned === 'boolean' && {
@@ -195,11 +197,11 @@ router.post('/createOne', authMiddleware, async (req, res) => {
 
     let apiData;
 
-    if (roleUsersForResponse) {
+    if (rolesUsersForResponse) {
       apiData = await getAllUsers({
         me: true,
         userId: null,
-        role: roleUsersForResponse,
+        roles: rolesUsersForResponse,
         canBeAssigned: null,
       });
     } else {
@@ -287,7 +289,7 @@ router.post('/recoveryPassword', recoveryPassword);
 
 router.patch('/updateOne', authMiddleware, async (req, res) => {
   try {
-    const { userId, roleUsersForResponse } = req.query;
+    const { userId, rolesUsersForResponse } = req.query;
 
     const userIdToUpdate = userId ? userId : req.user.id;
 
@@ -351,11 +353,11 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
 
     let apiData;
 
-    if (roleUsersForResponse) {
+    if (rolesUsersForResponse) {
       apiData = await getAllUsers({
         me: true,
         userId: null,
-        role: roleUsersForResponse,
+        role: rolesUsersForResponse,
       });
     } else {
       apiData = await getUserById(userId);
@@ -376,18 +378,19 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
 });
 
 router.patch('/updateStatisticsForUsers', authMiddleware, async (req, res) => {
-  const { role } = req.query;
+  const { roles } = req.query;
 
   try {
-    const { allUsersWithRefreshStat, sumCountUsersValue } =
-      await updateStatForUsers(role);
+    const { employeeStat, totalSumOfStatFields } = await updateStatForUsers({
+      roles,
+    });
 
     return res.status(200).json({
       message: 'Users with updated statistics received',
       status: 'success',
       apiData: {
-        users: allUsersWithRefreshStat,
-        sumValues: sumCountUsersValue,
+        users: employeeStat,
+        sumValues: totalSumOfStatFields,
       },
     });
   } catch (err) {
