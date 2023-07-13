@@ -33,7 +33,7 @@ const schema = new Schema({
     type: Boolean,
     required: false,
   },
-  amountPerVideo: {
+  advancePayment: {
     type: Number,
     required: false,
   },

@@ -172,10 +172,12 @@ router.post(
         });
       }
 
-      const authorLinkWithThisHash = await findOneRefFormByParam(
-        'formHash',
-        formHash
-      );
+      const authorLinkWithThisHash = await findOneRefFormByParam({
+        searchBy: 'formHash',
+        value: formHash,
+      });
+
+      console.log(authorLinkWithThisHash, 'authorLinkWithThisHash');
 
       if (formHash && !authorLinkWithThisHash) {
         return res.status(200).json({
@@ -204,7 +206,7 @@ router.post(
             }),
           ...(authorLinkWithThisHash &&
             authorLinkWithThisHash?.advancePayment && {
-              amountPerVideo: authorLinkWithThisHash?.advancePayment,
+              advancePayment: authorLinkWithThisHash?.advancePayment,
             }),
           balance: 0,
           activatedTheAccount: false,
@@ -285,7 +287,7 @@ router.post(
         didNotGiveRights,
         ...((authorLinkWithThisHash && authorLinkWithThisHash.advancePayment) ||
           (author &&
-            author.amountPerVideo && {
+            author.advancePayment && {
               advancePaymentReceived: false,
             })),
         formId: `VB${vbCode}`,
@@ -301,26 +303,28 @@ router.post(
         await markRefFormAsUsed(authorLinkWithThisHash._id, { used: true });
       }
 
+      const apiData = {
+        ...resData,
+        name,
+        lastName,
+        email,
+        ...(author.advancePayment && {
+          advancePayment: author.advancePayment,
+        }),
+        ...(author.percentage && {
+          percentage: author.percentage,
+        }),
+        ...(authorLinkWithThisHash && {
+          exclusivity: authorLinkWithThisHash.exclusivity,
+        }),
+      };
+
+      console.log(apiData, 88888);
+
       return res.status(200).send({
         message:
           'The data has been uploaded successfully. The agreement has been sent to the post office.',
-        apiData: {
-          ...resData,
-          name,
-          lastName,
-          email,
-          ...(authorLinkWithThisHash &&
-            authorLinkWithThisHash.advancePayment && {
-              advancePayment: authorLinkWithThisHash.advancePayment,
-            }),
-          ...(authorLinkWithThisHash &&
-            authorLinkWithThisHash.percentage && {
-              percentage: authorLinkWithThisHash.percentage,
-            }),
-          ...(authorLinkWithThisHash && {
-            exclusivity: authorLinkWithThisHash.exclusivity,
-          }),
-        },
+        apiData,
         status: 'success',
       });
     } catch (err) {

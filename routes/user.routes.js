@@ -140,7 +140,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       name,
       role,
       percentage,
-      amountPerVideo,
+      advancePayment,
       country,
       paymentInfo,
       canBeAssigned,
@@ -178,7 +178,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       password: await hashBcrypt(password, salt),
       role,
       ...(percentage && { percentage }),
-      ...(amountPerVideo && { amountPerVideo }),
+      ...(advancePayment && { advancePayment }),
       ...(country && { country }),
       ...(paymentInfo && {
         paymentInfo,
@@ -308,7 +308,7 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       role,
       email,
       percentage,
-      amountPerVideo,
+      advancePayment,
       country,
       balance,
       paymentInfo,
@@ -336,7 +336,7 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       ...(role && { role }),
       ...(email && { email }),
       ...(percentage && { percentage }),
-      ...(amountPerVideo && { amountPerVideo }),
+      ...(advancePayment && { advancePayment }),
       ...(country && { country }),
       ...(paymentInfo && { paymentInfo }),
       ...(typeof canBeAssigned === 'boolean' && {
@@ -612,7 +612,7 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
     }
 
     if (paymentFor === 'advance') {
-      if (author.amountPerVideo && vbForm.advancePaymentReceived === true) {
+      if (author.advancePayment && vbForm.advancePaymentReceived === true) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
           status: 'warning',
@@ -620,7 +620,7 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
       }
 
       if (
-        !author.amountPerVideo ||
+        !author.advancePayment ||
         typeof vbForm.advancePaymentReceived !== 'boolean'
       ) {
         return res.status(200).json({
@@ -629,7 +629,7 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      advanceAmount = author.amountPerVideo;
+      advanceAmount = author.advancePayment;
 
       if (Math.ceil(advanceAmount) !== Math.ceil(amountToTopUp)) {
         return res.status(200).json({
@@ -738,7 +738,7 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      if (author.amountPerVideo && vbForm.advancePaymentReceived === true) {
+      if (author.advancePayment && vbForm.advancePaymentReceived === true) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
           status: 'warning',
@@ -746,7 +746,7 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
       }
 
       if (
-        !author.amountPerVideo ||
+        !author.advancePayment ||
         typeof vbForm.advancePaymentReceived !== 'boolean'
       ) {
         return res.status(200).json({
@@ -755,7 +755,7 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      advanceAmount = author.amountPerVideo;
+      advanceAmount = author.advancePayment;
 
       percentAmount = salesWithThisVideoId.reduce(
         (acc, sale) => acc + (sale.amount * author.percentage) / 100,
@@ -868,20 +868,20 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
           let totalBalance = 0;
 
           if (
-            authorRelatedWithVbForm.amountPerVideo &&
+            authorRelatedWithVbForm.advancePayment &&
             typeof vbForm.advancePaymentReceived === 'boolean' &&
             !vbForm.advancePaymentReceived
           ) {
-            advanceAmount = authorRelatedWithVbForm.amountPerVideo;
-            toBePaid = authorRelatedWithVbForm.amountPerVideo;
+            advanceAmount = authorRelatedWithVbForm.advancePayment;
+            toBePaid = authorRelatedWithVbForm.advancePayment;
           }
 
           if (
-            authorRelatedWithVbForm.amountPerVideo &&
+            authorRelatedWithVbForm.advancePayment &&
             typeof vbForm.advancePaymentReceived === 'boolean' &&
             vbForm.advancePaymentReceived
           ) {
-            totalBalance = authorRelatedWithVbForm.amountPerVideo * -1;
+            totalBalance = authorRelatedWithVbForm.advancePayment * -1;
           }
 
           if (authorRelatedWithVbForm.percentage) {
@@ -906,12 +906,12 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
             advance: {
               value:
                 typeof vbForm.advancePaymentReceived === 'boolean' &&
-                authorRelatedWithVbForm.amountPerVideo
-                  ? authorRelatedWithVbForm.amountPerVideo
+                authorRelatedWithVbForm.advancePayment
+                  ? authorRelatedWithVbForm.advancePayment
                   : 0,
               paid:
                 typeof vbForm.advancePaymentReceived !== 'boolean' &&
-                !authorRelatedWithVbForm.amountPerVideo
+                !authorRelatedWithVbForm.advancePayment
                   ? '-'
                   : vbForm.advancePaymentReceived === true
                   ? 'yes'

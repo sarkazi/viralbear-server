@@ -1011,6 +1011,8 @@ const convertingVideoToHorizontal = async (video, userId) => {
 };
 
 const findVideoByValue = async ({ searchBy, value }) => {
+  console.log(searchBy, value);
+
   return Video.findOne({ [searchBy]: value });
 };
 

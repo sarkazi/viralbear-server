@@ -9,7 +9,7 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
       !data.password ||
       !data.nickname ||
       //!data.percentage ||
-      //!data.amountPerVideo ||
+      //!data.advancePayment ||
       //!data.country ||
       !data.role ||
       //!data.paymentInfo.variant ||
@@ -52,7 +52,7 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
       !data.email ||
       !data.name ||
       !data.password ||
-      //!data.amountPerVideo ||
+      //!data.advancePayment ||
       !data.role ||
       //!data.paymentInfo.variant ||
       //!data.paymentInfo.value ||
@@ -88,7 +88,7 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
         !data.email ||
         !data.name ||
         !data.password ||
-        //!data.amountPerVideo ||
+        //!data.advancePayment ||
         !data.role
         //!data.paymentInfo.variant ||
         //(data.paymentInfo.variant === 'bankTransfer' &&

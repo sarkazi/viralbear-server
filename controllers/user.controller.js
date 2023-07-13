@@ -259,7 +259,7 @@ const updateStatForUsers = async ({ roles }) => {
               );
 
             const earnedAfterLastPayment =
-              user.amountPerVideo * acquiredVideoCountDateLimit;
+              user.advancePayment * acquiredVideoCountDateLimit;
 
             const defaultInputValue =
               earnedTillNextPayment > earnedAfterLastPayment ||

@@ -92,8 +92,8 @@ router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
           authorEmail: author ? author.email : '-',
           advance: !author
             ? '-'
-            : author.amountPerVideo
-            ? author.amountPerVideo
+            : author.advancePayment
+            ? author.advancePayment
             : 0,
           percentage: !author ? '-' : author.percentage ? author.percentage : 0,
         },
@@ -470,12 +470,12 @@ router.get('/getAll', authMiddleware, async (req, res) => {
             ...sale._doc,
             authorEmail: authorRelatedWithVbForm.email,
             advance: {
-              value: authorRelatedWithVbForm.amountPerVideo
-                ? authorRelatedWithVbForm.amountPerVideo
+              value: authorRelatedWithVbForm.advancePayment
+                ? authorRelatedWithVbForm.advancePayment
                 : 0,
               paidFor:
                 typeof vbForm.advancePaymentReceived !== 'boolean' ||
-                !authorRelatedWithVbForm.amountPerVideo
+                !authorRelatedWithVbForm.advancePayment
                   ? '-'
                   : vbForm.advancePaymentReceived
                   ? 'yes'
@@ -561,8 +561,8 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
               percentage: authorRelatedWithVbForm.percentage,
             }),
             ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
-              authorRelatedWithVbForm.amountPerVideo && {
-                advance: authorRelatedWithVbForm.amountPerVideo,
+              authorRelatedWithVbForm.advancePayment && {
+                advance: authorRelatedWithVbForm.advancePayment,
                 advancePaymentReceived: vbForm.advancePaymentReceived,
               }),
             videoId: sale.videoId,
