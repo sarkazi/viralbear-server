@@ -1,7 +1,6 @@
 const CC = require('currency-converter-lt');
 
 const determinationCompanyDataBasedOnPairedReport = async (arr) => {
-
   return await new Promise(async (resolve, reject) => {
     if (arr[0].hasOwnProperty('Partner Video Id')) {
       resolve({
@@ -51,23 +50,27 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             { suitable: [], emptyField: [] }
           ),
       });
-    } else if (arr[0].hasOwnProperty('Supplier Ref:')) {
+    } else if (arr[0].hasOwnProperty('Aflo Ref:')) {
       resolve({
         company: 'aflo',
         searchBy: 'videoId',
 
         data: await Promise.all(
           arr.map(async (obj) => {
-            console.log(obj.TOTAL);
-
             return {
-              videoId: obj['Supplier Ref'],
+              videoId:
+                obj['Supplier Ref:'] && obj['Supplier Ref:'].includes('_tv')
+                  ? +obj['Supplier Ref:'].replace('_tv', '')
+                  : obj['Supplier Ref:'],
               usage: null,
-              amount: await new CC()
-                .from('JPY')
-                .to('USD')
-                .amount(obj['TOTAL'])
-                .convert(),
+              amount:
+                obj.TOTAL && obj.TOTAL > 0
+                  ? await new CC()
+                      .from('GBP')
+                      .to('USD')
+                      .amount(obj.TOTAL)
+                      .convert()
+                  : 0,
               title: null,
             };
           })
@@ -111,11 +114,37 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             return {
               videoId: obj['Video_ref_ID'],
               usage: null,
-              amount: await new CC()
-                .from('EUR')
-                .to('USD')
-                .amount(obj[' EUR/clip'])
-                .convert(),
+              amount:
+                obj[' EUR/clip'] && obj[' EUR/clip'] > 0
+                  ? await new CC()
+                      .from('EUR')
+                      .to('USD')
+                      .amount(obj[' EUR/clip'])
+                      .convert()
+                  : 0,
+              title: null,
+            };
+          })
+        ).then((arr) => {
+          return arr.reduce(
+            (res, item) => {
+              res[!item.videoId ? 'emptyField' : 'suitable'].push(item);
+              return res;
+            },
+            { suitable: [], emptyField: [] }
+          );
+        }),
+      });
+    } else if (arr[0].hasOwnProperty('ViralBear ID')) {
+      resolve({
+        company: 'stringershub',
+        searchBy: 'videoId',
+        data: await Promise.all(
+          arr.map(async (obj) => {
+            return {
+              videoId: obj['ViralBear ID'],
+              usage: null,
+              amount: obj['Gross sales'],
               title: null,
             };
           })

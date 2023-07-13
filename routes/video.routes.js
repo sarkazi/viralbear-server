@@ -2044,7 +2044,7 @@ router.patch(
             'trelloData.researchers': researchersListForCreatingVideo,
           }),
           isApproved: true,
-          pubDate: moment('2023-06-03').valueOf(),
+          pubDate: moment().valueOf(),
         },
         { creditTo: creditTo ? creditTo : null }
       );

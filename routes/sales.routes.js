@@ -138,6 +138,7 @@ router.post(
     try {
       const workbook = xlsx.read(csv[0].buffer, {
         type: 'buffer',
+        sheetStubs: true,
       });
 
       const parseDocument = await Promise.all(
@@ -147,6 +148,8 @@ router.post(
           );
         })
       );
+
+      console.log(parseDocument, 888);
 
       const processingData = await determinationCompanyDataBasedOnPairedReport(
         parseDocument[0]
@@ -170,13 +173,6 @@ router.post(
             } else {
               const videoDb = await findById(obj.videoId);
 
-              const vbForm = await findOne({
-                searchBy: 'formId',
-                param: videoDb?.uploadData?.vbCode
-                  ? videoDb.uploadData.vbCode
-                  : null,
-              });
-
               if (!videoDb) {
                 return {
                   videoId: obj.videoId,
@@ -189,38 +185,60 @@ router.post(
                   ? +(amount * (0.4 / videoResearchers.length)).toFixed(2)
                   : 0;
 
+                let author = null;
+                let vbForm = null;
+
+                if (videoDb.uploadData.vbCode) {
+                  vbForm = await findOne({
+                    searchBy: 'formId',
+                    param: videoDb.uploadData.vbCode,
+                  });
+
+                  if (vbForm.sender) {
+                    author = await getUserBy({
+                      param: '_id',
+                      value: vbForm.sender,
+                    });
+                  }
+                }
+
                 return {
-                  researchers: videoResearchers.map((researcher) => {
-                    return {
-                      email: researcher.email,
-                      name: researcher.name,
-                    };
-                  }),
+                  researchers: videoResearchers.length
+                    ? videoResearchers.map((researcher) => {
+                        return {
+                          email: researcher.email,
+                          name: researcher.name,
+                        };
+                      })
+                    : [],
                   videoId: obj.videoId,
                   ...(vbForm && {
                     vbForm: vbForm._id,
                   }),
-                  ...(obj.usage && { usage: obj.usage }),
+                  usage: obj.usage ? obj.usage : null,
                   amount,
                   videoTitle: videoDb.videoData.title,
                   company: resCompany,
                   amountToResearcher: amountToResearcher,
                   date: moment().toString(),
                   status: 'found',
-                  author: null,
-                  advance: null,
-                  percentage: null,
+                  authorEmail: author ? author.email : null,
+                  advance: !author
+                    ? null
+                    : !author.advancePayment
+                    ? 0
+                    : author.advancePayment,
+                  percentage: !author
+                    ? null
+                    : !author.percentage
+                    ? 0
+                    : author.percentage,
                   saleIdForClient: index + 1,
                 };
               }
             }
           } else {
             const videoDb = await findVideoByTitle(obj.title);
-
-            const vbForm = await findOne({
-              searchBy: 'formId',
-              param: videoDb?.uploadData?.vbCode,
-            });
 
             if (!videoDb) {
               return {
@@ -240,27 +258,54 @@ router.post(
                   ? +(amount * (0.4 / videoResearchers.length)).toFixed(2)
                   : 0;
 
+                let author = null;
+                let vbForm = null;
+
+                if (videoDb.uploadData.vbCode) {
+                  vbForm = await findOne({
+                    searchBy: 'formId',
+                    param: videoDb?.uploadData?.vbCode,
+                  });
+
+                  if (vbForm.sender) {
+                    author = await getUserBy({
+                      param: '_id',
+                      value: vbForm.sender,
+                    });
+                  }
+                }
+
                 return {
-                  researchers: videoResearchers.map((researcher) => {
-                    return {
-                      email: researcher.email,
-                      name: researcher.name,
-                    };
-                  }),
+                  researchers: videoResearchers.length
+                    ? videoResearchers.map((researcher) => {
+                        return {
+                          email: researcher.email,
+                          name: researcher.name,
+                        };
+                      })
+                    : [],
                   videoId: videoDb.videoData.videoId,
                   ...(vbForm && {
                     vbForm: vbForm._id,
                   }),
-                  ...(obj.usage && { usage: obj.usage }),
+                  usage: obj.usage ? obj.usage : null,
                   amount,
                   videoTitle: obj.title,
                   company: resCompany,
                   amountToResearcher: amountToResearcher,
                   date: moment().format('ll'),
                   status: 'found',
-                  author: null,
-                  advance: null,
-                  percentage: null,
+                  authorEmail: author ? author.email : null,
+                  advance: !author
+                    ? null
+                    : !author.advancePayment
+                    ? 0
+                    : author.advancePayment,
+                  percentage: !author
+                    ? null
+                    : !author.percentage
+                    ? 0
+                    : author.percentage,
                   saleIdForClient: index + 1,
                 };
               }
@@ -313,14 +358,14 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     const promiseAfterCreated = await Promise.all(
       body.map(async (obj) => {
-        console.log(obj.researchers);
-
-        const users = await findUsersByValueList({
-          param: 'email',
-          valueList: obj.researchers.map((researcher) => {
-            return researcher.email;
-          }),
-        });
+        const users = obj.researchers.length
+          ? await findUsersByValueList({
+              param: 'email',
+              valueList: obj.researchers.map((researcher) => {
+                return researcher.email;
+              }),
+            })
+          : [];
 
         const amount = +obj.amount;
         const amountToResearcher = obj.amountToResearcher;
@@ -328,12 +373,14 @@ router.post('/create', authMiddleware, async (req, res) => {
         console.log(obj.vbForm);
 
         const objDB = {
-          researchers: users.map((el) => {
-            return {
-              id: el._id,
-              name: el.name,
-            };
-          }),
+          researchers: users.length
+            ? users.map((el) => {
+                return {
+                  id: el._id,
+                  name: el.name,
+                };
+              })
+            : [],
           videoId: obj.videoId,
           ...(obj.vbForm && {
             vbFormInfo: {

@@ -752,6 +752,7 @@ const creatingAndSavingFeeds = async (video) => {
     bucket: { cloudVideoLink, cloudScreenLink, cloudConversionVideoLink },
     brandSafe,
     createdAt,
+    updatedAt,
     pubDate,
   } = video;
 
@@ -785,7 +786,9 @@ const creatingAndSavingFeeds = async (video) => {
     creditMrss = `Credit to: ${creditTo}`;
   }
 
-  const dateOfPublication = new Date(createdAt).toGMTString();
+  const dateOfPublication = new Date(
+    pubDate ? pubDate : updatedAt ? updatedAt : ''
+  ).toGMTString();
 
   const filmingDate = moment(date).format(`ddd, D MMM YYYY`);
 
