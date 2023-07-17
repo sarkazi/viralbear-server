@@ -363,25 +363,23 @@ router.get('/findOne', async (req, res) => {
       });
     }
 
-    const refForm = form.refFormId
-      ? await findOneRefFormByParam({ searchBy: '_id', value: form.refFormId })
+    const author = form.sender
+      ? await getUserBy({ param: '_id', value: form.sender })
       : null;
 
-    const author = refForm
-      ? await getUserBy({ param: '_id', value: refForm.researcher })
-      : null;
+    const apiData = {
+      ...form._doc,
+      ...(author && {
+        authorEmail: author.email,
+        percentage: author.percentage ? author.percentage : 0,
+        advancePayment: author.advancePayment ? author.advancePayment : 0,
+      }),
+    };
 
     res.status(200).json({
       message: `Form found in the database`,
       status: 'success',
-      apiData: {
-        ...form._doc,
-        ...(refForm && author && { authorEmail: author.email }),
-        ...(refForm &&
-          refForm.percentage && { percentage: refForm.percentage }),
-        ...(refForm &&
-          refForm.advancePayment && { advancePayment: refForm.advancePayment }),
-      },
+      apiData,
     });
   } catch (err) {
     console.log(err);

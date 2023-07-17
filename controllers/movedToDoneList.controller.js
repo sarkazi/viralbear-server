@@ -1,5 +1,7 @@
 const MovedToDoneListSchema = require('../entities/MovedToDoneList');
 
+const moment = require('moment');
+
 const writeNewMoveToDone = async ({
   researcherId,
   listBefore,
@@ -18,4 +20,23 @@ const findTheRecordOfTheCardMovedToDone = async (trelloCardId) => {
   });
 };
 
-module.exports = { writeNewMoveToDone, findTheRecordOfTheCardMovedToDone };
+const getCountApprovedTrelloCardBy = async ({
+  searchBy,
+  value,
+  forLastDays,
+}) => {
+  return await MovedToDoneListSchema.find({
+    [searchBy]: value,
+    ...(forLastDays && {
+      $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
+    }),
+  })
+    .countDocuments()
+    .sort({ $natural: -1 });
+};
+
+module.exports = {
+  writeNewMoveToDone,
+  findTheRecordOfTheCardMovedToDone,
+  getCountApprovedTrelloCardBy,
+};

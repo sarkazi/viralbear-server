@@ -47,6 +47,7 @@ const {
   getCountAcquiredVideoByUserEmail,
   getAllVideos,
   findVideoByValue,
+  getCountAcquiredVideosBy,
 } = require('../controllers/video.controller');
 
 router.get('/getAll', authMiddleware, async (req, res) => {
@@ -983,6 +984,20 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
         apiData: [],
       });
     }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.get('/test', async (req, res) => {
+  try {
+    const acquiredVideosCountLast7Days = await getCountAcquiredVideosBy({
+      searchBy: 'trelloData.researchers',
+      value: 'rintin@viralbear.media',
+      forLastDays: null,
+    });
+
+    return res.status(200).json({ mes: 'збс' });
   } catch (err) {
     console.log(err);
   }

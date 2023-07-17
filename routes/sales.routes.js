@@ -32,6 +32,7 @@ const {
 const moment = require('moment');
 
 const authMiddleware = require('../middleware/auth.middleware');
+const Sales = require('../entities/Sales');
 
 router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
   try {
@@ -127,12 +128,11 @@ router.post(
   ]),
   async (req, res) => {
     const { csv } = req.files;
-    const { company: resCompany } = req.body;
 
-    if (!resCompany || !csv) {
+    if (!csv) {
       return res.status(200).json({
         status: 'warning',
-        message: 'Missing values: "company" or "csv file"',
+        message: 'The file for parsing was not found',
       });
     }
     try {
@@ -149,18 +149,9 @@ router.post(
         })
       );
 
-      console.log(parseDocument, 888);
-
       const processingData = await determinationCompanyDataBasedOnPairedReport(
         parseDocument[0]
       );
-
-      if (resCompany !== processingData.company) {
-        return res.status(200).json({
-          status: 'warning',
-          message: 'The report and the company are not comparable',
-        });
-      }
 
       const newReport = await Promise.all(
         processingData.data.suitable.map(async (obj, index) => {
@@ -218,7 +209,7 @@ router.post(
                   usage: obj.usage ? obj.usage : null,
                   amount,
                   videoTitle: videoDb.videoData.title,
-                  company: resCompany,
+                  company: processingData.company,
                   amountToResearcher: amountToResearcher,
                   date: moment().toString(),
                   status: 'found',
@@ -291,7 +282,7 @@ router.post(
                   usage: obj.usage ? obj.usage : null,
                   amount,
                   videoTitle: obj.title,
-                  company: resCompany,
+                  company: processingData.company,
                   amountToResearcher: amountToResearcher,
                   date: moment().format('ll'),
                   status: 'found',
@@ -369,8 +360,6 @@ router.post('/create', authMiddleware, async (req, res) => {
 
         const amount = +obj.amount;
         const amountToResearcher = obj.amountToResearcher;
-
-        console.log(obj.vbForm);
 
         const objDB = {
           researchers: users.length
@@ -507,6 +496,8 @@ router.get('/getAll', authMiddleware, async (req, res) => {
             searchBy: '_id',
             param: sale._doc.vbFormInfo.uid,
           });
+
+          console.log(vbForm, 8978778);
 
           const authorRelatedWithVbForm = await getUserBy({
             param: '_id',
@@ -835,6 +826,90 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
       status: 'success',
       message: `The sale with id ${saleId} has been deleted`,
       apiData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 'error',
+      message: err?.message ? err.message : 'Server side error',
+    });
+  }
+});
+
+router.get('/getTop', authMiddleware, async (req, res) => {
+  const { forLastDays } = req.query;
+
+  try {
+    const pipeline = [
+      {
+        $match: {
+          ...(forLastDays && {
+            createdAt: {
+              $gte: new Date(
+                moment().subtract(forLastDays, 'd').startOf('d').toISOString()
+              ),
+            },
+          }),
+        },
+      },
+      {
+        $group: {
+          _id: '$videoId',
+          amount: { $sum: '$amount' },
+          numberOfSales: { $sum: 1 },
+          videoId: { $first: '$videoId' },
+          title: { $first: '$videoTitle' },
+          researchers: { $first: '$researchers' },
+          vbForm: { $first: '$vbFormInfo' },
+        },
+      },
+      {
+        $sort: { amount: -1 },
+      },
+      { $limit: 10 },
+    ];
+
+    let salesGroup = [];
+
+    const aggregationResult = Sales.aggregate(pipeline);
+
+    for await (const doc of aggregationResult) {
+      salesGroup.push(doc);
+    }
+
+    salesGroup = await Promise.all(
+      salesGroup.map(async (obj) => {
+        if (obj.vbForm) {
+          const vbForm = await findOne({
+            searchBy: '_id',
+            param: obj.vbForm.uid,
+          });
+
+          if (vbForm.sender) {
+            const author = await getUserBy({
+              param: '_id',
+              value: vbForm.sender,
+            });
+
+            return {
+              ...obj,
+              authorEmail: author.email,
+              percentage: author.percentage ? author.percentage : 0,
+              advancePayment: author.advancePayment ? author.advancePayment : 0,
+            };
+          } else {
+            return obj;
+          }
+        } else {
+          return obj;
+        }
+      })
+    );
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'List of top sales received',
+      apiData: salesGroup,
     });
   } catch (err) {
     console.log(err);

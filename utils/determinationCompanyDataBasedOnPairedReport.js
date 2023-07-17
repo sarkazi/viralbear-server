@@ -66,7 +66,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
               amount:
                 obj.TOTAL && obj.TOTAL > 0
                   ? await new CC()
-                      .from('GBP')
+                      .from('JPY')
                       .to('USD')
                       .amount(obj.TOTAL)
                       .convert()
@@ -144,7 +144,7 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             return {
               videoId: obj['ViralBear ID'],
               usage: null,
-              amount: obj['Gross sales'],
+              amount: obj['Net sales'],
               title: null,
             };
           })
