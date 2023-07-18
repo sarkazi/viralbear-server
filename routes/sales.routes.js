@@ -532,8 +532,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         })
       );
 
-      console.log(sales, 87878);
-
       sumAmountAuthor = sales.reduce((acc, item) => {
         return acc + item.authorEarnings;
       }, 0);

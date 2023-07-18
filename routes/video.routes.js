@@ -14,8 +14,13 @@ const Video = require('../entities/Video');
 const authMiddleware = require('../middleware/auth.middleware');
 
 const { generateVideoId } = require('../utils/generateVideoId');
+const { findTimestampsBySearch } = require('../utils/findTimestampsBySearch');
 
 const { getDurationFromBuffer } = require('fancy-video-duration');
+
+const {
+  findStartEndPointOfDuration,
+} = require('../utils/findStartEndPointOfDuration');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
 
@@ -122,6 +127,7 @@ router.post(
         whenFilmed,
         whoAppears,
         agreementLink,
+        exclusivity,
         videoId: reqVideoId,
       } = req.body;
 
@@ -197,6 +203,12 @@ router.post(
           req.user.id
         );
 
+        if (!reqVideoId) {
+          videoId = await generateVideoId();
+        } else {
+          videoId = +reqVideoId;
+        }
+
         const bucketResponseByConvertedVideoUpload = await new Promise(
           (resolve, reject) => {
             fs.readFile(
@@ -213,7 +225,8 @@ router.post(
                   await uploadFileToStorage(
                     video[0].originalname,
                     'reuters-videos',
-                    createUniqueHash(),
+
+                    videoId,
                     buffer,
                     video[0].mimetype,
                     path.extname(video[0].originalname),
@@ -234,7 +247,8 @@ router.post(
             await uploadFileToStorage(
               video[0].originalname,
               'videos',
-              createUniqueHash(),
+
+              videoId,
               video[0].buffer,
               video[0].mimetype,
               path.extname(video[0].originalname),
@@ -252,7 +266,8 @@ router.post(
             await uploadFileToStorage(
               screen[0].originalname,
               'screens',
-              createUniqueHash(),
+
+              videoId,
               screen[0].buffer,
               screen[0].mimetype,
               path.extname(screen[0].originalname),
@@ -272,12 +287,6 @@ router.post(
             event: 'Just a little bit left',
             file: null,
           });
-
-        if (!reqVideoId) {
-          videoId = await generateVideoId();
-        } else {
-          videoId = +reqVideoId;
-        }
 
         const researchersList = await findUsersByValueList({
           param: 'name',
@@ -332,6 +341,7 @@ router.post(
           trelloCardName,
           researchers: researchersListForCreatingVideo,
           priority: JSON.parse(priority),
+          exclusivity: JSON.parse(exclusivity),
           ...(agreementLink && {
             agreementLink,
           }),
@@ -427,8 +437,6 @@ router.get('/findAll', async (req, res) => {
     page,
     isApproved,
     limit,
-    fieldsInTheResponse,
-    pullUpVbFormData,
   } = req.query;
 
   let durationPoints = null;
@@ -443,7 +451,6 @@ router.get('/findAll', async (req, res) => {
       tag,
       location,
       isApproved,
-      fieldsInTheResponse,
     });
 
     let count = 0;
@@ -534,83 +541,85 @@ router.get('/findAll', async (req, res) => {
         .skip(skip);
     }
 
-    if (pullUpVbFormData && JSON.parse(pullUpVbFormData) === true) {
-      videos = await Promise.all(
-        videos.map(async (video) => {
-          if (video.uploadData.vbCode) {
-            const vbForm = await findOne({
-              searchBy: 'formId',
-              param: video.uploadData.vbCode,
-            });
+    //if (pullUpVbFormData && JSON.parse(pullUpVbFormData) === true) {
+    //  videos = await Promise.all(
+    //    videos.map(async (video) => {
+    //      if (video.uploadData.vbCode) {
+    //        const vbForm = await findOne({
+    //          searchBy: 'formId',
+    //          param: video.uploadData.vbCode,
+    //        });
 
-            if (vbForm.sender) {
-              const authorRelatedWithVbForm = await getUserBy({
-                param: '_id',
-                value: vbForm.sender,
-              });
+    //        if (vbForm.sender) {
+    //          const authorRelatedWithVbForm = await getUserBy({
+    //            param: '_id',
+    //            value: vbForm.sender,
+    //          });
 
-              const salesOfThisVideo = await getAllSales({
-                videoId: video.videoData.videoId,
-              });
+    //          const salesOfThisVideo = await getAllSales({
+    //            videoId: video.videoData.videoId,
+    //          });
 
-              return {
-                videoTitle: video.videoData.title,
-                videoId: video.videoData.videoId,
-                authorEmail: authorRelatedWithVbForm.email,
-                percentage: authorRelatedWithVbForm.percentage
-                  ? authorRelatedWithVbForm.percentage
-                  : 0,
-                advance: {
-                  value:
-                    typeof vbForm.advancePaymentReceived === 'boolean' &&
-                    authorRelatedWithVbForm.advancePayment
-                      ? authorRelatedWithVbForm.advancePayment
-                      : 0,
-                  paid:
-                    typeof vbForm.advancePaymentReceived !== 'boolean' &&
-                    !authorRelatedWithVbForm.advancePayment
-                      ? '-'
-                      : vbForm.advancePaymentReceived === true
-                      ? 'yes'
-                      : 'no',
-                },
-                paymentInfo:
-                  authorRelatedWithVbForm.paymentInfo.variant === undefined
-                    ? 'no'
-                    : 'yes',
-                salesCount: salesOfThisVideo.length,
-              };
-            } else {
-              return {
-                videoTitle: video.videoData.title,
-                videoId: video.videoData.videoId,
-                authorEmail: '-',
-                percentage: '-',
-                advance: {
-                  value: '-',
-                  paid: '-',
-                },
-                paymentInfo: '-',
-                salesCount: '-',
-              };
-            }
-          } else {
-            return {
-              videoTitle: video.videoData.title,
-              videoId: video.videoData.videoId,
-              authorEmail: '-',
-              percentage: '-',
-              advance: {
-                value: '-',
-                paid: '-',
-              },
-              paymentInfo: '-',
-              salesCount: '-',
-            };
-          }
-        })
-      );
-    }
+    //          return {
+    //            videoTitle: video.videoData.title,
+    //            videoId: video.videoData.videoId,
+    //            authorEmail: authorRelatedWithVbForm.email,
+    //            percentage: authorRelatedWithVbForm.percentage
+    //              ? authorRelatedWithVbForm.percentage
+    //              : 0,
+    //            advance: {
+    //              value:
+    //                typeof vbForm.advancePaymentReceived === 'boolean' &&
+    //                authorRelatedWithVbForm.advancePayment
+    //                  ? authorRelatedWithVbForm.advancePayment
+    //                  : 0,
+    //              paid:
+    //                typeof vbForm.advancePaymentReceived !== 'boolean' &&
+    //                !authorRelatedWithVbForm.advancePayment
+    //                  ? '-'
+    //                  : vbForm.advancePaymentReceived === true
+    //                  ? 'yes'
+    //                  : 'no',
+    //            },
+    //            paymentInfo:
+    //              authorRelatedWithVbForm.paymentInfo.variant === undefined
+    //                ? 'no'
+    //                : 'yes',
+    //            salesCount: salesOfThisVideo.length,
+    //          };
+    //        } else {
+    //          return {
+    //            videoTitle: video.videoData.title,
+    //            videoId: video.videoData.videoId,
+    //            authorEmail: '-',
+    //            percentage: '-',
+    //            advance: {
+    //              value: '-',
+    //              paid: '-',
+    //            },
+    //            paymentInfo: '-',
+    //            salesCount: '-',
+    //          };
+    //        }
+    //      } else {
+    //        return {
+    //          videoTitle: video.videoData.title,
+    //          videoId: video.videoData.videoId,
+    //          authorEmail: '-',
+    //          percentage: '-',
+    //          advance: {
+    //            value: '-',
+    //            paid: '-',
+    //          },
+    //          paymentInfo: '-',
+    //          salesCount: '-',
+    //        };
+    //      }
+    //    })
+    //  );
+    //}
+
+    console.log(count, pageCount);
 
     const apiData = {
       ...(count &&
@@ -2245,8 +2254,6 @@ router.post(
               );
             }
           );
-
-          console.log(bucketResponseByConvertedVideoUpload);
 
           const bucketResponseByVideoUpload = await new Promise(
             async (resolve, reject) => {

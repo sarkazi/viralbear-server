@@ -367,6 +367,10 @@ router.get('/findOne', async (req, res) => {
       ? await getUserBy({ param: '_id', value: form.sender })
       : null;
 
+    const refForm = form.refFormId
+      ? await findOneRefFormByParam({ searchBy: '_id', value: form.refFormId })
+      : null;
+
     const apiData = {
       ...form._doc,
       ...(author && {
@@ -374,6 +378,7 @@ router.get('/findOne', async (req, res) => {
         percentage: author.percentage ? author.percentage : 0,
         advancePayment: author.advancePayment ? author.advancePayment : 0,
       }),
+      exclusivity: !refForm ? true : refForm.exclusivity ? true : false,
     };
 
     res.status(200).json({

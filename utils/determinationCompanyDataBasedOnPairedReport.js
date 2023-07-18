@@ -1,4 +1,13 @@
 const CC = require('currency-converter-lt');
+const axios = require('axios');
+
+const convertCurrency = async ({ from, to, amount }) => {
+  const { data } = await axios.get(
+    `https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`
+  );
+
+  return data.result;
+};
 
 const determinationCompanyDataBasedOnPairedReport = async (arr) => {
   return await new Promise(async (resolve, reject) => {
@@ -11,11 +20,14 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
             return {
               videoId: obj['Partner Video Id'],
               usage: obj['Sale Type'],
-              amount: await new CC()
-                .from('GBP')
-                .to('USD')
-                .amount(obj['Your Earnings'])
-                .convert(),
+              amount:
+                obj['Your Earnings'] && obj['Your Earnings'] > 0
+                  ? await convertCurrency({
+                      from: 'GBP',
+                      to: 'USD',
+                      amount: obj['Your Earnings'],
+                    })
+                  : 0,
               title: null,
             };
           })
@@ -65,11 +77,11 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
               usage: null,
               amount:
                 obj.TOTAL && obj.TOTAL > 0
-                  ? await new CC()
-                      .from('JPY')
-                      .to('USD')
-                      .amount(obj.TOTAL)
-                      .convert()
+                  ? await convertCurrency({
+                      from: 'JPY',
+                      to: 'USD',
+                      amount: obj.TOTAL,
+                    })
                   : 0,
               title: null,
             };
@@ -116,11 +128,11 @@ const determinationCompanyDataBasedOnPairedReport = async (arr) => {
               usage: null,
               amount:
                 obj[' EUR/clip'] && obj[' EUR/clip'] > 0
-                  ? await new CC()
-                      .from('EUR')
-                      .to('USD')
-                      .amount(obj[' EUR/clip'])
-                      .convert()
+                  ? await convertCurrency({
+                      from: 'EUR',
+                      to: 'USD',
+                      amount: obj[' EUR/clip'],
+                    })
                   : 0,
               title: null,
             };

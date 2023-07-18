@@ -24,13 +24,6 @@ const trelloInstance = require('../api/trello.instance');
 
 const { exportsVideoToExcel } = require('../utils/exportsVideoToExcel');
 
-const {
-  findStartEndPointOfDuration,
-} = require('../utils/findStartEndPointOfDuration');
-
-const { findTimestampsBySearch } = require('../utils/findTimestampsBySearch');
-const { timeStamp } = require('console');
-
 const filePath2 = path.join(
   __dirname,
   '..',
@@ -389,6 +382,7 @@ const createNewVideo = async (body) => {
       cloudConversionVideoPath: body.bucketResponseByConversionVideoUpload.Key,
     },
     brandSafe: false,
+    exclusivity: body.exclusivity,
   });
 
   return newVideo;
@@ -548,7 +542,6 @@ const findAllVideos = async ({
   tag,
   location,
   isApproved,
-  fieldsInTheResponse,
 }) => {
   return Video.find(
     {
@@ -570,12 +563,13 @@ const findAllVideos = async ({
           },
         ],
       }),
-      ...(isApproved && { isApproved }),
-    },
-    {
-      ...(fieldsInTheResponse &&
-        fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
+      ...(typeof isApproved === 'boolean' &&
+        JSON.parse(isApproved) && { isApproved }),
     }
+    //{
+    //  ...(fieldsInTheResponse &&
+    //    fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
+    //}
   ).collation({ locale: 'en', strength: 2 });
 };
 
@@ -781,6 +775,7 @@ const creatingAndSavingFeeds = async (video) => {
     createdAt,
     updatedAt,
     pubDate,
+    exclusivity,
   } = video;
 
   if (
@@ -850,7 +845,7 @@ const creatingAndSavingFeeds = async (video) => {
             <media:categoryCode>${categoryReuters}</media:categoryCode>      
              <media:category>${category}</media:category>
              <media:exclusivity>${
-               vbCode ? 'exclusive' : 'non-exсlusive'
+               exclusivity ? 'exclusive' : 'non-exсlusive'
              }</media:exclusivity>
              <media:filmingDate>${filmingDate}</media:filmingDate>
              <guid>${videoId}</guid>
@@ -872,7 +867,7 @@ const creatingAndSavingFeeds = async (video) => {
            <media:categoryCode>${categoryReuters}</media:categoryCode>      
             <media:category>${category}</media:category>
             <media:exclusivity>${
-              vbCode ? 'exclusive' : 'non-exсlusive'
+              exclusivity ? 'exclusive' : 'non-exсlusive'
             }</media:exclusivity>
             <media:filmingDate>${filmingDate}</media:filmingDate>
             <guid>${videoId}</guid>
@@ -899,7 +894,7 @@ const creatingAndSavingFeeds = async (video) => {
              <media:categoryCode>${categoryReuters}</media:categoryCode>
              <media:category>${category}</media:category>
              <media:exclusivity>${
-               vbCode ? 'exclusive' : 'non-exсlusive'
+               exclusivity ? 'exclusive' : 'non-exсlusive'
              }</media:exclusivity>
              <media:filmingDate>${filmingDate}</media:filmingDate>
              <guid>${videoId}</guid>
@@ -921,7 +916,7 @@ const creatingAndSavingFeeds = async (video) => {
               <media:categoryCode>${categoryReuters}</media:categoryCode>
               <media:category>${category}</media:category>
               <media:exclusivity>${
-                vbCode ? 'exclusive' : 'non-exсlusive'
+                exclusivity ? 'exclusive' : 'non-exсlusive'
               }</media:exclusivity>
               <media:filmingDate>${filmingDate}</media:filmingDate>
               <guid>${videoId}</guid>

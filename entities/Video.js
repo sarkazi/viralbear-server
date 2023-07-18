@@ -190,6 +190,10 @@ const schema = new Schema(
       type: Boolean,
       default: true,
     },
+    exclusivity: {
+      type: Boolean,
+      default: false,
+    },
     publishedInSocialMedia: {
       type: Boolean,
       default: true,
