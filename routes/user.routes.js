@@ -48,6 +48,7 @@ const {
   getAllVideos,
   findVideoByValue,
   getCountAcquiredVideosBy,
+  updateVideosBy,
 } = require('../controllers/video.controller');
 
 const {
@@ -535,7 +536,7 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
           if (advance > percentage) {
             return {
               tooltip: `advance payment for ${videoCountWithUnpaidAdvance} videos`,
-              subject: 'advance',
+              paymentFor: 'advance',
             };
           } else if (
             advance < percentage ||
@@ -543,12 +544,12 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
           ) {
             return {
               tooltip: `percentage for ${unpaidSales} sales`,
-              subject: 'percent',
+              paymentFor: 'percent',
             };
           } else {
             return {
               tooltip: null,
-              subject: null,
+              paymentFor: null,
             };
           }
         };
@@ -846,13 +847,13 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/topUpBalance', authMiddleware, async (req, res) => {
+router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   try {
-    const { balance, userId } = req.body;
+    const { amount, userId } = req.body;
 
-    const { roleUsersForResponse } = req.query;
+    const { paymentFor } = req.query;
 
-    if (!balance || !userId) {
+    if (!balance || !userId || !paymentFor) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
         status: 'warning',
@@ -865,6 +866,37 @@ router.post('/topUpBalance', authMiddleware, async (req, res) => {
       return res.status(200).json({
         message: 'The user with this id was not found',
         status: 'warning',
+      });
+    }
+
+    if (paymentFor === 'advance') {
+      const videoCountWithUnpaidAdvance = await getAllVideos({
+        isApproved: true,
+        researcherEmail: user.email,
+        advanceHasBeenPaid: false,
+      });
+
+      if (videoCountWithUnpaidAdvance * 10 !== amount) {
+        return res.status(200).json({
+          message: `The totals for the payment do not converge`,
+          status: 'warning',
+        });
+      }
+
+      await updateVideosBy({
+        updateBy: 'trelloData.researchers',
+        value: {
+          $elemMatch: {
+            email: researcherEmail,
+            ...(advanceHasBeenPaid && advanceHasBeenPaid),
+          },
+        },
+        dataForUpdate: { advanceHasBeenPaid: true },
+      });
+
+      return res.status(200).json({
+        message: `Percentage of $${percentAmount} was credited to the author's balance`,
+        status: 'success',
       });
     }
 
@@ -887,16 +919,16 @@ router.post('/topUpBalance', authMiddleware, async (req, res) => {
 
     //await sendEmail(fromEmail, toEmail, subjectEmail, htmlEmail);
 
-    const { allUsersWithRefreshStat, sumCountUsersValue } =
-      await updateStatForUsers(roleUsersForResponse);
+    //const { allUsersWithRefreshStat, sumCountUsersValue } =
+    //  await updateStatForUsers(roleUsersForResponse);
 
     return res.status(200).json({
       message: 'The workers"s balance has been successfully replenished',
       status: 'success',
-      apiData: {
-        allUsersWithRefreshStat,
-        sumCountUsersValue,
-      },
+      //apiData: {
+      //  allUsersWithRefreshStat,
+      //  sumCountUsersValue,
+      //},
     });
   } catch (err) {
     console.log(err);
@@ -1384,10 +1416,15 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
 
 router.get('/test', async (req, res) => {
   try {
-    const acquiredVideosCountLast7Days = await getCountAcquiredVideosBy({
-      searchBy: 'trelloData.researchers',
-      value: 'rintin@viralbear.media',
-      forLastDays: null,
+    await updateVideosBy({
+      updateBy: 'trelloData.researchers',
+      value: {
+        $elemMatch: {
+          email: researcherEmail,
+          ...(advanceHasBeenPaid && advanceHasBeenPaid),
+        },
+      },
+      dataForUpdate: { advanceHasBeenPaid: true },
     });
 
     return res.status(200).json({ mes: 'збс' });

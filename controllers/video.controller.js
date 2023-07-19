@@ -1061,6 +1061,10 @@ const findVideoByValue = async ({ searchBy, value }) => {
   return Video.findOne({ [searchBy]: value });
 };
 
+const updateVideosBy = async ({ updateBy, value, dataForUpdate }) => {
+  return Video.updateMany({ [updateBy]: value }, dataForUpdate);
+};
+
 module.exports = {
   findLastVideo,
   findByIsBrandSafe,
@@ -1091,4 +1095,5 @@ module.exports = {
   findVideoByValue,
   findAllVideos,
   getCountAcquiredVideosBy,
+  updateVideosBy,
 };
