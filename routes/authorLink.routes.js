@@ -37,6 +37,13 @@ router.post('/create', authMiddleware, async (req, res) => {
     });
   }
 
+  if (!exclusivity && !advancePayment && !percentage) {
+    return res.status(200).json({
+      message: 'The percent/advance cannot be empty in this case',
+      status: 'warning',
+    });
+  }
+
   try {
     const user = await getUserById(req.user.id);
 

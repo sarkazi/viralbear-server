@@ -63,6 +63,8 @@ const {
   getUserBy,
 } = require('../controllers/user.controller');
 
+const { sendEmail } = require('../controllers/sendEmail.controller');
+
 const {
   uploadFileToStorage,
   removeFileFromStorage,
@@ -413,6 +415,9 @@ router.post(
         });
       } catch (err) {
         console.log(err);
+
+        await sendEmail;
+
         return res.status(500).json({
           message: err?.message ? err?.message : 'Server side error',
           status: 'error',
@@ -541,89 +546,9 @@ router.get('/findAll', async (req, res) => {
         .skip(skip);
     }
 
-    //if (pullUpVbFormData && JSON.parse(pullUpVbFormData) === true) {
-    //  videos = await Promise.all(
-    //    videos.map(async (video) => {
-    //      if (video.uploadData.vbCode) {
-    //        const vbForm = await findOne({
-    //          searchBy: 'formId',
-    //          param: video.uploadData.vbCode,
-    //        });
-
-    //        if (vbForm.sender) {
-    //          const authorRelatedWithVbForm = await getUserBy({
-    //            param: '_id',
-    //            value: vbForm.sender,
-    //          });
-
-    //          const salesOfThisVideo = await getAllSales({
-    //            videoId: video.videoData.videoId,
-    //          });
-
-    //          return {
-    //            videoTitle: video.videoData.title,
-    //            videoId: video.videoData.videoId,
-    //            authorEmail: authorRelatedWithVbForm.email,
-    //            percentage: authorRelatedWithVbForm.percentage
-    //              ? authorRelatedWithVbForm.percentage
-    //              : 0,
-    //            advance: {
-    //              value:
-    //                typeof vbForm.advancePaymentReceived === 'boolean' &&
-    //                authorRelatedWithVbForm.advancePayment
-    //                  ? authorRelatedWithVbForm.advancePayment
-    //                  : 0,
-    //              paid:
-    //                typeof vbForm.advancePaymentReceived !== 'boolean' &&
-    //                !authorRelatedWithVbForm.advancePayment
-    //                  ? '-'
-    //                  : vbForm.advancePaymentReceived === true
-    //                  ? 'yes'
-    //                  : 'no',
-    //            },
-    //            paymentInfo:
-    //              authorRelatedWithVbForm.paymentInfo.variant === undefined
-    //                ? 'no'
-    //                : 'yes',
-    //            salesCount: salesOfThisVideo.length,
-    //          };
-    //        } else {
-    //          return {
-    //            videoTitle: video.videoData.title,
-    //            videoId: video.videoData.videoId,
-    //            authorEmail: '-',
-    //            percentage: '-',
-    //            advance: {
-    //              value: '-',
-    //              paid: '-',
-    //            },
-    //            paymentInfo: '-',
-    //            salesCount: '-',
-    //          };
-    //        }
-    //      } else {
-    //        return {
-    //          videoTitle: video.videoData.title,
-    //          videoId: video.videoData.videoId,
-    //          authorEmail: '-',
-    //          percentage: '-',
-    //          advance: {
-    //            value: '-',
-    //            paid: '-',
-    //          },
-    //          paymentInfo: '-',
-    //          salesCount: '-',
-    //        };
-    //      }
-    //    })
-    //  );
-    //}
-
-    console.log(count, pageCount);
-
     const apiData = {
-      ...(count &&
-        pageCount && {
+      ...(limit &&
+        page && {
           pagination: {
             count,
             pageCount,
