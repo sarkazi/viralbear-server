@@ -24,6 +24,10 @@ const {
 
 const { findOne } = require('../controllers/uploadInfo.controller');
 
+const {
+  findOneRefFormByParam,
+} = require('../controllers/authorLink.controller');
+
 var Mutex = require('async-mutex').Mutex;
 const mutex = new Mutex();
 
@@ -610,6 +614,92 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
 
     res.status(400).json({
       message: 'server side error',
+    });
+  }
+});
+
+router.get('/findByAuthor', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const videosWithVbCode = await getAllVideos({
+      vbCode: true,
+      isApproved: true,
+      fieldsInTheResponse: [
+        'videoData.title',
+        'videoData.videoId',
+        'uploadData.vbCode',
+        'bucket.cloudScreenLink',
+      ],
+    });
+
+    let videos = await Promise.all(
+      videosWithVbCode.map(async (video) => {
+        const vbForm = await findOne({
+          searchBy: 'formId',
+          param: video.uploadData.vbCode,
+        });
+
+        if (vbForm?.sender && vbForm.sender.toString() === userId.toString()) {
+          const sales = await getAllSales({ videoId: video.videoData.videoId });
+
+          let refForm = null;
+          let revenue = 0;
+
+          if (vbForm?.refFormId) {
+            refForm = await findOneRefFormByParam({
+              searchBy: '_id',
+              value: vbForm.refFormId,
+            });
+          }
+
+          if (sales.length && refForm && refForm?.percentage) {
+            revenue = sales.reduce(
+              (acc, sale) => acc + (sale.amount * refForm.percentage) / 100,
+              0
+            );
+          }
+
+          console.log(refForm, revenue);
+
+          return {
+            title: video.videoData.title,
+            videoId: video.videoData.videoId,
+            screenPath: video.bucket.cloudScreenLink,
+            agreementDate: moment(vbForm.createdAt).format(),
+            videoByThisAuthor: true,
+            revenue: +revenue.toFixed(2),
+            percentage:
+              refForm && refForm?.percentage ? refForm?.percentage : 0,
+          };
+        } else {
+          return { ...video._doc, videoByThisAuthor: false };
+        }
+      })
+    );
+
+    videos = videos.reduce(
+      (res, videoData) => {
+        if (videoData.videoByThisAuthor) {
+          res['videosByThisAuthor'].push(videoData);
+        } else {
+          res['videosIsNotByThisAuthor'].push(videoData);
+        }
+        return res;
+      },
+      { videosByThisAuthor: [], videosIsNotByThisAuthor: [] }
+    );
+
+    return res.status(200).json({
+      message: `Videos with statistics received`,
+      status: 'success',
+      apiData: videos.videosByThisAuthor,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Server side error`,
+      status: 'error',
     });
   }
 });

@@ -577,11 +577,17 @@ const findById = async (id) => {
   return await Video.findOne({ 'videoData.videoId': +id });
 };
 
-const getAllVideos = async ({ vbCode, isApproved }) => {
-  return Video.find({
-    ...(vbCode && vbCode),
-    ...(isApproved && isApproved),
-  });
+const getAllVideos = async ({ vbCode, isApproved, fieldsInTheResponse }) => {
+  return Video.find(
+    {
+      ...(vbCode && { 'uploadData.vbCode': { $exists: true, $ne: '' } }),
+      ...(isApproved && { isApproved: true }),
+    },
+    {
+      ...(fieldsInTheResponse &&
+        fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
+    }
+  );
 };
 
 const addCommentForFixed = async (req, res) => {
@@ -682,7 +688,7 @@ const getCountAcquiredVideosBy = async ({
     {
       $match: {
         [searchBy]: {
-          $elemMatch: { email: value, ...(purchased && { main: purchased }) },
+          $elemMatch: { email: value, main: purchased },
         },
         isApproved: true,
         ...(forLastDays && {

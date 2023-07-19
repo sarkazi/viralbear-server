@@ -229,11 +229,13 @@ const updateStatForUsers = async ({ roles }) => {
           purchased: true,
         });
 
-      const acquiredVideosCountLast30Days = await getCountAcquiredVideosBy({
-        searchBy: 'trelloData.researchers',
-        value: user.email,
-        forLastDays: 30,
-      });
+      const acquiredVideosCountLast30DaysNoMainRole =
+        await getCountAcquiredVideosBy({
+          searchBy: 'trelloData.researchers',
+          value: user.email,
+          forLastDays: 30,
+          purchased: false,
+        });
 
       const acquiredVideosCountLast7DaysMainRole =
         await getCountAcquiredVideosBy({
@@ -243,11 +245,13 @@ const updateStatForUsers = async ({ roles }) => {
           purchased: true,
         });
 
-      const acquiredVideosCountLast7Days = await getCountAcquiredVideosBy({
-        searchBy: 'trelloData.researchers',
-        value: user.email,
-        forLastDays: 7,
-      });
+      const acquiredVideosCountLast7DaysNoMainRole =
+        await getCountAcquiredVideosBy({
+          searchBy: 'trelloData.researchers',
+          value: user.email,
+          forLastDays: 7,
+          purchased: false,
+        });
 
       const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
         searchBy: 'trelloData.researchers',
@@ -256,13 +260,12 @@ const updateStatForUsers = async ({ roles }) => {
         purchased: true,
       });
 
-      const acquiredVideosCount = await getCountAcquiredVideosBy({
+      const acquiredVideosCountNoMainRole = await getCountAcquiredVideosBy({
         searchBy: 'trelloData.researchers',
         value: user.email,
         forLastDays: null,
+        purchased: false,
       });
-
-      console.log(acquiredVideosCount, 889787);
 
       const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
         searchBy: 'researcherId',
@@ -327,10 +330,10 @@ const updateStatForUsers = async ({ roles }) => {
           last7Days: linksCountLast7Days,
         },
         acquiredVideosCount: {
-          common: {
-            total: acquiredVideosCount,
-            last30Days: acquiredVideosCountLast30Days,
-            last7Days: acquiredVideosCountLast7Days,
+          noMainRole: {
+            total: acquiredVideosCountNoMainRole,
+            last30Days: acquiredVideosCountLast30DaysNoMainRole,
+            last7Days: acquiredVideosCountLast7DaysNoMainRole,
           },
           mainRole: {
             total: acquiredVideosCountMainRole,
@@ -354,13 +357,6 @@ const updateStatForUsers = async ({ roles }) => {
       };
     })
   );
-
-  //console.log(
-  //  employeeStat.map((el) => {
-  //    return el.acquiredVideosCount;
-  //  }),
-  //  88787
-  //);
 
   const totalSumOfStatFields = employeeStat.reduce(
     (acc = {}, user = {}) => {
@@ -431,21 +427,24 @@ const updateStatForUsers = async ({ roles }) => {
         total: parseFloat(
           (
             acc.acquiredVideosCount.total +
-            user.acquiredVideosCount.common.total
+            user.acquiredVideosCount.noMainRole.total +
+            user.acquiredVideosCount.mainRole.total
           ).toFixed(2)
         ),
         //за 30 дней
         last30Days: parseFloat(
           (
             acc.acquiredVideosCount.last30Days +
-            user.acquiredVideosCount.common.last30Days
+            user.acquiredVideosCount.noMainRole.last30Days +
+            user.acquiredVideosCount.mainRole.last30Days
           ).toFixed(2)
         ),
         // за 7 дней
         last7Days: parseFloat(
           (
             acc.acquiredVideosCount.last7Days +
-            user.acquiredVideosCount.common.last7Days
+            user.acquiredVideosCount.noMainRole.last7Days +
+            user.acquiredVideosCount.mainRole.last7Days
           ).toFixed(2)
         ),
       };
