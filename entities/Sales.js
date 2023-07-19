@@ -29,6 +29,10 @@ const schema = new Schema(
         name: {
           name: String,
         },
+        paidFor: {
+          name: Boolean,
+          default: false,
+        },
         type: Object,
       },
     ],

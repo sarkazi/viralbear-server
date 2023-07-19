@@ -2145,11 +2145,11 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     await Promise.all(
       bucketPathArr.map(async (path) => {
         if (!path) {
-          resolve({
+          return {
             message: 'There is no path to delete',
             status: 'warning',
             response: {},
-          });
+          };
         } else {
           return await new Promise((resolve, reject) => {
             removeFileFromStorage(path, resolve, reject);

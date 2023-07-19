@@ -86,6 +86,11 @@ const schema = new Schema(
             type: String,
             required: true,
           },
+          advanceHasBeenPaid: {
+            type: Boolean,
+            required: true,
+            default: false,
+          },
           main: {
             type: Boolean,
             required: true,

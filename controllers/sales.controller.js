@@ -42,9 +42,11 @@ const findSaleById = async (saleId) => {
   return Sales.findById(saleId);
 };
 
-const getSalesByUserId = async (userId, dateLimit) => {
+const getSalesByUserId = async ({ userId, dateLimit, paidFor }) => {
   return Sales.find({
-    researchers: { $elemMatch: { id: userId } },
+    researchers: {
+      $elemMatch: { id: userId, ...(typeof paidFor === 'boolean' && paidFor) },
+    },
     ...(dateLimit && {
       createdAt: {
         $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),

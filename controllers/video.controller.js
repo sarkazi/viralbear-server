@@ -577,17 +577,31 @@ const findById = async (id) => {
   return await Video.findOne({ 'videoData.videoId': +id });
 };
 
-const getAllVideos = async ({ vbCode, isApproved, fieldsInTheResponse }) => {
+const getAllVideos = async ({
+  vbCode,
+  isApproved,
+  fieldsInTheResponse,
+  researcherEmail,
+  advanceHasBeenPaid,
+}) => {
   return Video.find(
     {
       ...(vbCode && { 'uploadData.vbCode': { $exists: true, $ne: '' } }),
       ...(isApproved && { isApproved: true }),
+      ...(researcherEmail && {
+        'trelloData.researchers': {
+          $elemMatch: {
+            email: researcherEmail,
+            ...(advanceHasBeenPaid && advanceHasBeenPaid),
+          },
+        },
+      }),
     },
     {
       ...(fieldsInTheResponse &&
         fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
     }
-  );
+  ).count();
 };
 
 const addCommentForFixed = async (req, res) => {

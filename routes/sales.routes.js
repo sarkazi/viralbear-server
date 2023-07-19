@@ -367,6 +367,7 @@ router.post('/create', authMiddleware, async (req, res) => {
                 return {
                   id: el._id,
                   name: el.name,
+                  paidFor: false,
                 };
               })
             : [],

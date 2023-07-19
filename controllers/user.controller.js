@@ -180,333 +180,302 @@ const updateUser = async (userId, objDB, objDBForIncrement) => {
 };
 
 const updateStatForUsers = async ({ roles }) => {
-  const users = await getAllUsers({
-    me: true,
-    userId: null,
-    roles,
-  });
-
-  const employeeStat = await Promise.all(
-    users.map(async (user) => {
-      const salesLast30Days = await getSalesByUserId(user._id, 30);
-
-      const earnedYourselfLast30Days = salesLast30Days.reduce((acc, sale) => {
-        return +(acc + sale.amountToResearcher).toFixed(2);
-      }, 0);
-
-      const salesTotal = await getSalesByUserId(user._id, null);
-
-      const earnedYourselfTotal = salesTotal.reduce(
-        (a, sale) => a + +sale.amountToResearcher,
-        0
-      );
-      const earnedTotal = salesTotal.reduce(
-        (a, sale) => a + +(sale.amount / sale.researchers.length),
-        0
-      );
-
-      const earnedCompanies = salesTotal.reduce(
-        (a, sale) => a + ((sale.amount / sale.researchers.length) * 60) / 100,
-        0
-      );
-
-      let earnedTillNextPayment = earnedYourselfTotal - user.balance;
-
-      const linksCountLast30Days = await getCountLinksByUserEmail(
-        user.email,
-        30
-      );
-
-      const linksCountLast7Days = await getCountLinksByUserEmail(user.email, 7);
-
-      const linksCount = await getCountLinksByUserEmail(user.email, null);
-
-      const acquiredVideosCountLast30DaysMainRole =
-        await getCountAcquiredVideosBy({
-          searchBy: 'trelloData.researchers',
-          value: user.email,
-          forLastDays: 30,
-          purchased: true,
-        });
-
-      const acquiredVideosCountLast30DaysNoMainRole =
-        await getCountAcquiredVideosBy({
-          searchBy: 'trelloData.researchers',
-          value: user.email,
-          forLastDays: 30,
-          purchased: false,
-        });
-
-      const acquiredVideosCountLast7DaysMainRole =
-        await getCountAcquiredVideosBy({
-          searchBy: 'trelloData.researchers',
-          value: user.email,
-          forLastDays: 7,
-          purchased: true,
-        });
-
-      const acquiredVideosCountLast7DaysNoMainRole =
-        await getCountAcquiredVideosBy({
-          searchBy: 'trelloData.researchers',
-          value: user.email,
-          forLastDays: 7,
-          purchased: false,
-        });
-
-      const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
-        searchBy: 'trelloData.researchers',
-        value: user.email,
-        forLastDays: null,
-        purchased: true,
-      });
-
-      const acquiredVideosCountNoMainRole = await getCountAcquiredVideosBy({
-        searchBy: 'trelloData.researchers',
-        value: user.email,
-        forLastDays: null,
-        purchased: false,
-      });
-
-      const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
-        searchBy: 'researcherId',
-        value: user._id,
-        forLastDays: 30,
-      });
-
-      const approvedVideosCountLast7Days = await getCountApprovedTrelloCardBy({
-        searchBy: 'researcherId',
-        value: user._id,
-        forLastDays: 7,
-      });
-
-      const approvedVideosCount = await getCountApprovedTrelloCardBy({
-        searchBy: 'researcherId',
-        value: user._id,
-        forLastDays: null,
-      });
-
-      const defineDefaultValueForPayingInput = async () => {
-        if (roles[0] === 'researcher') {
-          if (user.lastPaymentDate) {
-            const daysSinceLastPayment = Math.abs(
-              Math.ceil(
-                (moment().valueOf() - moment(user.lastPaymentDate).valueOf()) /
-                  1000 /
-                  60 /
-                  60 /
-                  24
-              )
-            );
-
-            const acquiredVideosCountLast30Days =
-              await getCountAcquiredVideosBy({
-                searchBy: 'trelloData.researchers',
-                value: user.email,
-                forLastDays: daysSinceLastPayment + 1,
-                main: false,
-              });
-
-            const earnedAfterLastPayment =
-              user.advancePayment * acquiredVideosCountLast30Days;
-
-            const defaultInputValue =
-              earnedTillNextPayment > earnedAfterLastPayment ||
-              roles[0] === 'stringer'
-                ? earnedAfterLastPayment
-                : earnedTillNextPayment;
-
-            return defaultInputValue;
-          }
-        }
-      };
-
-      const defaultPaymentAmount = await defineDefaultValueForPayingInput();
-
-      return {
-        ...user._doc,
-        sentVideosCount: {
-          total: linksCount,
-          last30Days: linksCountLast30Days,
-          last7Days: linksCountLast7Days,
-        },
-        acquiredVideosCount: {
-          noMainRole: {
-            total: acquiredVideosCountNoMainRole,
-            last30Days: acquiredVideosCountLast30DaysNoMainRole,
-            last7Days: acquiredVideosCountLast7DaysNoMainRole,
-          },
-          mainRole: {
-            total: acquiredVideosCountMainRole,
-            last30Days: acquiredVideosCountLast30DaysMainRole,
-            last7Days: acquiredVideosCountLast7DaysMainRole,
-          },
-        },
-        approvedVideosCount: {
-          total: approvedVideosCount,
-          last30Days: approvedVideosCountLast30Days,
-          last7Days: approvedVideosCountLast7Days,
-        },
-        earnedYourself: {
-          total: earnedYourselfTotal,
-          last30Days: earnedYourselfLast30Days,
-        },
-        earnedCompanies,
-        earnedTotal,
-        earnedTillNextPayment,
-        defaultPaymentAmount,
-      };
-    })
-  );
-
-  const totalSumOfStatFields = employeeStat.reduce(
-    (acc = {}, user = {}) => {
-      //суммарный баланс работников
-      acc.balance = parseFloat((acc.balance + user.balance).toFixed(2));
-
-      //суммарный earnedTillNextPayment работников
-      acc.earnedTillNextPayment =
-        roles[0] === 'researcher'
-          ? parseFloat(
-              (
-                acc.earnedTillNextPayment +
-                (user.earnedYourself.total - user.balance)
-              ).toFixed(2)
-            )
-          : parseFloat(
-              (acc.earnedTillNextPayment + user.earnedTillNextPayment).toFixed(
-                2
-              )
-            );
-
-      //суммарный личный заработок работников
-      acc.earnedYourself = {
-        //за 30 дней
-        last30Days: parseFloat(
-          (
-            acc.earnedYourself.last30Days + user.earnedYourself.last30Days
-          ).toFixed(2)
-        ),
-        //всего
-        total: parseFloat(
-          (acc.earnedYourself.total + user.earnedYourself.total).toFixed(2)
-        ),
-      };
-
-      //суммарный общий заработок работников
-      acc.earnedTotal = parseFloat(
-        (acc.earnedTotal + user.earnedTotal).toFixed(2)
-      );
-      //суммарный заработок компании
-      acc.earnedCompanies = parseFloat(
-        (acc.earnedCompanies + user.earnedCompanies).toFixed(2)
-      );
-
-      //суммарное количество отправленных работниками в трелло видео
-      acc.sentVideosCount = {
-        //общий
-        total: parseFloat(
-          (acc.sentVideosCount.total + user.sentVideosCount.total).toFixed(2)
-        ),
-        //за 30 дней
-        last30Days: parseFloat(
-          (
-            acc.sentVideosCount.last30Days + user.sentVideosCount.last30Days
-          ).toFixed(2)
-        ),
-        // за 7 дней
-        last7Days: parseFloat(
-          (
-            acc.sentVideosCount.last7Days + user.sentVideosCount.last7Days
-          ).toFixed(2)
-        ),
-      };
-
-      //суммарное количество опубликованных на сайте видео, где присутствуют работники
-      acc.acquiredVideosCount = {
-        //общий
-        total: parseFloat(
-          (
-            acc.acquiredVideosCount.total +
-            user.acquiredVideosCount.noMainRole.total +
-            user.acquiredVideosCount.mainRole.total
-          ).toFixed(2)
-        ),
-        //за 30 дней
-        last30Days: parseFloat(
-          (
-            acc.acquiredVideosCount.last30Days +
-            user.acquiredVideosCount.noMainRole.last30Days +
-            user.acquiredVideosCount.mainRole.last30Days
-          ).toFixed(2)
-        ),
-        // за 7 дней
-        last7Days: parseFloat(
-          (
-            acc.acquiredVideosCount.last7Days +
-            user.acquiredVideosCount.noMainRole.last7Days +
-            user.acquiredVideosCount.mainRole.last7Days
-          ).toFixed(2)
-        ),
-      };
-
-      //суммарное количество одобренных видео (перемещенные из review листа в trello), где присутствуют работники
-      acc.approvedVideosCount = {
-        //общий
-        total: parseFloat(
-          (
-            acc.approvedVideosCount.total + user.approvedVideosCount.total
-          ).toFixed(2)
-        ),
-        //за 30 дней
-        last30Days: parseFloat(
-          (
-            acc.approvedVideosCount.last30Days +
-            user.approvedVideosCount.last30Days
-          ).toFixed(2)
-        ),
-        //за 7 дней
-        last7Days: parseFloat(
-          (
-            acc.approvedVideosCount.last7Days +
-            user.approvedVideosCount.last7Days
-          ).toFixed(2)
-        ),
-      };
-
-      return acc;
-    },
-    {
-      balance: 0,
-      earnedTillNextPayment: 0,
-      earnedYourself: {
-        last30Days: 0,
-        total: 0,
-      },
-      earnedTotal: 0,
-      earnedCompanies: 0,
-      sentVideosCount: {
-        total: 0,
-        last30Days: 0,
-        last7Days: 0,
-      },
-      acquiredVideosCount: {
-        total: 0,
-        last30Days: 0,
-        last7Days: 0,
-      },
-      approvedVideosCount: {
-        total: 0,
-        last30Days: 0,
-        last7Days: 0,
-      },
-    }
-  );
-
-  return {
-    employeeStat,
-    totalSumOfStatFields,
-    status: 'success',
-  };
+  //const users = await getAllUsers({
+  //  me: true,
+  //  userId: null,
+  //  roles,
+  //});
+  //const employeeStat = await Promise.all(
+  //  users.map(async (user) => {
+  //    //-----------------------------------------------------------------------------------------------------
+  //    const salesLast30Days = await getSalesByUserId(user._id, 30);
+  //    const salesTotal = await getSalesByUserId(user._id, null);
+  //    const earnedYourselfLast30Days = salesLast30Days.reduce((acc, sale) => {
+  //      return +(acc + sale.amountToResearcher).toFixed(2);
+  //    }, 0);
+  //    const earnedYourselfTotal = salesTotal.reduce(
+  //      (a, sale) => a + +sale.amountToResearcher,
+  //      0
+  //    );
+  //    const earnedTotal = salesTotal.reduce(
+  //      (a, sale) => a + +(sale.amount / sale.researchers.length),
+  //      0
+  //    );
+  //    const earnedCompanies = salesTotal.reduce(
+  //      (a, sale) => a + ((sale.amount / sale.researchers.length) * 60) / 100,
+  //      0
+  //    );
+  //    let earnedTillNextPayment = earnedYourselfTotal - user.balance;
+  //    const linksCountLast30Days = await getCountLinksByUserEmail(
+  //      user.email,
+  //      30
+  //    );
+  //    const linksCountLast7Days = await getCountLinksByUserEmail(user.email, 7);
+  //    const linksCount = await getCountLinksByUserEmail(user.email, null);
+  //    const acquiredVideosCountLast30DaysMainRole =
+  //      await getCountAcquiredVideosBy({
+  //        searchBy: 'trelloData.researchers',
+  //        value: user.email,
+  //        forLastDays: 30,
+  //        purchased: true,
+  //      });
+  //    const acquiredVideosCountLast30DaysNoMainRole =
+  //      await getCountAcquiredVideosBy({
+  //        searchBy: 'trelloData.researchers',
+  //        value: user.email,
+  //        forLastDays: 30,
+  //        purchased: false,
+  //      });
+  //    const acquiredVideosCountLast7DaysMainRole =
+  //      await getCountAcquiredVideosBy({
+  //        searchBy: 'trelloData.researchers',
+  //        value: user.email,
+  //        forLastDays: 7,
+  //        purchased: true,
+  //      });
+  //    const acquiredVideosCountLast7DaysNoMainRole =
+  //      await getCountAcquiredVideosBy({
+  //        searchBy: 'trelloData.researchers',
+  //        value: user.email,
+  //        forLastDays: 7,
+  //        purchased: false,
+  //      });
+  //    const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
+  //      searchBy: 'trelloData.researchers',
+  //      value: user.email,
+  //      forLastDays: null,
+  //      purchased: true,
+  //    });
+  //    const acquiredVideosCountNoMainRole = await getCountAcquiredVideosBy({
+  //      searchBy: 'trelloData.researchers',
+  //      value: user.email,
+  //      forLastDays: null,
+  //      purchased: false,
+  //    });
+  //    const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
+  //      searchBy: 'researcherId',
+  //      value: user._id,
+  //      forLastDays: 30,
+  //    });
+  //    const approvedVideosCountLast7Days = await getCountApprovedTrelloCardBy({
+  //      searchBy: 'researcherId',
+  //      value: user._id,
+  //      forLastDays: 7,
+  //    });
+  //    const approvedVideosCount = await getCountApprovedTrelloCardBy({
+  //      searchBy: 'researcherId',
+  //      value: user._id,
+  //      forLastDays: null,
+  //    });
+  //    //-----------------------------------------------------------------------------------------------------
+  //    const videoWithAnUnpaidAdvance = await
+  //    //const defineDefaultValueForPayingInput = async () => {
+  //    //  if (roles[0] === 'researcher') {
+  //    //    if (user.lastPaymentDate) {
+  //    //      const daysSinceLastPayment = Math.abs(
+  //    //        Math.ceil(
+  //    //          (moment().valueOf() - moment(user.lastPaymentDate).valueOf()) /
+  //    //            1000 /
+  //    //            60 /
+  //    //            60 /
+  //    //            24
+  //    //        )
+  //    //      );
+  //    //      const acquiredVideosCountLast30Days =
+  //    //        await getCountAcquiredVideosBy({
+  //    //          searchBy: 'trelloData.researchers',
+  //    //          value: user.email,
+  //    //          forLastDays: daysSinceLastPayment + 1,
+  //    //          main: false,
+  //    //        });
+  //    //      const earnedAfterLastPayment =
+  //    //        user.advancePayment * acquiredVideosCountLast30Days;
+  //    //      const defaultInputValue =
+  //    //        earnedTillNextPayment > earnedAfterLastPayment ||
+  //    //        roles[0] === 'stringer'
+  //    //          ? earnedAfterLastPayment
+  //    //          : earnedTillNextPayment;
+  //    //      return defaultInputValue;
+  //    //    }
+  //    //  }
+  //    //};
+  //    //const defaultPaymentAmount = await defineDefaultValueForPayingInput();
+  //    return {
+  //      ...user._doc,
+  //      sentVideosCount: {
+  //        total: linksCount,
+  //        last30Days: linksCountLast30Days,
+  //        last7Days: linksCountLast7Days,
+  //      },
+  //      acquiredVideosCount: {
+  //        noMainRole: {
+  //          total: acquiredVideosCountNoMainRole,
+  //          last30Days: acquiredVideosCountLast30DaysNoMainRole,
+  //          last7Days: acquiredVideosCountLast7DaysNoMainRole,
+  //        },
+  //        mainRole: {
+  //          total: acquiredVideosCountMainRole,
+  //          last30Days: acquiredVideosCountLast30DaysMainRole,
+  //          last7Days: acquiredVideosCountLast7DaysMainRole,
+  //        },
+  //      },
+  //      approvedVideosCount: {
+  //        total: approvedVideosCount,
+  //        last30Days: approvedVideosCountLast30Days,
+  //        last7Days: approvedVideosCountLast7Days,
+  //      },
+  //      earnedYourself: {
+  //        total: earnedYourselfTotal,
+  //        last30Days: earnedYourselfLast30Days,
+  //      },
+  //      earnedCompanies,
+  //      earnedTotal,
+  //      earnedTillNextPayment,
+  //      defaultPaymentAmount,
+  //    };
+  //  })
+  //);
+  //const totalSumOfStatFields = employeeStat.reduce(
+  //  (acc = {}, user = {}) => {
+  //    //суммарный баланс работников
+  //    acc.balance = parseFloat((acc.balance + user.balance).toFixed(2));
+  //    //суммарный earnedTillNextPayment работников
+  //    acc.earnedTillNextPayment =
+  //      roles[0] === 'researcher'
+  //        ? parseFloat(
+  //            (
+  //              acc.earnedTillNextPayment +
+  //              (user.earnedYourself.total - user.balance)
+  //            ).toFixed(2)
+  //          )
+  //        : parseFloat(
+  //            (acc.earnedTillNextPayment + user.earnedTillNextPayment).toFixed(
+  //              2
+  //            )
+  //          );
+  //    //суммарный личный заработок работников
+  //    acc.earnedYourself = {
+  //      //за 30 дней
+  //      last30Days: parseFloat(
+  //        (
+  //          acc.earnedYourself.last30Days + user.earnedYourself.last30Days
+  //        ).toFixed(2)
+  //      ),
+  //      //всего
+  //      total: parseFloat(
+  //        (acc.earnedYourself.total + user.earnedYourself.total).toFixed(2)
+  //      ),
+  //    };
+  //    //суммарный общий заработок работников
+  //    acc.earnedTotal = parseFloat(
+  //      (acc.earnedTotal + user.earnedTotal).toFixed(2)
+  //    );
+  //    //суммарный заработок компании
+  //    acc.earnedCompanies = parseFloat(
+  //      (acc.earnedCompanies + user.earnedCompanies).toFixed(2)
+  //    );
+  //    //суммарное количество отправленных работниками в трелло видео
+  //    acc.sentVideosCount = {
+  //      //общий
+  //      total: parseFloat(
+  //        (acc.sentVideosCount.total + user.sentVideosCount.total).toFixed(2)
+  //      ),
+  //      //за 30 дней
+  //      last30Days: parseFloat(
+  //        (
+  //          acc.sentVideosCount.last30Days + user.sentVideosCount.last30Days
+  //        ).toFixed(2)
+  //      ),
+  //      // за 7 дней
+  //      last7Days: parseFloat(
+  //        (
+  //          acc.sentVideosCount.last7Days + user.sentVideosCount.last7Days
+  //        ).toFixed(2)
+  //      ),
+  //    };
+  //    //суммарное количество опубликованных на сайте видео, где присутствуют работники
+  //    acc.acquiredVideosCount = {
+  //      //общий
+  //      total: parseFloat(
+  //        (
+  //          acc.acquiredVideosCount.total +
+  //          user.acquiredVideosCount.noMainRole.total +
+  //          user.acquiredVideosCount.mainRole.total
+  //        ).toFixed(2)
+  //      ),
+  //      //за 30 дней
+  //      last30Days: parseFloat(
+  //        (
+  //          acc.acquiredVideosCount.last30Days +
+  //          user.acquiredVideosCount.noMainRole.last30Days +
+  //          user.acquiredVideosCount.mainRole.last30Days
+  //        ).toFixed(2)
+  //      ),
+  //      // за 7 дней
+  //      last7Days: parseFloat(
+  //        (
+  //          acc.acquiredVideosCount.last7Days +
+  //          user.acquiredVideosCount.noMainRole.last7Days +
+  //          user.acquiredVideosCount.mainRole.last7Days
+  //        ).toFixed(2)
+  //      ),
+  //    };
+  //    //суммарное количество одобренных видео (перемещенные из review листа в trello), где присутствуют работники
+  //    acc.approvedVideosCount = {
+  //      //общий
+  //      total: parseFloat(
+  //        (
+  //          acc.approvedVideosCount.total + user.approvedVideosCount.total
+  //        ).toFixed(2)
+  //      ),
+  //      //за 30 дней
+  //      last30Days: parseFloat(
+  //        (
+  //          acc.approvedVideosCount.last30Days +
+  //          user.approvedVideosCount.last30Days
+  //        ).toFixed(2)
+  //      ),
+  //      //за 7 дней
+  //      last7Days: parseFloat(
+  //        (
+  //          acc.approvedVideosCount.last7Days +
+  //          user.approvedVideosCount.last7Days
+  //        ).toFixed(2)
+  //      ),
+  //    };
+  //    return acc;
+  //  },
+  //  {
+  //    balance: 0,
+  //    earnedTillNextPayment: 0,
+  //    earnedYourself: {
+  //      last30Days: 0,
+  //      total: 0,
+  //    },
+  //    earnedTotal: 0,
+  //    earnedCompanies: 0,
+  //    sentVideosCount: {
+  //      total: 0,
+  //      last30Days: 0,
+  //      last7Days: 0,
+  //    },
+  //    acquiredVideosCount: {
+  //      total: 0,
+  //      last30Days: 0,
+  //      last7Days: 0,
+  //    },
+  //    approvedVideosCount: {
+  //      total: 0,
+  //      last30Days: 0,
+  //      last7Days: 0,
+  //    },
+  //  }
+  //);
+  //return {
+  //  employeeStat,
+  //  totalSumOfStatFields,
+  //  status: 'success',
+  //};
 };
 
 const updateUserByIncrement = async (field, emailsOfResearchers, objDB) => {
