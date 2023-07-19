@@ -420,8 +420,6 @@ router.post(
       } catch (err) {
         console.log(err);
 
-        await sendEmail;
-
         return res.status(500).json({
           message: err?.message ? err?.message : 'Server side error',
           status: 'error',

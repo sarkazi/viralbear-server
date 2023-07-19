@@ -592,7 +592,9 @@ const getAllVideos = async ({
         'trelloData.researchers': {
           $elemMatch: {
             email: researcherEmail,
-            ...(advanceHasBeenPaid && advanceHasBeenPaid),
+            ...(typeof advanceHasBeenPaid === 'boolean' && {
+              advanceHasBeenPaid,
+            }),
           },
         },
       }),
@@ -1065,6 +1067,16 @@ const updateVideosBy = async ({ updateBy, value, dataForUpdate }) => {
   return Video.updateMany({ [updateBy]: value }, dataForUpdate);
 };
 
+const markVideoEmployeeAsHavingReceivedAnAdvance = async ({
+  researcherEmail,
+}) => {
+  return Video.updateMany(
+    { 'trelloData.researchers': { $elemMatch: { email: researcherEmail } } },
+    { $set: { 'trelloData.researchers.$[field].advanceHasBeenPaid': true } },
+    { arrayFilters: [{ 'field.email': researcherEmail }] }
+  );
+};
+
 module.exports = {
   findLastVideo,
   findByIsBrandSafe,
@@ -1096,4 +1108,5 @@ module.exports = {
   findAllVideos,
   getCountAcquiredVideosBy,
   updateVideosBy,
+  markVideoEmployeeAsHavingReceivedAnAdvance,
 };

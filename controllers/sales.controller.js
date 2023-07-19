@@ -45,7 +45,10 @@ const findSaleById = async (saleId) => {
 const getSalesByUserId = async ({ userId, dateLimit, paidFor }) => {
   return Sales.find({
     researchers: {
-      $elemMatch: { id: userId, ...(typeof paidFor === 'boolean' && paidFor) },
+      $elemMatch: {
+        id: userId,
+        ...(typeof paidFor === 'boolean' && { paidFor }),
+      },
     },
     ...(dateLimit && {
       createdAt: {
@@ -73,6 +76,14 @@ const updateSaleBy = async ({ updateBy, value, dataForUpdate }) => {
   );
 };
 
+const markEmployeeOnSalesHavingReceivePercentage = async ({ researcherId }) => {
+  return Sales.updateMany(
+    { researchers: { $elemMatch: { id: researcherId } } },
+    { $set: { 'researchers.$[field].paidFor': true } },
+    { arrayFilters: [{ 'field.id': researcherId }] }
+  );
+};
+
 module.exports = {
   createNewSale,
   deleteSaleById,
@@ -81,4 +92,5 @@ module.exports = {
   getSalesByUserId,
   updateSalesBy,
   updateSaleBy,
+  markEmployeeOnSalesHavingReceivePercentage,
 };

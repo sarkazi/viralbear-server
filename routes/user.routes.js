@@ -39,6 +39,7 @@ const {
   updateSalesBy,
   updateSaleBy,
   findSaleById,
+  markEmployeeOnSalesHavingReceivePercentage,
 } = require('../controllers/sales.controller');
 
 const { sendEmail } = require('../controllers/sendEmail.controller');
@@ -49,6 +50,7 @@ const {
   findVideoByValue,
   getCountAcquiredVideosBy,
   updateVideosBy,
+  markVideoEmployeeAsHavingReceivedAnAdvance,
 } = require('../controllers/video.controller');
 
 const {
@@ -543,7 +545,7 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
             (advance === percentage && advance > 0 && percentage > 0)
           ) {
             return {
-              tooltip: `percentage for ${unpaidSales} sales`,
+              tooltip: `percentage for ${unpaidSales.length} sales`,
               paymentFor: 'percent',
             };
           } else {
@@ -853,7 +855,9 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
 
     const { paymentFor } = req.query;
 
-    if (!balance || !userId || !paymentFor) {
+    console.log(amount, userId, paymentFor);
+
+    if (!amount || !userId || !paymentFor) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
         status: 'warning',
@@ -883,32 +887,58 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      await updateVideosBy({
-        updateBy: 'trelloData.researchers',
-        value: {
-          $elemMatch: {
-            email: researcherEmail,
-            ...(advanceHasBeenPaid && advanceHasBeenPaid),
-          },
-        },
-        dataForUpdate: { advanceHasBeenPaid: true },
+      await markVideoEmployeeAsHavingReceivedAnAdvance({
+        researcherEmail: user.email,
       });
 
       return res.status(200).json({
-        message: `Percentage of $${percentAmount} was credited to the author's balance`,
+        message: `An advance of $${amount} was paid to the employee`,
         status: 'success',
       });
     }
 
-    objDB = {
-      ...(balance && { lastPaymentDate: moment().toDate() }),
-    };
+    if (paymentFor === 'percent') {
+      let percentage = 0;
 
-    objDBForIncrement = {
-      ...(balance && { balance }),
-    };
+      const unpaidSales = await getSalesByUserId({
+        userId: user._id,
+        dateLimit: null,
+        paidFor: false,
+      });
 
-    await updateUser(userId, objDB, objDBForIncrement);
+      if (unpaidSales.length) {
+        percentage = unpaidSales.reduce(
+          (acc, sale) => acc + sale.amountToResearcher,
+          0
+        );
+      }
+
+      if (percentage !== amount) {
+        return res.status(200).json({
+          message: `The totals for the payment do not converge`,
+          status: 'warning',
+        });
+      }
+
+      await markEmployeeOnSalesHavingReceivePercentage({
+        researcherId: user._id,
+      });
+
+      return res.status(200).json({
+        message: `The interest of $${amount} was paid to the employee`,
+        status: 'success',
+      });
+    }
+
+    //objDB = {
+    //  ...(balance && { lastPaymentDate: moment().toDate() }),
+    //};
+
+    //objDBForIncrement = {
+    //  ...(balance && { balance }),
+    //};
+
+    //await updateUser(userId, objDB, objDBForIncrement);
 
     //const fromEmail = 'Vladislav Starostenko';
     //const toEmail = user.email;
@@ -921,15 +951,6 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
 
     //const { allUsersWithRefreshStat, sumCountUsersValue } =
     //  await updateStatForUsers(roleUsersForResponse);
-
-    return res.status(200).json({
-      message: 'The workers"s balance has been successfully replenished',
-      status: 'success',
-      //apiData: {
-      //  allUsersWithRefreshStat,
-      //  sumCountUsersValue,
-      //},
-    });
   } catch (err) {
     console.log(err);
     return res.status(500).json({

@@ -22,6 +22,7 @@ const defineResearchersListForCreatingVideo = async ({
               : false,
           name: researcher.name,
           email: researcher.email,
+          advanceHasBeenPaid: false,
         };
       }
     );
@@ -35,6 +36,7 @@ const defineResearchersListForCreatingVideo = async ({
           main: false,
           name: researcher.name,
           email: researcher.email,
+          advanceHasBeenPaid: false,
         };
       }
     );
