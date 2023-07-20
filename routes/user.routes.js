@@ -44,6 +44,8 @@ const {
 
 const { sendEmail } = require('../controllers/sendEmail.controller');
 
+const { findAllAuthorLinks } = require('../controllers/authorLink.controller');
+
 const {
   getCountAcquiredVideoByUserEmail,
   getAllVideos,
@@ -273,7 +275,11 @@ router.post('/authorRegister', async (req, res) => {
       activatedTheAccount: true,
     };
 
-    await updateUser(vbForm.sender, objForUpdateUAuthor, {});
+    await updateUser({
+      userId: vbForm.sender,
+      objDB: objForUpdateUAuthor,
+      objDBForIncrement: {},
+    });
 
     const { accessToken, refreshToken } = generateTokens(candidate);
 
@@ -357,7 +363,11 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
       ...(balance && { balance }),
     };
 
-    await updateUser(userIdToUpdate, objDB, objDBForIncrement);
+    await updateUser({
+      userId: userIdToUpdate,
+      objDB,
+      objDBForIncrement: {},
+    });
 
     let apiData;
 
@@ -410,7 +420,7 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
         });
 
         const earnedYourselfLast30Days = salesLast30Days.reduce((acc, sale) => {
-          return +(acc + sale.amountToResearcher).toFixed(2);
+          return acc + sale.amountToResearcher;
         }, 0);
 
         const earnedYourselfTotal = salesTotal.reduce(
@@ -426,8 +436,6 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
           (a, sale) => a + ((sale.amount / sale.researchers.length) * 60) / 100,
           0
         );
-
-        let earnedTillNextPayment = earnedYourselfTotal - user.balance;
 
         const linksCountLast30Days = await getCountLinksByUserEmail(
           user.email,
@@ -508,18 +516,40 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
           forLastDays: null,
         });
 
+        let paidReferralFormsCount = 0;
+
+        const referralFormsUsed = await findAllAuthorLinks({
+          userId: user._id,
+          used: true,
+        });
+
+        if (referralFormsUsed.length) {
+          await Promise.all(
+            referralFormsUsed.map(async (refForm) => {
+              const vbForm = await findOne({
+                searchBy: 'refFormId',
+                param: refForm._id,
+              });
+
+              if (vbForm && vbForm?.advancePaymentReceived === true) {
+                paidReferralFormsCount += 1;
+              }
+            })
+          );
+        }
+
         //-----------------------------------------------------------------------------------------------------
 
         let advance = 0;
         let percentage = 0;
 
-        const videoCountWithUnpaidAdvance = await getAllVideos({
+        const videosWithUnpaidAdvance = await getAllVideos({
           isApproved: true,
           researcherEmail: user.email,
           advanceHasBeenPaid: false,
         });
 
-        advance = videoCountWithUnpaidAdvance * 10;
+        advance = videosWithUnpaidAdvance.length * 10;
 
         const unpaidSales = await getSalesByUserId({
           userId: user._id,
@@ -537,7 +567,7 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
         const paymentSubject = () => {
           if (advance > percentage) {
             return {
-              tooltip: `advance payment for ${videoCountWithUnpaidAdvance} videos`,
+              tooltip: `advance payment for ${videosWithUnpaidAdvance.length} videos`,
               paymentFor: 'advance',
             };
           } else if (
@@ -581,13 +611,12 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
             last7Days: approvedVideosCountLast7Days,
           },
           earnedYourself: {
-            total: earnedYourselfTotal,
-            last30Days: earnedYourselfLast30Days,
+            total: +earnedYourselfTotal.toFixed(2),
+            last30Days: +earnedYourselfLast30Days.toFixed(2),
           },
-          earnedCompanies,
-          earnedTotal,
-          earnedTillNextPayment,
-          //defaultPaymentAmount,
+          earnedCompanies: +earnedCompanies.toFixed(2),
+          earnedTotal: +earnedTotal.toFixed(2),
+          paidReferralFormsCount,
           amountToBePaid: advance > percentage ? advance : percentage,
           paymentSubject: paymentSubject(),
         };
@@ -598,6 +627,12 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
       (acc = {}, user = {}) => {
         //суммарный баланс работников
         acc.balance = parseFloat((acc.balance + user.balance).toFixed(2));
+        acc.gettingPaid = parseFloat(
+          (acc.gettingPaid + user.gettingPaid).toFixed(2)
+        );
+        acc.paidReferralFormsCount = parseFloat(
+          acc.paidReferralFormsCount + user.paidReferralFormsCount
+        );
 
         //суммарный earnedTillNextPayment работников
         acc.earnedTillNextPayment =
@@ -713,7 +748,8 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
       },
       {
         balance: 0,
-        earnedTillNextPayment: 0,
+        gettingPaid: 0,
+        paidReferralFormsCount: 0,
         earnedYourself: {
           last30Days: 0,
           total: 0,
@@ -804,7 +840,11 @@ router.patch(
         earnedTillNextPayment: +earnedTillNextPayment.toFixed(2),
       };
 
-      await updateUser(user._id, dataDBForUpdateUser, {});
+      await updateUser({
+        userId: user._id,
+        objDB: dataDBForUpdateUser,
+        objDBForIncrement: {},
+      });
 
       const refreshUser = await getUserById(userId);
 
@@ -853,9 +893,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   try {
     const { amount, userId } = req.body;
 
-    const { paymentFor } = req.query;
-
-    console.log(amount, userId, paymentFor);
+    const { paymentFor, mix } = req.query;
 
     if (!amount || !userId || !paymentFor) {
       return res.status(200).json({
@@ -891,6 +929,17 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherEmail: user.email,
       });
 
+      objDB = {
+        lastPaymentDate: moment().toDate(),
+      };
+
+      objDBForIncrement = {
+        balance: -amount,
+        gettingPaid: amount,
+      };
+
+      await updateUser({ userId, objDB, objDBForIncrement });
+
       return res.status(200).json({
         message: `An advance of $${amount} was paid to the employee`,
         status: 'success',
@@ -924,21 +973,22 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherId: user._id,
       });
 
+      objDB = {
+        lastPaymentDate: moment().toDate(),
+      };
+
+      objDBForIncrement = {
+        balance: amount,
+        gettingPaid: amount,
+      };
+
+      await updateUser({ userId, objDB, objDBForIncrement });
+
       return res.status(200).json({
         message: `The interest of $${amount} was paid to the employee`,
         status: 'success',
       });
     }
-
-    //objDB = {
-    //  ...(balance && { lastPaymentDate: moment().toDate() }),
-    //};
-
-    //objDBForIncrement = {
-    //  ...(balance && { balance }),
-    //};
-
-    //await updateUser(userId, objDB, objDBForIncrement);
 
     //const fromEmail = 'Vladislav Starostenko';
     //const toEmail = user.email;
@@ -948,9 +998,6 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     //`;
 
     //await sendEmail(fromEmail, toEmail, subjectEmail, htmlEmail);
-
-    //const { allUsersWithRefreshStat, sumCountUsersValue } =
-    //  await updateStatForUsers(roleUsersForResponse);
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -964,8 +1011,6 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
   try {
     const { videoId, amountToTopUp } = req.body;
     const { paymentFor } = req.query;
-
-    console.log(videoId, amountToTopUp, paymentFor);
 
     if (!paymentFor) {
       return res.status(200).json({
@@ -1055,10 +1100,14 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
         balance: amountToTopUp,
       };
 
-      await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+      await updateUser({
+        userId: author._id,
+        objDB: dataForUpdateUser,
+        objDBForIncrement: dataForUpdateUserInc,
+      });
 
       return res.status(200).json({
-        message: `Percentage of $${advanceAmount} was credited to the author's balance`,
+        message: `Advance payment of $${advanceAmount} was credited to the author's balance`,
         status: 'success',
       });
     }
@@ -1113,7 +1162,11 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
         balance: amountToTopUp,
       };
 
-      await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+      await updateUser({
+        userId: author._id,
+        objDB: dataForUpdateUser,
+        objDBForIncrement: dataForUpdateUserInc,
+      });
 
       return res.status(200).json({
         message: `Percentage of $${percentAmount} was credited to the author's balance`,
@@ -1188,7 +1241,11 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
         balance: amountToTopUp,
       };
 
-      await updateUser(author._id, dataForUpdateUser, dataForUpdateUserInc);
+      await updateUser({
+        userId: author._id,
+        objDB: dataForUpdateUser,
+        objDBForIncrement: dataForUpdateUserInc,
+      });
 
       const dataForUpdateSales = {
         $set: { 'vbFormInfo.paidFor': true },
@@ -1381,6 +1438,8 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
           }
         })
       );
+
+      console.log(authorsVideoStatistics, 98987987);
 
       authorsVideoStatistics = authorsVideoStatistics.reduce(
         (res, videoData) => {

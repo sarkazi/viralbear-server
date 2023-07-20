@@ -587,7 +587,7 @@ const getAllVideos = async ({
   return Video.find(
     {
       ...(vbCode && { 'uploadData.vbCode': { $exists: true, $ne: '' } }),
-      ...(isApproved && { isApproved: true }),
+      ...(typeof isApproved === 'boolean' && { isApproved }),
       ...(researcherEmail && {
         'trelloData.researchers': {
           $elemMatch: {
@@ -603,7 +603,7 @@ const getAllVideos = async ({
       ...(fieldsInTheResponse &&
         fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
     }
-  ).count();
+  );
 };
 
 const addCommentForFixed = async (req, res) => {

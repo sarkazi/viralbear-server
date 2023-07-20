@@ -2,7 +2,6 @@ const AuthorLink = require('../entities/AuthorLink');
 
 const findAuthorLinkByVideoId = async (videoId) => {
   const authorLink = await AuthorLink.findOne({ videoId });
-
   return authorLink;
 };
 
@@ -32,10 +31,18 @@ const markRefFormAsUsed = async (formId, objDB) => {
   return authorLink;
 };
 
+const findAllAuthorLinks = async ({ userId, used }) => {
+  return AuthorLink.find({
+    ...(userId && { researcher: userId }),
+    ...(typeof used === 'boolean' && { used }),
+  });
+};
+
 module.exports = {
   findAuthorLinkByVideoId,
   deleteAuthorLink,
   createNewAuthorLink,
   findOneRefFormByParam,
   markRefFormAsUsed,
+  findAllAuthorLinks,
 };

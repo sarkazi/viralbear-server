@@ -52,6 +52,11 @@ const schema = new Schema({
     required: true,
     default: 0,
   },
+  gettingPaid: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
 
   paymentInfo: {
     required: false,

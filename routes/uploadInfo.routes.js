@@ -177,8 +177,6 @@ router.post(
         value: formHash,
       });
 
-      console.log(authorLinkWithThisHash, 'authorLinkWithThisHash');
-
       if (formHash && !authorLinkWithThisHash) {
         return res.status(200).json({
           message: 'Invalid link for the form. Request another one...',
@@ -271,6 +269,10 @@ router.post(
         );
       }
 
+      const isFormImpliesAnAdvancePayment =
+        (authorLinkWithThisHash && !!authorLinkWithThisHash.advancePayment) ||
+        (author && !!author.advancePayment);
+
       const objDB = {
         sender: author._id,
         videoLinks,
@@ -285,11 +287,9 @@ router.post(
         over18YearOld,
         agreedWithTerms,
         didNotGiveRights,
-        ...((authorLinkWithThisHash && authorLinkWithThisHash.advancePayment) ||
-          (author &&
-            author.advancePayment && {
-              advancePaymentReceived: false,
-            })),
+        ...(isFormImpliesAnAdvancePayment && {
+          advancePaymentReceived: false,
+        }),
         formId: `VB${vbCode}`,
         ip,
         ...(formHash && { refFormId: authorLinkWithThisHash._id }),
@@ -318,8 +318,6 @@ router.post(
           exclusivity: authorLinkWithThisHash.exclusivity,
         }),
       };
-
-      console.log(apiData, 88888);
 
       return res.status(200).send({
         message:

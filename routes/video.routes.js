@@ -631,6 +631,7 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
       ],
     });
 
+
     let videos = await Promise.all(
       videosWithVbCode.map(async (video) => {
         const vbForm = await findOne({

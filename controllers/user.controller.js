@@ -167,7 +167,7 @@ const findWorkersForCard = async (workers, selfWorkerName) => {
   });
 };
 
-const updateUser = async (userId, objDB, objDBForIncrement) => {
+const updateUser = async ({ userId, objDB, objDBForIncrement }) => {
   return await User.updateOne(
     {
       _id: userId,
