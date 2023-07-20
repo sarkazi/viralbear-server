@@ -893,7 +893,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   try {
     const { amount, userId } = req.body;
 
-    const { paymentFor, mix } = req.query;
+    const { paymentFor } = req.query;
 
     if (!amount || !userId || !paymentFor) {
       return res.status(200).json({
@@ -918,7 +918,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         advanceHasBeenPaid: false,
       });
 
-      if (videoCountWithUnpaidAdvance * 10 !== amount) {
+      if (videoCountWithUnpaidAdvance.length * 10 !== amount) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
           status: 'warning',
