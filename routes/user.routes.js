@@ -791,77 +791,137 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
   }
 });
 
-router.patch(
-  '/updateStatisticsForOneResearcher',
-  authMiddleware,
-  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await getUserById(userId);
+router.patch('/collectStatForEmployee', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await getUserById(userId);
 
-      if (!user) {
-        return res.status(200).json({
-          message: 'The user with this id was not found',
-          status: 'warning',
-        });
-      }
-
-      const salesDateLimit = await getSalesByUserId(user._id, 30);
-
-      const salesSumAmountDateLimit = salesDateLimit.reduce((acc, sale) => {
-        return +(acc + sale.amountToResearcher).toFixed(2);
-      }, 0);
-
-      const sales = await getSalesByUserId(user._id, null);
-
-      const earnedForYourself = sales.reduce(
-        (a, sale) => a + +sale.amountToResearcher,
-        0
-      );
-
-      const earnedTillNextPayment = earnedForYourself - user.balance;
-
-      const linksCount = await getCountLinksByUserEmail(user.email, null);
-
-      const acquiredVideoCount = await getCountAcquiredVideoByUserEmail(
-        user.email,
-        null
-      );
-
-      //const approvedTrelloCardCount =
-      //  await getCountApprovedTrelloCardByNickname(user.nickname, null);
-
-      const dataDBForUpdateUser = {
-        'sentVideosCount.total': linksCount,
-        'earnedForYourself.dateLimit': +salesSumAmountDateLimit.toFixed(2),
-        'earnedForYourself.total': +earnedForYourself.toFixed(2),
-        'acquiredVideosCount.total': acquiredVideoCount,
-        //'approvedVideosCount.total': approvedTrelloCardCount,
-        earnedTillNextPayment: +earnedTillNextPayment.toFixed(2),
-      };
-
-      await updateUser({
-        userId: user._id,
-        objDB: dataDBForUpdateUser,
-        objDBForIncrement: {},
-      });
-
-      const refreshUser = await getUserById(userId);
-
+    if (!user) {
       return res.status(200).json({
-        message: 'User statistics updated',
-        status: 'success',
-        apiData: refreshUser,
-      });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({
-        message: 'Server side error',
-        status: 'error',
+        message: 'The user with this id was not found',
+        status: 'warning',
       });
     }
+
+    const sales = await getSalesByUserId({
+      userId: user._id,
+      dateLimit: null,
+    });
+
+    const salesDateLimit = await getSalesByUserId({
+      userId: user._id,
+      dateLimit: 30,
+    });
+
+    const earnedYourselfLast30Days = salesDateLimit.reduce((acc, sale) => {
+      return +(acc + sale.amountToResearcher).toFixed(2);
+    }, 0);
+
+    const earnedForYourself = sales.reduce(
+      (a, sale) => a + +sale.amountToResearcher,
+      0
+    );
+
+    //const earnedTillNextPayment = earnedForYourself - user.balance;
+
+    const linksCount = await getCountLinksByUserEmail(user.email, null);
+
+    //const acquiredVideosCountLast30DaysMainRole =
+    //  await getCountAcquiredVideosBy({
+    //    searchBy: 'trelloData.researchers',
+    //    value: user.email,
+    //    forLastDays: 30,
+    //    purchased: true,
+    //  });
+
+    //const acquiredVideosCountLast30DaysNoMainRole =
+    //  await getCountAcquiredVideosBy({
+    //    searchBy: 'trelloData.researchers',
+    //    value: user.email,
+    //    forLastDays: 30,
+    //    purchased: false,
+    //  });
+
+    const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
+      searchBy: 'trelloData.researchers',
+      value: user.email,
+      forLastDays: null,
+      purchased: true,
+    });
+
+    const acquiredVideosCountNoMainRole = await getCountAcquiredVideosBy({
+      searchBy: 'trelloData.researchers',
+      value: user.email,
+      forLastDays: null,
+      purchased: false,
+    });
+
+    //const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
+    //  searchBy: 'researcherId',
+    //  value: user._id,
+    //  forLastDays: 30,
+    //});
+
+    const approvedVideosCount = await getCountApprovedTrelloCardBy({
+      searchBy: 'researcherId',
+      value: user._id,
+      forLastDays: null,
+    });
+
+    let paidReferralFormsCount = 0;
+
+    const referralFormsUsed = await findAllAuthorLinks({
+      userId: user._id,
+      used: true,
+    });
+
+    if (referralFormsUsed.length) {
+      await Promise.all(
+        referralFormsUsed.map(async (refForm) => {
+          const vbForm = await findOne({
+            searchBy: 'refFormId',
+            param: refForm._id,
+          });
+
+          if (vbForm && vbForm?.advancePaymentReceived === true) {
+            paidReferralFormsCount += 1;
+          }
+        })
+      );
+    }
+
+    const apiData = {
+      balance: user.balance,
+      gettingPaid: user.gettingPaid,
+      approvedVideosCount,
+      earnedForYourself: {
+        allTime: earnedForYourself,
+        last30Days: earnedYourselfLast30Days,
+      },
+      linksCount,
+      acquiredVideosCount: {
+        mainRole: acquiredVideosCountMainRole,
+        noMainRole: acquiredVideosCountNoMainRole,
+      },
+      percentage: user.percentage ? user.percentage : 0,
+      advancePayment: user.advancePayment ? user.advancePayment : 0,
+      paidReferralFormsCount,
+      name: user.name,
+    };
+
+    return res.status(200).json({
+      message: 'User statistics updated',
+      status: 'success',
+      apiData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
   }
-);
+});
 
 router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
   const { userId } = req.params;
