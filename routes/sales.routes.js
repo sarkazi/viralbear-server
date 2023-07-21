@@ -170,11 +170,37 @@ router.post(
                   status: 'notFound',
                 };
               } else {
+                let amountToResearcher = 0;
+
                 const videoResearchers = videoDb.trelloData.researchers;
                 const amount = +(+obj.amount).toFixed(2);
-                const amountToResearcher = videoResearchers.length
-                  ? +(amount * (0.4 / videoResearchers.length)).toFixed(2)
-                  : 0;
+
+                if (!videoResearchers.length) {
+                  amountToResearcher = 0;
+                } else if (videoResearchers.length > 1) {
+                  amountToResearcher = +(
+                    amount *
+                    (0.4 / videoResearchers.length)
+                  ).toFixed(2);
+                } else {
+                  const researcher = await getUserBy({
+                    param: 'email',
+                    value: videoResearchers[0].email,
+                  });
+
+                  if (!researcher) {
+                    amountToResearcher = 0;
+                  } else {
+                    if (researcher.advancePayment) {
+                      amountToResearcher = +(
+                        (amount * researcher.advancePayment) /
+                        100
+                      ).toFixed(2);
+                    } else {
+                      amountToResearcher = +(amount * 0.4).toFixed(2);
+                    }
+                  }
+                }
 
                 let author = null;
                 let vbForm = null;
@@ -243,11 +269,37 @@ router.post(
                   status: 'lessThen1460',
                 };
               } else {
+                let amountToResearcher = 0;
+
                 const videoResearchers = videoDb.trelloData.researchers;
                 const amount = +(+obj.amount).toFixed(2);
-                const amountToResearcher = videoResearchers.length
-                  ? +(amount * (0.4 / videoResearchers.length)).toFixed(2)
-                  : 0;
+
+                if (!videoResearchers.length) {
+                  amountToResearcher = 0;
+                } else if (videoResearchers.length > 1) {
+                  amountToResearcher = +(
+                    amount *
+                    (0.4 / videoResearchers.length)
+                  ).toFixed(2);
+                } else {
+                  const researcher = await getUserBy({
+                    param: 'email',
+                    value: videoResearchers[0].email,
+                  });
+
+                  if (!researcher) {
+                    amountToResearcher = 0;
+                  } else {
+                    if (researcher.advancePayment) {
+                      amountToResearcher = +(
+                        (amount * researcher.advancePayment) /
+                        100
+                      ).toFixed(2);
+                    } else {
+                      amountToResearcher = +(amount * 0.4).toFixed(2);
+                    }
+                  }
+                }
 
                 let author = null;
                 let vbForm = null;
@@ -895,12 +947,19 @@ router.get('/getTop', authMiddleware, async (req, res) => {
               authorEmail: author.email,
               percentage: author.percentage ? author.percentage : 0,
               advancePayment: author.advancePayment ? author.advancePayment : 0,
+              amount: +obj.amount.toFixed(2),
             };
           } else {
-            return obj;
+            return {
+              ...obj,
+              amount: +obj.amount.toFixed(2),
+            };
           }
         } else {
-          return obj;
+          return {
+            ...obj,
+            amount: +obj.amount.toFixed(2),
+          };
         }
       })
     );

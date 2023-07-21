@@ -1384,92 +1384,120 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
                 value: vbForm.sender,
               });
 
-              let percentAmount = 0;
-              let advanceAmount = 0;
-              let toBePaid = 0;
-              let totalBalance = 0;
+              if (authorRelatedWithVbForm) {
+                let percentAmount = 0;
+                let advanceAmount = 0;
+                let toBePaid = 0;
+                let totalBalance = 0;
 
-              if (
-                authorRelatedWithVbForm.advancePayment &&
-                typeof vbForm.advancePaymentReceived === 'boolean' &&
-                !vbForm.advancePaymentReceived
-              ) {
-                advanceAmount = authorRelatedWithVbForm.advancePayment;
-                toBePaid = authorRelatedWithVbForm.advancePayment;
+                if (
+                  authorRelatedWithVbForm?.advancePayment &&
+                  typeof vbForm.advancePaymentReceived === 'boolean' &&
+                  !vbForm.advancePaymentReceived
+                ) {
+                  advanceAmount = authorRelatedWithVbForm.advancePayment;
+                  toBePaid = authorRelatedWithVbForm.advancePayment;
+                }
+
+                if (
+                  authorRelatedWithVbForm?.advancePayment &&
+                  typeof vbForm.advancePaymentReceived === 'boolean' &&
+                  vbForm.advancePaymentReceived
+                ) {
+                  totalBalance = authorRelatedWithVbForm.advancePayment * -1;
+                }
+
+                if (authorRelatedWithVbForm?.percentage) {
+                  salesOfThisVideo.map((sale) => {
+                    if (sale.vbFormInfo.paidFor === false) {
+                      percentAmount +=
+                        (sale.amount * authorRelatedWithVbForm.percentage) /
+                        100;
+                      toBePaid +=
+                        (sale.amount * authorRelatedWithVbForm.percentage) /
+                        100;
+                    } else {
+                      totalBalance +=
+                        (sale.amount * authorRelatedWithVbForm.percentage) /
+                        100;
+                    }
+                  });
+                }
+
+                return {
+                  status: 'All right',
+                  authorEmail: authorRelatedWithVbForm.email,
+                  percentage: authorRelatedWithVbForm.percentage
+                    ? authorRelatedWithVbForm.percentage
+                    : 0,
+                  advance: {
+                    value:
+                      typeof vbForm.advancePaymentReceived === 'boolean' &&
+                      authorRelatedWithVbForm.advancePayment
+                        ? authorRelatedWithVbForm.advancePayment
+                        : 0,
+                    paid:
+                      typeof vbForm.advancePaymentReceived !== 'boolean' &&
+                      !authorRelatedWithVbForm.advancePayment
+                        ? null
+                        : vbForm.advancePaymentReceived === true
+                        ? true
+                        : false,
+                  },
+                  videoId: video.videoData.videoId,
+                  videoTitle: video.videoData.title,
+                  paymentInfo:
+                    authorRelatedWithVbForm.paymentInfo.variant === undefined
+                      ? false
+                      : true,
+                  amount: {
+                    percent: +percentAmount.toFixed(2),
+                    advance: +advanceAmount.toFixed(2),
+                    toBePaid: +toBePaid.toFixed(2),
+                    totalBalance: +totalBalance.toFixed(2),
+                  },
+                  vbFormUid: vbForm.formId,
+                  salesCount: salesOfThisVideo.length,
+                };
+              } else {
+                return {
+                  status: 'Author not found',
+                  authorEmail: null,
+                  percentage: null,
+                  advance: {
+                    value: null,
+                    paid: null,
+                  },
+                  videoId: video.videoData.videoId,
+                  videoTitle: video.videoData.title,
+                  paymentInfo: null,
+                  amount: {
+                    percent: null,
+                    advance: null,
+                    toBePaid: null,
+                    totalBalance: null,
+                  },
+                  vbFormUid: vbForm.formId,
+                  salesCount: salesOfThisVideo.length,
+                };
               }
-
-              if (
-                authorRelatedWithVbForm.advancePayment &&
-                typeof vbForm.advancePaymentReceived === 'boolean' &&
-                vbForm.advancePaymentReceived
-              ) {
-                totalBalance = authorRelatedWithVbForm.advancePayment * -1;
-              }
-
-              if (authorRelatedWithVbForm.percentage) {
-                salesOfThisVideo.map((sale) => {
-                  if (sale.vbFormInfo.paidFor === false) {
-                    percentAmount +=
-                      (sale.amount * authorRelatedWithVbForm.percentage) / 100;
-                    toBePaid +=
-                      (sale.amount * authorRelatedWithVbForm.percentage) / 100;
-                  } else {
-                    totalBalance +=
-                      (sale.amount * authorRelatedWithVbForm.percentage) / 100;
-                  }
-                });
-              }
-
-              return {
-                authorEmail: authorRelatedWithVbForm.email,
-                percentage: authorRelatedWithVbForm.percentage
-                  ? authorRelatedWithVbForm.percentage
-                  : 0,
-                advance: {
-                  value:
-                    typeof vbForm.advancePaymentReceived === 'boolean' &&
-                    authorRelatedWithVbForm.advancePayment
-                      ? authorRelatedWithVbForm.advancePayment
-                      : 0,
-                  paid:
-                    typeof vbForm.advancePaymentReceived !== 'boolean' &&
-                    !authorRelatedWithVbForm.advancePayment
-                      ? '-'
-                      : vbForm.advancePaymentReceived === true
-                      ? 'yes'
-                      : 'no',
-                },
-                videoId: video.videoData.videoId,
-                videoTitle: video.videoData.title,
-                paymentInfo:
-                  authorRelatedWithVbForm.paymentInfo.variant === undefined
-                    ? 'no'
-                    : 'yes',
-                amount: {
-                  percent: +percentAmount.toFixed(2),
-                  advance: +advanceAmount.toFixed(2),
-                  toBePaid: +toBePaid.toFixed(2),
-                  totalBalance: +totalBalance.toFixed(2),
-                },
-                vbFormUid: vbForm.formId,
-                salesCount: salesOfThisVideo.length,
-              };
             } else {
               return {
-                authorEmail: '-',
-                percentage: '-',
+                status: 'VB form without sender',
+                authorEmail: null,
+                percentage: null,
                 advance: {
-                  value: '-',
-                  paid: '-',
+                  value: null,
+                  paid: null,
                 },
                 videoId: video.videoData.videoId,
                 videoTitle: video.videoData.title,
-                paymentInfo: '-',
+                paymentInfo: null,
                 amount: {
-                  percent: 0,
-                  advance: 0,
-                  toBePaid: 0,
-                  totalBalance: 0,
+                  percent: null,
+                  advance: null,
+                  toBePaid: null,
+                  totalBalance: null,
                 },
                 vbFormUid: vbForm.formId,
                 salesCount: salesOfThisVideo.length,
@@ -1477,53 +1505,52 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
             }
           } else {
             return {
-              authorEmail: '-',
-              percentage: '-',
+              status: 'VB form not found',
+              authorEmail: null,
+              percentage: null,
               advance: {
-                value: '-',
-                paid: '-',
+                value: null,
+                paid: null,
               },
               videoId: video.videoData.videoId,
               videoTitle: video.videoData.title,
-              paymentInfo: '-',
+              paymentInfo: null,
               amount: {
-                percent: 0,
-                advance: 0,
-                toBePaid: 0,
-                totalBalance: 0,
+                percent: null,
+                advance: null,
+                toBePaid: null,
+                totalBalance: null,
               },
-              vbFormUid: '-',
+              vbFormUid: null,
               salesCount: salesOfThisVideo.length,
             };
           }
         })
       );
 
-      console.log(authorsVideoStatistics, 98987987);
-
       authorsVideoStatistics = authorsVideoStatistics.reduce(
         (res, videoData) => {
-          if (
+          if (videoData.advance.value === 0 && videoData.percentage === 0) {
+            res['ignore'].push(videoData);
+          } else if (
+            videoData.advance.value === 0 ||
+            videoData.amount.toBePaid <= 75
+          ) {
+            res['other'].push(videoData);
+          } else if (
+            !videoData.paymentInfo &&
+            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
+          ) {
+            res['noPayment'].push(videoData);
+          } else if (
             videoData.paymentInfo &&
             (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
           ) {
             res['ready'].push(videoData);
           }
-          if (
-            !videoData.paymentInfo &&
-            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
-          ) {
-            res['noPayment'].push(videoData);
-          }
-          if (
-            videoData.advance.value === 0 ||
-            videoData.amount.toBePaid <= 75
-          ) {
-            res['other'].push(videoData);
-          }
           return res;
         },
-        { ready: [], noPayment: [], other: [] }
+        { ready: [], noPayment: [], other: [], ignore: [] }
       );
 
       const defineApiData = () => {

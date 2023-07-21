@@ -373,8 +373,10 @@ router.get('/findOne', async (req, res) => {
       ...form._doc,
       ...(author && {
         authorEmail: author.email,
-        percentage: author.percentage ? author.percentage : 0,
-        advancePayment: author.advancePayment ? author.advancePayment : 0,
+      }),
+      ...(refForm && {
+        percentage: refForm.percentage ? refForm.percentage : 0,
+        advancePayment: refForm.advancePayment ? refForm.advancePayment : 0,
       }),
       exclusivity: !refForm ? true : refForm.exclusivity ? true : false,
     };
