@@ -586,10 +586,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           }
         };
 
-        console.log({
-          total: +earnedYourselfTotal.toFixed(2),
-          last30Days: +earnedYourselfLast30Days.toFixed(2),
-        });
+       
 
         return {
           ...user._doc,
