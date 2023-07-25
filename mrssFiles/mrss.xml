@@ -7,6 +7,22 @@
          <channel>
            <title>ViralBear videos</title>
            <dfpvideo:version>2</dfpvideo:version><item>
+             <media:title>ав</media:title>
+             <media:description>вавыа</media:description>
+             <media:keywords>авыа</media:keywords>
+             <media:city>авыа</media:city>
+             <media:country>Angola</media:country>
+             <media:regionCode>AO</media:regionCode>
+             <media:categoryCode>GEN</media:categoryCode>
+             <media:category>Weather</media:category>
+             <media:exclusivity>exclusive</media:exclusivity>
+             <media:filmingDate>Tue, 25 Jul 2023</media:filmingDate>
+             <guid>2504</guid>
+             <pubDate>Tue, 25 Jul 2023 21:47:24 GMT</pubDate>
+             <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2504.jpg" />
+             <media:content url="https://viralbear2.storage.yandexcloud.net/videos/2504.mp4" />
+             <dfpvideo:lastModifiedDate/>
+             </item><item>
              <media:title>Unlikely confrontation: tourist's dog faces fierce cat at Irganai reservoir</media:title>
              <media:description>In an unexpected turn of events at the picturesque Irganai reservoir in Dagestan, Russia, a tourist's leisurely day took a surprising twist when their four-legged companion faced off against a disgruntled cat. On June 11, 2023, @dag.travel captured a video showing the intense encounter. The cat lunged at the dog, prompting the owner to swiftly intervene, pulling the dog away and moving to a safer distance. Despite the distance, the persistent cat continued its pursuit, leading the dog's owner to carry their pet to avoid further confrontation. The serene outing turned into an unusual showdown, leaving both the onlookers and the tourists in awe of the unexpected clash between these unlikely adversaries.</media:description>
              <media:keywords>dog,cat,attack,Irganai,reservoir,Dagestan,Russia,tourist,owner,atmosphere,video,confront,surprising,encounter,lunge,persistent,pursuit,carry,onlookers,clash</media:keywords>
@@ -794,22 +810,6 @@ Credit to: https://t.me/kazdoytvaripopare</media:description>
              <pubDate>Sat, 15 Jul 2023 16:31:17 GMT</pubDate>
              <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/9b1d4d58-31cc-4c4c-8acd-0a47379bd97a.jpg" />
              <media:content url="https://viralbear.storage.yandexcloud.net/videos/bf97ebff-d629-4265-b5df-78e9946f6cb3.mp4" />
-             <dfpvideo:lastModifiedDate/>
-             </item><item>
-             <media:title>Enthusiastic equine: the joyful journey of Tosha, the Bashkir breed Macintosh horse</media:title>
-             <media:description>In a heartwarming video captured by @mashak_b on May 4th, 2023, in Lobnya, Moscow, Russia, we witness an endearing moment between a skilled equestrian and his beloved horse, Tosha. The footage shows the author standing on a wooden stool as Tosha, a magnificent Bashkir breed Macintosh horse, gallops towards him with boundless enthusiasm. As the author reveals, this video showcases one of Tosha's favorite exercises, where he is asked to "park" at the end of their class. The genuine connection between the rider and his horse is evident, portraying the sheer joy and fulfillment that comes from this beautiful bond between man and equine companion.</media:description>
-             <media:keywords>horse,video,Bashkir,Macintosh,Tosha,equestrian,enthusiasm,Moscow,Russia,Lobnya,wooden,stool,student,exercise,park,connection,rider,gallop,bond,joy,fulfillment</media:keywords>
-             <media:city>Lobnya, Moscow</media:city>
-             <media:country>Russia</media:country>
-             <media:regionCode>RU</media:regionCode>
-            <media:categoryCode>ENT</media:categoryCode>      
-             <media:category>Animals</media:category>
-             <media:exclusivity>non-exсlusive</media:exclusivity>
-             <media:filmingDate>Thu, 4 May 2023</media:filmingDate>
-             <guid>2449</guid>
-             <pubDate>Sat, 15 Jul 2023 16:13:46 GMT</pubDate>
-             <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/4d478e9e-fbb6-4a65-a9ca-e981b78a2bd5.jpg" />
-             <media:content url="https://viralbear.storage.yandexcloud.net/videos/aa9a8d10-7cea-4a7b-942a-d38594f519ce.mp4" />
              <dfpvideo:lastModifiedDate/>
              </item></channel>
            </rss>

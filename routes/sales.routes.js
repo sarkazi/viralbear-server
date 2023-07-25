@@ -58,10 +58,10 @@ router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
 
     let author = null;
 
-    if (videoDb.uploadData.vbCode) {
+    if (videoDb.vbForm) {
       const vbForm = await findOne({
-        searchBy: 'formId',
-        param: videoDb.uploadData.vbCode,
+        searchBy: '_id',
+        param: videoDb.vbForm,
       });
 
       if (vbForm && vbForm.sender) {
@@ -205,10 +205,10 @@ router.post(
                 let author = null;
                 let vbForm = null;
 
-                if (videoDb.uploadData.vbCode) {
+                if (videoDb.vbForm) {
                   vbForm = await findOne({
-                    searchBy: 'formId',
-                    param: videoDb.uploadData.vbCode,
+                    searchBy: '_id',
+                    param: videoDb.vbForm,
                   });
 
                   if (vbForm.sender) {
@@ -304,10 +304,10 @@ router.post(
                 let author = null;
                 let vbForm = null;
 
-                if (videoDb.uploadData.vbCode) {
+                if (videoDb.vbForm) {
                   vbForm = await findOne({
-                    searchBy: 'formId',
-                    param: videoDb?.uploadData?.vbCode,
+                    searchBy: '_id',
+                    param: videoDb?.vbForm,
                   });
 
                   if (vbForm.sender) {

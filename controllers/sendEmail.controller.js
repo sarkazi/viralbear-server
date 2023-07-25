@@ -35,7 +35,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     .join(', ');
 
   await mailTransporter.sendMail({
-    from: `"Information" <info@viralbear.media>`,
+    from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
     to:
       refForm && researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
@@ -136,7 +136,7 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
   } = dataForSendingSurveyInfo;
 
   await mailTransporter.sendMail({
-    from: `"Information (the survey)" <info@viralbear.media>`,
+    from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
     to:
       refForm && researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
@@ -161,7 +161,7 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
   });
 };
 
-const sendEmail = async (emailFrom, emailTo, subject, html) => {
+const sendEmail = async ({ emailFrom, emailTo, subject, html }) => {
   await mailTransporter.sendMail({
     from: emailFrom,
     to: emailTo,

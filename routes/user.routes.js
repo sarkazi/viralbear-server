@@ -395,7 +395,7 @@ router.patch('/updateOne', authMiddleware, async (req, res) => {
   }
 });
 
-router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
+router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
   const { roles } = req.query;
 
   try {
@@ -585,6 +585,11 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
             };
           }
         };
+
+        console.log({
+          total: +earnedYourselfTotal.toFixed(2),
+          last30Days: +earnedYourselfLast30Days.toFixed(2),
+        });
 
         return {
           ...user._doc,
@@ -791,7 +796,7 @@ router.patch('/collectStatForEmployees', authMiddleware, async (req, res) => {
   }
 });
 
-router.patch('/collectStatForEmployee', authMiddleware, async (req, res) => {
+router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await getUserById(userId);
@@ -925,20 +930,12 @@ router.patch('/collectStatForEmployee', authMiddleware, async (req, res) => {
 
 router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
   const { userId } = req.params;
-  const { roleUsersForResponse } = req.query;
   try {
     await deleteUser(userId);
-
-    users = await getAllUsers({
-      me: true,
-      userId: null,
-      role: roleUsersForResponse,
-    });
 
     return res.status(200).json({
       message: 'The user has been successfully deleted',
       status: 'success',
-      apiData: users,
     });
   } catch (err) {
     console.log(err);
@@ -1099,13 +1096,13 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
     }
 
     const vbForm = await findOne({
-      searchBy: 'formId',
-      param: video.uploadData.vbCode,
+      searchBy: '_id',
+      param: video.vbForm,
     });
 
     if (!vbForm) {
       return res.status(200).json({
-        message: `VB form with id "${video.uploadData.vbCode}" not found`,
+        message: `VB form with id "${video.vbForm}" not found`,
         status: 'warning',
       });
     }
@@ -1360,7 +1357,7 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
 
     const videosWithVbCode = await getAllVideos({
       vbCode: {
-        'uploadData.vbCode': { $exists: true, $ne: '' },
+        vbForm: { $exists: true, $ne: '' },
       },
       isApproved: { isApproved: true },
     });
@@ -1369,8 +1366,8 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
       let authorsVideoStatistics = await Promise.all(
         videosWithVbCode.map(async (video) => {
           const vbForm = await findOne({
-            searchBy: 'formId',
-            param: video.uploadData.vbCode,
+            searchBy: '_id',
+            param: video.vbForm,
           });
 
           const salesOfThisVideo = await getAllSales({

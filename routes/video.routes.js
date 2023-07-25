@@ -47,7 +47,7 @@ const {
   findPrevVideoInFeed,
   findOneVideoInFeed,
   findReadyForPublication,
-  findVideoByVBCode,
+
   findTheCountryCodeByName,
   uploadContentOnBucket,
   createNewVideo,
@@ -65,6 +65,7 @@ const {
 const {
   findUsersByValueList,
   getUserBy,
+  updateUser,
 } = require('../controllers/user.controller');
 
 const { sendEmail } = require('../controllers/sendEmail.controller');
@@ -110,9 +111,6 @@ router.post(
       const {
         originalLink,
         vbCode,
-        authorEmail,
-        percentage,
-        advancePayment,
         researchers,
         title,
         desc,
@@ -127,12 +125,6 @@ router.post(
         trelloCardId,
         trelloCardName,
         priority,
-        whereFilmed,
-        whyDecide,
-        whatHappen,
-        whenFilmed,
-        whoAppears,
-        agreementLink,
         exclusivity,
         videoId: reqVideoId,
       } = req.body;
@@ -175,10 +167,12 @@ router.post(
       }
 
       try {
-        if (vbCode) {
-          const form = await findOne(vbCode);
+        let vbForm = null;
 
-          if (!form) {
+        if (vbCode) {
+          vbForm = await findOne({ searchBy: 'formId', param: `VB${vbCode}` });
+
+          if (!vbForm) {
             return res.status(200).json({
               message: `The form with the vb code ${vbCode} was not found in the database`,
               status: 'warning',
@@ -186,11 +180,14 @@ router.post(
           }
         }
 
-        const videoWithVBCode = await findVideoByVBCode(vbCode);
+        const videoWithVBForm = await findVideoByValue({
+          searchBy: 'vbForm',
+          value: vbForm._id,
+        });
 
-        if (videoWithVBCode) {
+        if (videoWithVBForm) {
           return res.status(200).json({
-            message: 'a video with such a "vbcode" is already in the database',
+            message: 'a video with such a "VB code" is already in the database',
             status: 'warning',
           });
         }
@@ -348,35 +345,8 @@ router.post(
           researchers: researchersListForCreatingVideo,
           priority: JSON.parse(priority),
           exclusivity: JSON.parse(exclusivity),
-          ...(agreementLink && {
-            agreementLink,
-          }),
-          ...(vbCode && {
-            vbCode: `VB${vbCode}`,
-          }),
-          ...(authorEmail && {
-            authorEmail,
-          }),
-          ...(advancePayment && {
-            advancePayment,
-          }),
-          ...(percentage && {
-            percentage,
-          }),
-          ...(whereFilmed && {
-            whereFilmed,
-          }),
-          ...(whyDecide && {
-            whyDecide,
-          }),
-          ...(whatHappen && {
-            whatHappen,
-          }),
-          ...(whenFilmed && {
-            whenFilmed,
-          }),
-          ...(whoAppears && {
-            whoAppears,
+          ...(vbForm && {
+            vbForm: vbForm._id,
           }),
           bucketResponseByVideoUpload: bucketResponseByVideoUpload.response,
           bucketResponseByScreenUpload: bucketResponseByScreenUpload.response,
@@ -432,6 +402,34 @@ router.post(
 router.post('/generateExcelFile', authMiddleware, generateExcelFile);
 
 router.get('/findOne', authMiddleware, findLastVideo);
+
+router.get('/findOneBy', async (req, res) => {
+  try {
+    const { searchBy, value } = req.query;
+
+    if (!searchBy || !value) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'Missing parameters for video search',
+      });
+    }
+
+    const apiData = await findVideoByValue({ searchBy, value });
+
+    return res.status(200).json({
+      apiData,
+      status: 'success',
+      message: 'Detailed video information received',
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server side error',
+    });
+  }
+});
 
 router.get('/findAll', async (req, res) => {
   const {
@@ -626,17 +624,15 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
       fieldsInTheResponse: [
         'videoData.title',
         'videoData.videoId',
-        'uploadData.vbCode',
         'bucket.cloudScreenLink',
       ],
-    });
-
+    }).populate({ path: 'vbForm', select: { formId: 1 } });
 
     let videos = await Promise.all(
       videosWithVbCode.map(async (video) => {
         const vbForm = await findOne({
-          searchBy: 'formId',
-          param: video.uploadData.vbCode,
+          searchBy: '_id',
+          param: video.vbForm,
         });
 
         if (vbForm?.sender && vbForm.sender.toString() === userId.toString()) {
@@ -786,10 +782,10 @@ router.get('/findOneBy', async (req, res) => {
         salesCount: salesOfThisVideo.length,
       };
 
-      if (video.uploadData.vbCode) {
+      if (video.vbForm) {
         const vbForm = await findOne({
-          searchBy: 'formId',
-          param: video.uploadData.vbCode,
+          searchBy: '_id',
+          param: video.vbForm,
         });
 
         if (vbForm.sender) {
@@ -866,14 +862,13 @@ router.patch(
 
     if (!videoId) {
       return res
-        .status(404)
+        .status(200)
         .json({ message: 'missing "video id" parameter', status: 'warning' });
     }
 
     const {
       originalLink,
       vbCode,
-      authorEmail,
       researchers,
       title,
       desc,
@@ -895,86 +890,46 @@ router.patch(
       const video = await findVideoById(+videoId);
 
       if (!video) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: `video with id "${videoId}" not found`,
           status: 'warning',
         });
       }
 
-      if (authorEmail && !video?.uploadData?.vbCode && !vbCode) {
-        return res.status(400).json({
-          message: `the "author's email" field cannot be without "vb code"`,
-          status: 'warning',
+      if (!vbCode && !!video.vbForm) {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToDelete: {
+            needToBeFixed: 1,
+            ...(!creditTo && { 'videoData.creditTo': 1 }),
+          },
         });
       }
 
-      if (!vbCode && video?.uploadData?.vbCode) {
-        await updateVideoById(
-          +videoId,
-          {
-            uploadData: {},
-          },
-          { creditTo: creditTo ? creditTo : null }
-        );
-      }
-
       if (vbCode) {
-        const form = await findOne(vbCode);
+        const vbForm = await findOne({
+          searchBy: 'formId',
+          param: `VB${vbCode}`,
+        });
 
-        if (!form) {
-          return res.status(404).json({
+        if (!vbForm) {
+          return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
             status: 'warning',
           });
         }
 
-        await updateVideoById(
-          +videoId,
-          {
-            uploadData: {
-              vbCode: `VB${vbCode}`,
-              authorEmail: authorEmail ? authorEmail : form.email,
-              agreementLink: form.agreementLink,
-              ...(form.percentage && {
-                percentage: form.percentage,
-              }),
-              ...(form.advancePayment && {
-                advancePayment: form.advancePayment,
-              }),
-              ...(form.whereFilmed && {
-                whereFilmed: form.whereFilmed,
-              }),
-              ...(form.whyDecide && {
-                whyDecide: form.whyDecide,
-              }),
-              ...(form.whatHappen && {
-                whatHappen: form.whatHappen,
-              }),
-              ...(form.whenFilmed && {
-                whenFilmed: form.whenFilmed,
-              }),
-              ...(form.whoAppears && {
-                whoAppears: form.whoAppears,
-              }),
-            },
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            vbForm: vbForm._id,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
-      }
-
-      if (authorEmail && !vbCode && video?.uploadData?.vbCode) {
-        await updateVideoById(
-          +videoId,
-          {
-            'uploadData.authorEmail': authorEmail,
-          },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (reqVideo) {
         if (path.extname(reqVideo[0].originalname) !== '.mp4') {
-          return res.status(400).json({
+          return res.status(200).json({
             message: `Incorrect video extension`,
             status: 'warning',
           });
@@ -1037,9 +992,9 @@ router.patch(
 
         const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'bucket.cloudVideoLink':
               bucketResponseByVideoUpload.response.Location,
             'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
@@ -1051,8 +1006,7 @@ router.patch(
             'videoData.hasAudioTrack':
               responseAfterConversion.data.hasAudioTrack,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (reqScreen) {
@@ -1081,15 +1035,14 @@ router.patch(
           }
         );
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'bucket.cloudScreenLink':
               bucketResponseByScreenUpload.response.Location,
             'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       socketInstance
@@ -1112,13 +1065,12 @@ router.patch(
           });
         }
 
-        await updateVideoById(
-          videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'videoData.countryCode': countryCode,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (country) {
@@ -1131,33 +1083,30 @@ router.patch(
           });
         }
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'videoData.country': country,
             'videoData.countryCode': countryCode,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (JSON.parse(brandSafe) === false) {
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             brandSafe: JSON.parse(brandSafe),
             publishedInSocialMedia: false,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       } else {
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             brandSafe: JSON.parse(brandSafe),
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       const trelloCardId = video.trelloData.trelloCardId;
@@ -1191,11 +1140,10 @@ router.patch(
           });
       }
 
-      await updateVideoById(
-        +videoId,
-        {
+      await updateVideoById({
+        videoId: +videoId,
+        dataToUpdate: {
           ...(originalLink && { 'videoData.originalVideoLink': originalLink }),
-          ...(authorEmail && { 'uploadData.authorEmail': authorEmail }),
           ...(title && { 'videoData.title': title }),
           ...(desc && { 'videoData.description': desc }),
           ...(creditTo && { 'videoData.creditTo': creditTo }),
@@ -1219,10 +1167,14 @@ router.patch(
             'trelloData.researchers': researchersListForCreatingVideo,
           }),
         },
-        { creditTo: creditTo ? creditTo : null }
-      );
+      });
 
-      const updatedVideo = await findVideoById(+videoId);
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
+
+      
 
       if (updatedVideo.isApproved === true) {
         const { status } = await creatingAndSavingFeeds(updatedVideo);
@@ -1313,75 +1265,35 @@ router.patch(
         });
       }
 
-      if (authorEmail && !video?.uploadData?.vbCode && !vbCode) {
-        return res.status(400).json({
-          message: `the "author's email" field cannot be without "vb code"`,
-          status: 'warning',
+      if (!vbCode && !!video.vbForm) {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToDelete: {
+            needToBeFixed: 1,
+            ...(!creditTo && { 'videoData.creditTo': 1 }),
+          },
         });
       }
 
-      if (!vbCode && video?.uploadData?.vbCode) {
-        await updateVideoById(
-          +videoId,
-          {
-            uploadData: {},
-          },
-          { creditTo: creditTo ? creditTo : null }
-        );
-      }
-
       if (vbCode) {
-        const form = await findOne(vbCode);
+        const vbForm = await findOne({
+          searchBy: 'formId',
+          param: `VB${vbCode}`,
+        });
 
-        if (!form) {
-          return res.status(404).json({
+        if (!vbForm) {
+          return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
             status: 'warning',
           });
         }
 
-        await updateVideoById(
-          +videoId,
-          {
-            uploadData: {
-              vbCode: `VB${vbCode}`,
-              authorEmail: authorEmail ? authorEmail : form.email,
-              agreementLink: form.agreementLink,
-              ...(form.percentage && {
-                percentage: form.percentage,
-              }),
-              ...(form.advancePayment && {
-                advancePayment: form.advancePayment,
-              }),
-              ...(form.whereFilmed && {
-                whereFilmed: form.whereFilmed,
-              }),
-              ...(form.whyDecide && {
-                whyDecide: form.whyDecide,
-              }),
-              ...(form.whatHappen && {
-                whatHappen: form.whatHappen,
-              }),
-              ...(form.whenFilmed && {
-                whenFilmed: form.whenFilmed,
-              }),
-              ...(form.whoAppears && {
-                whoAppears: form.whoAppears,
-              }),
-            },
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            vbForm: vbForm._id,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
-      }
-
-      if (authorEmail && !vbCode && video?.uploadData?.vbCode) {
-        await updateVideoById(
-          +videoId,
-          {
-            'uploadData.authorEmail': authorEmail,
-          },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (reqVideo) {
@@ -1449,9 +1361,9 @@ router.patch(
 
         const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'bucket.cloudVideoLink':
               bucketResponseByVideoUpload.response.Location,
             'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
@@ -1463,8 +1375,7 @@ router.patch(
             'videoData.hasAudioTrack':
               responseAfterConversion.data.hasAudioTrack,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (reqScreen) {
@@ -1493,15 +1404,14 @@ router.patch(
           }
         );
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'bucket.cloudScreenLink':
               bucketResponseByScreenUpload.response.Location,
             'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       socketInstance
@@ -1524,13 +1434,12 @@ router.patch(
           });
         }
 
-        await updateVideoById(
-          videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'videoData.countryCode': countryCode,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (country) {
@@ -1543,33 +1452,30 @@ router.patch(
           });
         }
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'videoData.country': country,
             'videoData.countryCode': countryCode,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (JSON.parse(brandSafe) === false) {
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             brandSafe: JSON.parse(brandSafe),
             publishedInSocialMedia: false,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       } else {
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             brandSafe: JSON.parse(brandSafe),
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       const trelloCardId = video.trelloData.trelloCardId;
@@ -1603,12 +1509,10 @@ router.patch(
           });
       }
 
-      await updateVideoById(
-        +videoId,
-        {
+      await updateVideoById({
+        videoId: +videoId,
+        dataToUpdate: {
           ...(originalLink && { 'videoData.originalVideoLink': originalLink }),
-          ...(vbCode && { 'uploadData.vbCode': `VB${vbCode}` }),
-          ...(authorEmail && { 'uploadData.authorEmail': authorEmail }),
           ...(title && { 'videoData.title': title }),
           ...(desc && { 'videoData.description': desc }),
           ...(creditTo && { 'videoData.creditTo': creditTo }),
@@ -1632,15 +1536,17 @@ router.patch(
             'trelloData.researchers': researchersListForCreatingVideo,
           }),
         },
-        { creditTo: creditTo ? creditTo : null }
-      );
+      });
 
       await Video.updateOne(
         { 'videoData.videoId': +videoId },
         { $unset: { needToBeFixed: 1 } }
       );
 
-      const updatedVideo = await findVideoById(+videoId);
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
 
       if (updatedVideo.isApproved === true) {
         const { status } = await creatingAndSavingFeeds(updatedVideo);
@@ -1743,75 +1649,35 @@ router.patch(
         });
       }
 
-      if (authorEmail && !video?.uploadData?.vbCode && !vbCode) {
-        return res.status(400).json({
-          message: `the "author's email" field cannot be without "vb code"`,
-          status: 'warning',
+      if (!vbCode && !!video.vbForm) {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToDelete: {
+            needToBeFixed: 1,
+            ...(!creditTo && { 'videoData.creditTo': 1 }),
+          },
         });
       }
 
-      if (!vbCode && video?.uploadData?.vbCode) {
-        await updateVideoById(
-          +videoId,
-          {
-            uploadData: {},
-          },
-          { creditTo: creditTo ? creditTo : null }
-        );
-      }
-
       if (vbCode) {
-        const form = await findOne(vbCode);
+        const vbForm = await findOne({
+          searchBy: 'formId',
+          param: `VB${vbCode}`,
+        });
 
-        if (!form) {
-          return res.status(404).json({
+        if (!vbForm) {
+          return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
             status: 'warning',
           });
         }
 
-        await updateVideoById(
-          +videoId,
-          {
-            uploadData: {
-              vbCode: `VB${vbCode}`,
-              authorEmail: authorEmail ? authorEmail : form.email,
-              agreementLink: form.agreementLink,
-              ...(form.percentage && {
-                percentage: form.percentage,
-              }),
-              ...(form.advancePayment && {
-                advancePayment: form.advancePayment,
-              }),
-              ...(form.whereFilmed && {
-                whereFilmed: form.whereFilmed,
-              }),
-              ...(form.whyDecide && {
-                whyDecide: form.whyDecide,
-              }),
-              ...(form.whatHappen && {
-                whatHappen: form.whatHappen,
-              }),
-              ...(form.whenFilmed && {
-                whenFilmed: form.whenFilmed,
-              }),
-              ...(form.whoAppears && {
-                whoAppears: form.whoAppears,
-              }),
-            },
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            vbForm: vbForm._id,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
-      }
-
-      if (authorEmail && !vbCode && video?.uploadData?.vbCode) {
-        await updateVideoById(
-          +videoId,
-          {
-            'uploadData.authorEmail': authorEmail,
-          },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (reqVideo) {
@@ -1879,9 +1745,9 @@ router.patch(
 
         const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'bucket.cloudVideoLink':
               bucketResponseByVideoUpload.response.Location,
             'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
@@ -1893,8 +1759,7 @@ router.patch(
             'videoData.hasAudioTrack':
               responseAfterConversion.data.hasAudioTrack,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (reqScreen) {
@@ -1923,15 +1788,14 @@ router.patch(
           }
         );
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'bucket.cloudScreenLink':
               bucketResponseByScreenUpload.response.Location,
             'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       socketInstance
@@ -1954,13 +1818,12 @@ router.patch(
           });
         }
 
-        await updateVideoById(
-          videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'videoData.countryCode': countryCode,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (country) {
@@ -1973,38 +1836,33 @@ router.patch(
           });
         }
 
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             'videoData.country': country,
             'videoData.countryCode': countryCode,
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       if (
         video.publishedInSocialMedia === true &&
         JSON.parse(brandSafe) === false
       ) {
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             brandSafe: JSON.parse(brandSafe),
             publishedInSocialMedia: false,
           },
-          {
-            creditTo: creditTo ? creditTo : null,
-          }
-        );
+        });
       } else {
-        await updateVideoById(
-          +videoId,
-          {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
             brandSafe: JSON.parse(brandSafe),
           },
-          { creditTo: creditTo ? creditTo : null }
-        );
+        });
       }
 
       const trelloCardId = video.trelloData.trelloCardId;
@@ -2038,12 +1896,10 @@ router.patch(
           });
       }
 
-      await updateVideoById(
-        +videoId,
-        {
+      await updateVideoById({
+        videoId: +videoId,
+        dataToUpdate: {
           ...(originalLink && { 'videoData.originalVideoLink': originalLink }),
-          ...(vbCode && { 'uploadData.vbCode': `VB${vbCode}` }),
-          ...(authorEmail && { 'uploadData.authorEmail': authorEmail }),
           ...(title && { 'videoData.title': title }),
           ...(desc && { 'videoData.description': desc }),
           ...(creditTo && { 'videoData.creditTo': creditTo }),
@@ -2069,10 +1925,12 @@ router.patch(
           isApproved: true,
           pubDate: moment().valueOf(),
         },
-        { creditTo: creditTo ? creditTo : null }
-      );
+      });
 
-      const updatedVideo = await findVideoById(+videoId);
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
 
       const { status } = await creatingAndSavingFeeds(updatedVideo);
 

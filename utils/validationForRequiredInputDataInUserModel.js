@@ -65,24 +65,25 @@ const validationForRequiredInputDataInUserModel = (role, data, method) => {
   }
   if (role === 'author') {
     if (method === 'update') {
-      if (
-        !data.paymentInfo.variant ||
-        (data.paymentInfo.variant === 'bankTransfer' &&
-          (!data.paymentInfo.email ||
-            !data.paymentInfo.fullName ||
-            !data.paymentInfo.address ||
-            !data.paymentInfo.phoneNumber ||
-            !data.paymentInfo.zipCode ||
-            !data.paymentInfo.bankName ||
-            !data.paymentInfo.iban)) ||
-        (data.paymentInfo.variant === 'payPal' &&
-          !data.paymentInfo.payPalEmail) ||
-        (data.paymentInfo.variant === 'other' && !data.paymentInfo.value)
-      ) {
-        return false;
-      } else {
-        return true;
-      }
+      //if (
+      //  !data.paymentInfo.variant ||
+      //  (data.paymentInfo.variant === 'bankTransfer' &&
+      //    (!data.paymentInfo.email ||
+      //      !data.paymentInfo.fullName ||
+      //      !data.paymentInfo.address ||
+      //      !data.paymentInfo.phoneNumber ||
+      //      !data.paymentInfo.zipCode ||
+      //      !data.paymentInfo.bankName ||
+      //      !data.paymentInfo.iban)) ||
+      //  (data.paymentInfo.variant === 'payPal' &&
+      //    !data.paymentInfo.payPalEmail) ||
+      //  (data.paymentInfo.variant === 'other' && !data.paymentInfo.value)
+      //) {
+      //  return false;
+      //} else {
+      //  return true;
+      //}
+      return true;
     } else {
       if (
         !data.email ||

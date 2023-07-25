@@ -89,8 +89,8 @@ router.post('/create', authMiddleware, async (req, res) => {
     const formHash = generateHash({ length: 13 });
 
     const bodyForNewAuthorLink = {
-      ...(percentage && { percentage }),
-      ...(advancePayment && { advancePayment }),
+      percentage: percentage ? percentage : 0,
+      advancePayment: advancePayment ? advancePayment : 0,
       researcher: user._id,
       formHash,
       formLink: `${process.env.CLIENT_URI}/submitVideo?unq=${formHash}`,

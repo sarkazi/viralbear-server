@@ -3,11 +3,11 @@ const schema = new Schema({
   researcher: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   advancePayment: {
     type: Number,
-    required: false,
+    required: true,
   },
   percentage: {
     type: Number,
-    required: false,
+    required: true,
   },
   videoLink: {
     type: String,

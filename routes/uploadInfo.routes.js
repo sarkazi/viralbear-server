@@ -35,6 +35,7 @@ const {
   sendMainInfoByVBToServiceMail,
   sendAgreementToClientMail,
   sendSurveyInfoToServiceMail,
+  sendEmail,
 } = require('../controllers/sendEmail.controller');
 
 const { findLinkByVideoId } = require('../controllers/links.controller');
@@ -43,6 +44,7 @@ const {
   getCardDataByCardId,
   updateCustomFieldByTrelloCard,
 } = require('../controllers/trello.controller');
+const UploadInfo = require('../entities/UploadInfo');
 
 const storage = multer.memoryStorage();
 
@@ -198,14 +200,6 @@ router.post(
           name: `${name} ${lastName}`,
           email,
           role: 'author',
-          ...(authorLinkWithThisHash &&
-            authorLinkWithThisHash.percentage && {
-              percentage: authorLinkWithThisHash.percentage,
-            }),
-          ...(authorLinkWithThisHash &&
-            authorLinkWithThisHash?.advancePayment && {
-              advancePayment: authorLinkWithThisHash?.advancePayment,
-            }),
           balance: 0,
           activatedTheAccount: false,
           specifiedPaymentDetails: false,
@@ -270,8 +264,7 @@ router.post(
       }
 
       const isFormImpliesAnAdvancePayment =
-        (authorLinkWithThisHash && !!authorLinkWithThisHash.advancePayment) ||
-        (author && !!author.advancePayment);
+        authorLinkWithThisHash && !!authorLinkWithThisHash.advancePayment;
 
       const objDB = {
         sender: author._id,
@@ -287,35 +280,38 @@ router.post(
         over18YearOld,
         agreedWithTerms,
         didNotGiveRights,
+        formId: `VB${vbCode}`,
+        ip,
+        ...(formHash && {
+          refFormId: authorLinkWithThisHash._id,
+        }),
         ...(isFormImpliesAnAdvancePayment && {
           advancePaymentReceived: false,
         }),
-        formId: `VB${vbCode}`,
-        ip,
-        ...(formHash && { refFormId: authorLinkWithThisHash._id }),
       };
 
-      const newVbForm = await createNewVbForm(objDB);
+      await createNewVbForm(objDB);
 
-      const { _id, __v, updatedAt, agreementLink, ...resData } = newVbForm._doc;
+      const newVbForm = await findOne({
+        searchBy: 'formId',
+        param: `VB${vbCode}`,
+      });
 
       if (formHash) {
         await markRefFormAsUsed(authorLinkWithThisHash._id, { used: true });
       }
 
       const apiData = {
-        ...resData,
         name,
         lastName,
         email,
-        ...(author.advancePayment && {
-          advancePayment: author.advancePayment,
-        }),
-        ...(author.percentage && {
-          percentage: author.percentage,
-        }),
-        ...(authorLinkWithThisHash && {
-          exclusivity: authorLinkWithThisHash.exclusivity,
+        videoLinks: newVbForm.videoLinks,
+        ip: newVbForm.ip,
+        vbFormId: newVbForm.formId,
+        ...(formHash && {
+          exclusivity: newVbForm.refFormId.exclusivity,
+          percentage: newVbForm.refFormId.percentage,
+          advancePayment: newVbForm.refFormId.advancePayment,
         }),
       };
 
@@ -354,6 +350,8 @@ router.get('/findOne', async (req, res) => {
 
     const form = await findOne(objDB);
 
+    
+
     if (!form) {
       return res.status(200).json({
         message: `Form found in the database`,
@@ -361,24 +359,13 @@ router.get('/findOne', async (req, res) => {
       });
     }
 
-    const author = form.sender
-      ? await getUserBy({ param: '_id', value: form.sender })
-      : null;
-
-    const refForm = form.refFormId
-      ? await findOneRefFormByParam({ searchBy: '_id', value: form.refFormId })
-      : null;
-
     const apiData = {
       ...form._doc,
-      ...(author && {
-        authorEmail: author.email,
-      }),
-      ...(refForm && {
-        percentage: refForm.percentage ? refForm.percentage : 0,
-        advancePayment: refForm.advancePayment ? refForm.advancePayment : 0,
-      }),
-      exclusivity: !refForm ? true : refForm.exclusivity ? true : false,
+      exclusivity: !form.refFormId
+        ? true
+        : form.refFormId.exclusivity
+        ? true
+        : false,
     };
 
     res.status(200).json({
@@ -399,6 +386,8 @@ router.post(
     try {
       const { pdf } = req.files;
       const { formId } = req.body;
+
+     
 
       if (!pdf) {
         return res.status(400).json({
@@ -452,11 +441,17 @@ router.post(
       }
 
       let referer = null;
+      let refForm = null;
 
-      const refForm = await findOneRefFormByParam('_id', vbForm.refFormId);
+      if (vbForm?.refFormId) {
+        refForm = await findOneRefFormByParam({
+          searchBy: '_id',
+          value: vbForm.refFormId,
+        });
 
-      if (refForm) {
-        referer = await getUserById(refForm?.researcher);
+        if (refForm) {
+          referer = await getUserById(refForm?.researcher);
+        }
       }
 
       const resStorage = await new Promise(async (resolve, reject) => {
@@ -546,12 +541,22 @@ router.post(
         }
       }
 
-      const resAfterSendingMainInfo = await sendMainInfoByVBToServiceMail(
-        dataForSendingMainInfo
-      );
-      const resAfterSendingAgreement = await sendAgreementToClientMail(
-        dataForSendingAgreement
-      );
+      await sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
+      await sendAgreementToClientMail(dataForSendingAgreement);
+
+      if (refForm && referer) {
+        await sendEmail({
+          emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
+          emailTo: referer.email,
+          subject: `Link to the personal account of the author`,
+          html: `
+          Hello ${referer.name}.<br/>
+          This is a link to the personal account of the author ${author.name} with email ${author.email}:<br/>
+          ${accountActivationLink}<br/>
+          Have a nice day!
+          `,
+        });
+      }
 
       return res.status(200).json({
         message: `The agreement was uploaded to the storage and sent to "${vbForm.email}"`,
@@ -565,7 +570,5 @@ router.post(
     }
   }
 );
-
-router.patch;
 
 module.exports = router;

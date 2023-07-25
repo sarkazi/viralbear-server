@@ -207,14 +207,14 @@ const generateExcelFile = async (req, res) => {
   res.status(200).download(path.resolve(__dirname, '..', 'excel', 'data.xlsx'));
 };
 
-const updateVideoById = async (id, dataValues, { creditTo }) => {
+const updateVideoById = async ({ videoId, dataToDelete, dataToUpdate }) => {
   const updatedVideo = await Video.updateOne(
     {
-      'videoData.videoId': id,
+      'videoData.videoId': videoId,
     },
     {
-      $set: dataValues,
-      ...(!creditTo && { $unset: { 'videoData.creditTo': 1 } }),
+      ...(dataToDelete && { $unset: dataToDelete }),
+      ...(dataToUpdate && { $set: dataToUpdate }),
     }
   );
 };
@@ -223,7 +223,20 @@ const findLastVideo = async (req, res) => {
   try {
     const lastAddedVideo = await Video.findOne({ isApproved: false })
       .sort({ createdAt: -1 })
-      .limit(1);
+      .limit(1)
+      .populate({
+        path: 'vbForm',
+        populate: {
+          path: 'sender refFormId',
+          select: {
+            email: 1,
+            advancePayment: 1,
+            percentage: 1,
+            exclusivity: 1,
+          },
+        },
+      });
+
     if (!lastAddedVideo) {
       return res.status(200).json({ message: 'No data found!' });
     }
@@ -340,38 +353,9 @@ const createNewVideo = async (body) => {
       researchers: body.researchers,
       priority: body.priority,
     },
-    uploadData: {
-      ...(body.vbCode && {
-        vbCode: body.vbCode,
-      }),
-      ...(body.agreementLink && {
-        agreementLink: body.agreementLink,
-      }),
-      ...(body.authorEmail && {
-        authorEmail: body.authorEmail,
-      }),
-      ...(body.advancePayment && {
-        advancePayment: body.advancePayment,
-      }),
-      ...(body.percentage && {
-        percentage: body.percentage,
-      }),
-      ...(body.whereFilmed && {
-        whereFilmed: body.whereFilmed,
-      }),
-      ...(body.whyDecide && {
-        whyDecide: body.whyDecide,
-      }),
-      ...(body.whatHappen && {
-        whatHappen: body.whatHappen,
-      }),
-      ...(body.whenFilmed && {
-        whenFilmed: body.whenFilmed,
-      }),
-      ...(body.whoAppears && {
-        whoAppears: body.whoAppears,
-      }),
-    },
+    ...(body.vbForm && {
+      vbForm: body.vbForm,
+    }),
     bucket: {
       cloudVideoLink: body.bucketResponseByVideoUpload.Location,
       cloudScreenLink: body.bucketResponseByScreenUpload.Location,
@@ -427,7 +411,12 @@ const findByNotApproved = async () => {
       isApproved: false,
       needToBeFixed: { $exists: false },
     },
-    { _id: false, __v: false, updatedAt: false }
+    {
+      _id: 1,
+      'trelloData.trelloCardId': 1,
+      'trelloData.trelloCardName': 1,
+      'videoData.videoId': 1,
+    }
   );
 
   return videos;
@@ -461,14 +450,6 @@ const findRelated = async (req, res) => {
   } catch (err) {
     console.log(err);
   }
-};
-
-const findVideoByVBCode = async (vbCode) => {
-  const videoWithVBCode = await Video.findOne({
-    'uploadData.vbCode': `VB${vbCode}`,
-  });
-
-  return videoWithVBCode;
 };
 
 const findOneVideoInFeed = async (req, res) => {
@@ -525,7 +506,13 @@ const findByFixed = async () => {
 };
 
 const findVideoById = async (id) => {
-  const video = await Video.findOne({ 'videoData.videoId': id });
+  const video = await Video.findOne({ 'videoData.videoId': id }).populate({
+    path: 'vbForm',
+    populate: {
+      path: 'sender refFormId',
+      select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
+    },
+  });;
 
   return video;
 };
@@ -586,7 +573,7 @@ const getAllVideos = async ({
 }) => {
   return Video.find(
     {
-      ...(vbCode && { 'uploadData.vbCode': { $exists: true, $ne: '' } }),
+      ...(vbCode && { vbForm: { $exists: true, $ne: '' } }),
       ...(typeof isApproved === 'boolean' && { isApproved }),
       ...(researcherEmail && {
         'trelloData.researchers': {
@@ -791,7 +778,6 @@ const creatingAndSavingFeeds = async (video) => {
       categoryReuters,
       countryCode,
     },
-    uploadData: { vbCode },
     bucket: { cloudVideoLink, cloudScreenLink, cloudConversionVideoLink },
     brandSafe,
     createdAt,
@@ -1058,9 +1044,13 @@ const convertingVideoToHorizontal = async (video, userId) => {
 };
 
 const findVideoByValue = async ({ searchBy, value }) => {
-  console.log(searchBy, value);
-
-  return Video.findOne({ [searchBy]: value });
+  return Video.findOne({ [searchBy]: value }).populate({
+    path: 'vbForm',
+    populate: {
+      path: 'sender refFormId',
+      select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
+    },
+  });
 };
 
 const updateVideosBy = async ({ updateBy, value, dataForUpdate }) => {
@@ -1091,7 +1081,7 @@ module.exports = {
   findOneVideoInFeed,
   refreshMrssFiles,
   findReadyForPublication,
-  findVideoByVBCode,
+
   findTheCountryCodeByName,
   uploadContentOnBucket,
   createNewVideo,

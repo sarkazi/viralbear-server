@@ -141,47 +141,11 @@ const schema = new Schema(
       type: Object,
       required: false,
     },
-    uploadData: {
-      agreementLink: {
-        type: String,
-        required: false,
-      },
-      vbCode: {
-        type: String,
-        required: false,
-      },
-      authorEmail: {
-        type: String,
-        required: false,
-      },
-      advancePayment: {
-        type: Number,
-        required: false,
-      },
-      percentage: {
-        type: Number,
-        required: false,
-      },
-      whereFilmed: {
-        type: String,
-        required: false,
-      },
-      whyDecide: {
-        type: String,
-        required: false,
-      },
-      whatHappen: {
-        type: String,
-        required: false,
-      },
-      whenFilmed: {
-        type: String,
-        required: false,
-      },
-      whoAppears: {
-        type: String,
-        required: false,
-      },
+
+    vbForm: {
+      type: Schema.Types.ObjectId,
+      ref: 'UploadInfo',
+      required: false,
     },
     brandSafe: {
       type: Boolean,
