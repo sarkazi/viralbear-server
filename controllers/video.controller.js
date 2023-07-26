@@ -414,10 +414,18 @@ const findByNotApproved = async () => {
     {
       _id: 1,
       'trelloData.trelloCardId': 1,
+      'trelloData.priority': 1,
       'trelloData.trelloCardName': 1,
       'videoData.videoId': 1,
     }
-  );
+  ).populate({
+    path: 'vbForm',
+    select: { refFormId: 1 },
+    populate: {
+      path: 'refFormId',
+      select: { advancePayment: 1 },
+    },
+  });
 
   return videos;
 };
@@ -512,7 +520,7 @@ const findVideoById = async (id) => {
       path: 'sender refFormId',
       select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
     },
-  });;
+  });
 
   return video;
 };

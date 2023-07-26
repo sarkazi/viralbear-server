@@ -8,11 +8,14 @@ const {
   getTrelloCardsFromDoneListByApprovedAndNot,
   getAllCardsByListId,
   getAllMembers,
+  getCardDataByCardId,
 } = require('../controllers/trello.controller');
-const { getUserById } = require('../controllers/user.controller');
+const { getUserById, getAllUsers } = require('../controllers/user.controller');
 const {
   getAllViewedMentionsByUser,
 } = require('../controllers/viewedMention.controller');
+
+const { findOne } = require('../controllers/uploadInfo.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -136,6 +139,81 @@ router.get(
     }
   }
 );
+
+router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
+  try {
+    const { trelloCardId } = req.params;
+
+    const trelloCard = await getCardDataByCardId(trelloCardId);
+
+    const trelloNicknames = trelloCard.members.map((el) => {
+      return `@${el.username}`;
+    });
+
+    const researchers = await getAllUsers({
+      me: true,
+      roles: ['researcher'],
+      fieldsInTheResponse: ['nickname', 'name'],
+      nicknames: trelloNicknames,
+    });
+
+    let vbForm = null;
+    const vbCode = trelloCard.customFieldItems.find(
+      (customField) => customField.idCustomField === '63e659f754cea8f9978e3b63'
+    )?.value?.number;
+
+    if (vbCode) {
+      vbForm = await findOne({ searchBy: 'formId', param: `VB${vbCode}` });
+    }
+
+    const apiData = {
+      ...(vbForm && {
+        vbCode: +vbForm.formId.replace('VB', ''),
+        agreementLink: vbForm.agreementLink,
+        ...(vbForm?.sender && { authorEmail: vbForm.sender.email }),
+        ...(vbForm?.whereFilmed && { whereFilmed: vbForm.whereFilmed }),
+        ...(vbForm?.whyDecide && { whyDecide: vbForm.whyDecide }),
+        ...(vbForm?.whatHappen && { whatHappen: vbForm.whatHappen }),
+        ...(vbForm?.whenFilmed && { whenFilmed: vbForm.whenFilmed }),
+        ...(vbForm?.whoAppears && { whoAppears: vbForm.whoAppears }),
+
+        ...(vbForm?.refFormId && {
+          percentage: vbForm.refFormId.percentage,
+          advancePayment: vbForm.refFormId.advancePayment,
+        }),
+      }),
+      url: trelloCard.url,
+      id: trelloCard.id,
+      name: trelloCard.name,
+      desc: trelloCard.desc,
+      priority: trelloCard.customFieldItems.find(
+        (el) => el.idValue === '62c7e0032a86d7161f8cadb2'
+      )
+        ? true
+        : false,
+      researchers: researchers.map((researcher) => {
+        return researcher.name;
+      }),
+      exclusivity: !vbForm?.refFormId
+        ? true
+        : vbForm.refFormId.exclusivity
+        ? true
+        : false,
+    };
+
+    return res.status(200).json({
+      message: 'Trello card data received',
+      status: 'success',
+      apiData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
 
 router.get('/getAllNicknamesByMembers', async (req, res) => {
   try {
