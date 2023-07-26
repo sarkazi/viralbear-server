@@ -59,6 +59,8 @@ const {
   getCountApprovedTrelloCardBy,
 } = require('../controllers/movedToDoneList.controller');
 
+const { inviteMemberOnBoard } = require('../controllers/trello.controller');
+
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
     const { me, roles, canBeAssigned, fieldsInTheResponse } = req.query;
@@ -156,8 +158,6 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       canBeAssigned,
     } = req.body;
 
-    const { rolesUsersForResponse } = req.query;
-
     const isValidate = validationForRequiredInputDataInUserModel(
       role,
       req.body,
@@ -169,6 +169,8 @@ router.post('/createOne', authMiddleware, async (req, res) => {
         .status(200)
         .json({ message: 'Missing data to create a user', status: 'warning' });
     }
+
+    const test = await inviteMemberOnBoard({ email });
 
     const candidate = await getUserByEmail(email);
 
@@ -205,23 +207,9 @@ router.post('/createOne', authMiddleware, async (req, res) => {
 
     await createUser(objDB);
 
-    let apiData;
-
-    if (rolesUsersForResponse) {
-      apiData = await getAllUsers({
-        me: true,
-        userId: null,
-        roles: rolesUsersForResponse,
-        canBeAssigned: null,
-      });
-    } else {
-      apiData = await getUserById(userId);
-    }
-
     return res.status(200).json({
       message: 'A new user has been successfully created',
       status: 'success',
-      apiData,
     });
   } catch (err) {
     console.log(err);
@@ -585,8 +573,6 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
             };
           }
         };
-
-       
 
         return {
           ...user._doc,

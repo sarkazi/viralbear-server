@@ -406,19 +406,10 @@ const readingAndUploadingConvertedVideoToBucket = async (name, userId) => {
 };
 
 const findByNotApproved = async () => {
-  const videos = await Video.find(
-    {
-      isApproved: false,
-      needToBeFixed: { $exists: false },
-    },
-    {
-      _id: 1,
-      'trelloData.trelloCardId': 1,
-      'trelloData.priority': 1,
-      'trelloData.trelloCardName': 1,
-      'videoData.videoId': 1,
-    }
-  ).populate({
+  const videos = await Video.find({
+    isApproved: false,
+    needToBeFixed: { $exists: false },
+  }).populate({
     path: 'vbForm',
     select: { refFormId: 1 },
     populate: {
@@ -503,12 +494,16 @@ const findOneVideoInFeed = async (req, res) => {
 };
 
 const findByFixed = async () => {
-  const videos = await Video.find(
-    {
-      needToBeFixed: { $exists: true },
+  const videos = await Video.find({
+    needToBeFixed: { $exists: true },
+  }).populate({
+    path: 'vbForm',
+    select: { refFormId: 1 },
+    populate: {
+      path: 'refFormId',
+      select: { advancePayment: 1 },
     },
-    { _id: false, __v: false, updatedAt: false }
-  );
+  });
 
   return videos;
 };
@@ -599,43 +594,6 @@ const getAllVideos = async ({
         fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
     }
   );
-};
-
-const addCommentForFixed = async (req, res) => {
-  try {
-    const { comment, videoId } = req.body;
-
-    const video = await Video.findOne({ 'videoData.videoId': videoId });
-
-    if (!video) {
-      res
-        .status(200)
-        .json({ message: `Video with id "${videoId}" was not found` });
-      return;
-    }
-
-    await video.updateOne({
-      needToBeFixed: {
-        comment,
-      },
-    });
-
-    const updatedVideo = await Video.findOne({ 'videoData.videoId': videoId });
-
-    const { _id, __v, updatedAt, ...data } = updatedVideo._doc;
-
-    const videoPendingChanges = await findByFixed();
-
-    socketInstance.io().emit('toggleCommentForFixedVideo', {
-      videos: videoPendingChanges,
-      event: 'add edits',
-    });
-
-    res.status(200).json(data);
-  } catch (err) {
-    console.log(err);
-    throw Error('Server-side error...');
-  }
 };
 
 const publishingVideoInSocialMedia = async (req, res) => {
@@ -1080,7 +1038,6 @@ module.exports = {
   findByIsBrandSafe,
   findByFixed,
   findById,
-  addCommentForFixed,
   generateExcelFile,
   findRelated,
   publishingVideoInSocialMedia,

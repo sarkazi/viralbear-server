@@ -77,6 +77,8 @@ const {
 
 const {
   getTrelloCardsFromDoneListByApprovedAndNot,
+  deleteLabelFromTrelloCard,
+  updateCustomFieldByTrelloCard,
 } = require('../controllers/trello.controller');
 
 const {
@@ -136,7 +138,7 @@ router.post(
         path.extname(screen[0].originalname) !== '.jpg'
       ) {
         return res
-          .status(400)
+          .status(200)
           .json({ message: 'Invalid file/s extension', status: 'warning' });
       }
 
@@ -160,7 +162,7 @@ router.post(
         !video ||
         !screen
       ) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: 'Missing values for adding a new video',
           status: 'warning',
         });
@@ -195,7 +197,7 @@ router.post(
         const countryCode = await findTheCountryCodeByName(country);
 
         if (!countryCode) {
-          return res.status(400).json({
+          return res.status(500).json({
             message: 'Could not determine the country code',
             status: 'error',
           });
@@ -363,23 +365,9 @@ router.post(
           });
         }
 
-        const videosReadyForPublication = await findReadyForPublication();
-
-        const { doneTasks, approvedTasks } =
-          await getTrelloCardsFromDoneListByApprovedAndNot();
-
-        socketInstance.io().emit('findReadyForPublication', {
-          data: {
-            videosReadyForPublication,
-            doneTasks,
-            approvedTasks,
-          },
+        socketInstance.io().emit('triggerForAnUpdateInPublishing', {
           event: 'ready for publication',
-        });
-
-        socketInstance.io().emit('changeDoneAndApprovedCards', {
-          doneTasks,
-          approvedTasks,
+          priority: null,
         });
 
         return res.status(200).json({
@@ -576,12 +564,30 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
   try {
     const videosReadyForPublication = await findReadyForPublication();
 
-    return res.status(200).json(videosReadyForPublication);
+    const apiData = videosReadyForPublication.map((video) => {
+      return {
+        _id: video._id,
+        videoId: video.videoData.videoId,
+        name:
+          video.trelloData.trelloCardName.length >= 20
+            ? video.trelloData.trelloCardName.substring(0, 20) + '...'
+            : video.trelloData.trelloCardName,
+        priority: video.trelloData.priority,
+        hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
+      };
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'The list of videos ready for publication has been received',
+      apiData,
+    });
   } catch (err) {
     console.log(err);
 
-    return res.status(400).json({
-      message: 'server side error',
+    return res.status(500).json({
+      message: 'Server-side error',
+      status: 'error',
     });
   }
 });
@@ -604,11 +610,29 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
   try {
     const videoPendingChanges = await findByFixed();
 
-    res.status(200).json(videoPendingChanges);
+    const apiData = videoPendingChanges.map((video) => {
+      return {
+        _id: video._id,
+        videoId: video.videoData.videoId,
+        name:
+          video.trelloData.trelloCardName.length >= 20
+            ? video.trelloData.trelloCardName.substring(0, 20) + '...'
+            : video.trelloData.trelloCardName,
+        priority: video.trelloData.priority,
+        hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
+      };
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'The list of videos awaiting editing has been received',
+      apiData,
+    });
   } catch (err) {
     console.log(err);
 
-    res.status(400).json({
+    res.status(500).json({
+      status: 'error',
       message: 'server side error',
     });
   }
@@ -1169,12 +1193,25 @@ router.patch(
         },
       });
 
+      if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
+        console.log('change');
+
+        //меняем кастомное поле "brand safe" в карточке trello
+        await updateCustomFieldByTrelloCard(
+          video.trelloData.trelloCardId,
+          process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
+          {
+            idValue: JSON.parse(brandSafe)
+              ? '6363888c65a44802954d88e5'
+              : '6363888c65a44802954d88e4',
+          }
+        );
+      }
+
       const updatedVideo = await findVideoByValue({
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
-
-      
 
       if (updatedVideo.isApproved === true) {
         const { status } = await creatingAndSavingFeeds(updatedVideo);
@@ -1190,10 +1227,6 @@ router.patch(
       }
 
       const { _id, __v, updatedAt, ...data } = updatedVideo._doc;
-
-      //const videosForSocialMedia = await findByIsBrandSafe();
-
-      //socketInstance.io().emit('findReadyForSocialMedia', videosForSocialMedia);
 
       return res.status(200).json({
         message: `Video with id "${videoId}" has been successfully updated`,
@@ -1230,14 +1263,13 @@ router.patch(
 
     if (!videoId) {
       return res
-        .status(404)
+        .status(200)
         .json({ message: 'missing "video id" parameter', status: 'warning' });
     }
 
     const {
       originalLink,
       vbCode,
-      authorEmail,
       researchers,
       title,
       desc,
@@ -1259,7 +1291,7 @@ router.patch(
       const video = await findVideoById(+videoId);
 
       if (!video) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: `video with id "${videoId}" not found`,
           status: 'warning',
         });
@@ -1298,7 +1330,7 @@ router.patch(
 
       if (reqVideo) {
         if (path.extname(reqVideo[0].originalname) !== '.mp4') {
-          return res.status(400).json({
+          return res.status(200).json({
             message: `Incorrect video extension`,
             status: 'warning',
           });
@@ -1543,6 +1575,19 @@ router.patch(
         { $unset: { needToBeFixed: 1 } }
       );
 
+      if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
+        //меняем кастомное поле "brand safe" в карточке trello
+        await updateCustomFieldByTrelloCard(
+          video.trelloData.trelloCardId,
+          process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
+          {
+            idValue: JSON.parse(brandSafe)
+              ? '6363888c65a44802954d88e5'
+              : '6363888c65a44802954d88e4',
+          }
+        );
+      }
+
       const updatedVideo = await findVideoByValue({
         searchBy: 'videoData.videoId',
         value: +videoId,
@@ -1563,17 +1608,6 @@ router.patch(
 
       const { _id, __v, updatedAt, ...data } = updatedVideo._doc;
 
-      const videoPendingChanges = await findByFixed();
-
-      socketInstance.io().emit('toggleCommentForFixedVideo', {
-        videos: videoPendingChanges,
-        event: 'fix',
-      });
-
-      //const videosForSocialMedia = await findByIsBrandSafe();
-
-      //socketInstance.io().emit('findReadyForSocialMedia', videosForSocialMedia);
-
       return res.status(200).json({
         message: `Video with id "${videoId}" has been successfully updated`,
         status: 'success',
@@ -1586,7 +1620,43 @@ router.patch(
   }
 );
 
-router.patch('/addCommentForFixed', authMiddleware, addCommentForFixed);
+router.patch('/addCommentForFixed', authMiddleware, async (req, res) => {
+  try {
+    const { comment, videoId } = req.body;
+
+    const video = await findVideoByValue({
+      searchBy: 'videoData.videoId',
+      value: videoId,
+    });
+
+    if (!video) {
+      return res.status(200).json({
+        message: `Video with id "${videoId}" was not found`,
+        status: 'warning',
+      });
+    }
+
+    await video.updateOne({
+      needToBeFixed: {
+        comment,
+      },
+    });
+
+    const updatedVideo = await Video.findOne({ 'videoData.videoId': videoId });
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Edits added to the video',
+      apiData: updatedVideo,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: 'success',
+      message: 'Server-side error',
+    });
+  }
+});
 
 router.patch(
   '/publishing/:id',
@@ -1607,7 +1677,6 @@ router.patch(
     const {
       originalLink,
       vbCode,
-      authorEmail,
       researchers,
       title,
       desc,
@@ -1935,7 +2004,7 @@ router.patch(
       const { status } = await creatingAndSavingFeeds(updatedVideo);
 
       if (status === 'warning') {
-        return res.status(404).json({
+        return res.status(200).json({
           message: 'Missing values for saving feeds',
           status: 'warning',
         });
@@ -1943,24 +2012,37 @@ router.patch(
 
       await refreshMrssFiles();
 
-      const videosReadyForPublication = await findReadyForPublication();
-
-      socketInstance.io().emit('findReadyForPublication', {
-        data: {
-          videosReadyForPublication,
-        },
-        event: 'published',
-      });
-
-      //const videosForSocialMedia = await findByIsBrandSafe();
-
-      //socketInstance.io().emit('findReadyForSocialMedia', videosForSocialMedia);
+      //добавляем кастомное поле "id video" в карточке trello
+      await updateCustomFieldByTrelloCard(
+        updatedVideo.trelloData.trelloCardId,
+        process.env.TRELLO_CUSTOM_FIELD_ID_VIDEO,
+        {
+          value: {
+            number: `${updatedVideo.videoData.videoId}`,
+          },
+        }
+      );
+      //меняем кастомное поле "brand safe" в карточке trello
+      await updateCustomFieldByTrelloCard(
+        updatedVideo.trelloData.trelloCardId,
+        process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
+        {
+          idValue: updatedVideo.brandSafe
+            ? '6363888c65a44802954d88e5'
+            : '6363888c65a44802954d88e4',
+        }
+      );
+      //убираем наклейку "not published" в карточке trello
+      await deleteLabelFromTrelloCard(
+        updatedVideo.trelloData.trelloCardId,
+        process.env.TRELLO_LABEL_NOT_PUBLISHED
+      );
 
       return res.status(200).json({
         apiData: {
-          trelloCardId: video.trelloData.trelloCardId,
-          videoId: video.videoData.videoId,
-          brandSafe: video.brandSafe,
+          trelloCardId: updatedVideo.trelloData.trelloCardId,
+          videoId: updatedVideo.videoData.videoId,
+          brandSafe: updatedVideo.brandSafe,
         },
         status: 'success',
         message: 'The video was successfully published',
@@ -2020,26 +2102,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     if (video.isApproved === true) {
       await refreshMrssFiles();
     }
-
-    //const videosForSocialMedia = await findByIsBrandSafe();
-
-    //socketInstance.io().emit('findReadyForSocialMedia', videosForSocialMedia);
-
-    const videoPendingChanges = await findByFixed();
-
-    socketInstance.io().emit('toggleCommentForFixedVideo', {
-      videos: videoPendingChanges,
-      event: 'delete video',
-    });
-
-    const videosReadyForPublication = await findReadyForPublication();
-
-    socketInstance.io().emit('findReadyForPublication', {
-      data: {
-        videosReadyForPublication,
-      },
-      event: 'delete video',
-    });
 
     return res.status(200).json({
       message: 'video successfully deleted',

@@ -96,243 +96,209 @@ app.use('/location', locationRouter);
 app.use('/webhook', webhookRouter);
 app.use('/public/users', publicUsersRouter);
 
-app.post('/trelloCallback', async (req, res) => {
-  const allNecessaryLabelsForDoneCard = [
-    process.env.TRELLO_LABEL_NOT_PUBLISHED,
-    process.env.TRELLO_LABEL_IG_GROUP,
-    process.env.TRELLO_LABEL_DONE,
-  ];
+//app.head('/trelloCallback', async (req, res) => {
+//  const allNecessaryLabelsForDoneCard = [
+//    process.env.TRELLO_LABEL_NOT_PUBLISHED,
+//    process.env.TRELLO_LABEL_IG_GROUP,
+//    process.env.TRELLO_LABEL_DONE,
+//  ];
 
-  //try {
-  //  //ловим проставление наклейки "done" в карточке
-  //  if (
-  //    req?.body?.action?.type === 'addLabelToCard' &&
-  //    req?.body?.action?.data?.label?.name === 'Done'
-  //  ) {
-  //    const cardId = req.body.action.data.card.id;
+//  try {
+//    //ловим проставление наклейки "done" в карточке
+//    if (
+//      req?.body?.action?.type === 'addLabelToCard' &&
+//      req?.body?.action?.data?.label?.name === 'Done'
+//    ) {
+//      const cardId = req.body.action.data.card.id;
 
-  //    //перемещаем карточку в лист "done" и проставляем все необходимые наклейки
-  //    await updateTrelloCard(cardId, {
-  //      idList: process.env.TRELLO_LIST_DONE_ID,
-  //      idLabels: [
-  //        process.env.TRELLO_LABEL_NOT_PUBLISHED,
-  //        process.env.TRELLO_LABEL_IG_GROUP,
-  //        process.env.TRELLO_LABEL_DONE,
-  //      ],
-  //    });
+//      //перемещаем карточку в лист "done" и проставляем все необходимые наклейки
+//      await updateTrelloCard(cardId, {
+//        idList: process.env.TRELLO_LIST_DONE_ID,
+//        idLabels: [
+//          process.env.TRELLO_LABEL_NOT_PUBLISHED,
+//          process.env.TRELLO_LABEL_IG_GROUP,
+//          process.env.TRELLO_LABEL_DONE,
+//        ],
+//      });
 
-  //    //обновляем карточки для "done" и "approved" для клиента
-  //    const { doneTasks, approvedTasks } =
-  //      await getTrelloCardsFromDoneListByApprovedAndNot();
+//      //узнаем "priority" карточки
 
-  //    //узнаем "priority" карточки
+//      const { priority } = await getPriorityCardByCardId(
+//        req.body.action.data.card.id
+//      );
 
-  //    const { priority } = await getPriorityCardByCardId(
-  //      req.body.action.data.card.id
-  //    );
+//      socketInstance.io().emit('movingCardToDone', { priority });
+//    }
 
-  //    socketInstance
-  //      .io()
-  //      .emit('movingCardToDone', { doneTasks, approvedTasks, priority });
-  //  }
+//    //ловим смену статуса в кастомном поле "status" в листе "done"
+//    if (req?.body?.action?.data?.customField?.name === 'Status') {
+//      const cardId = req.body.action.data.card.id;
 
-  //  //ловим смену статуса в кастомном поле "status" в листе "done"
-  //  if (req?.body?.action?.data?.customField?.name === 'Status') {
-  //    const cardId = req.body.action.data.card.id;
+//      const cardData = await getCardDataByCardId(cardId);
 
-  //    const cardData = await getCardDataByCardId(cardId);
+//      if (cardData.idList === '61a1c05f03075c0ea01b62af') {
+//        const cardLabels = await getCardLabelsByCardId(cardId);
 
-  //    if (cardData.idList === '61a1c05f03075c0ea01b62af') {
-  //      const cardLabels = await getCardLabelsByCardId(cardId);
+//        if (
+//          cardLabels.every((cardLabel) => {
+//            return allNecessaryLabelsForDoneCard.find((label) => {
+//              return label === cardLabel.id;
+//            });
+//          })
+//        ) {
+//          socketInstance.io().emit('changingStatusInCustomField');
+//        }
+//      }
+//    }
 
-  //      if (
-  //        cardLabels.every((cardLabel) => {
-  //          return allNecessaryLabelsForDoneCard.find((label) => {
-  //            return label === cardLabel.id;
-  //          });
-  //        })
-  //      ) {
-  //        const { doneTasks, approvedTasks } =
-  //          await getTrelloCardsFromDoneListByApprovedAndNot();
+//    //ловим проставление приоритета в кастомном поле "priority" в листе "done"
+//    if (req?.body?.action?.data?.customField?.name === 'Priority') {
+//      const cardId = req.body.action.data.card.id;
 
-  //        socketInstance
-  //          .io()
-  //          .emit('changingStatusInCustomField', { doneTasks, approvedTasks });
-  //      }
-  //    }
-  //  }
+//      const cardData = await getCardDataByCardId(cardId);
+//      if (cardData.idList === process.env.TRELLO_LIST_DONE_ID) {
+//        const cardLabels = await getCardLabelsByCardId(cardId);
 
-  //  //ловим проставление приоритета в кастомном поле "priority" в листе "done"
-  //  if (req?.body?.action?.data?.customField?.name === 'Priority') {
-  //    const cardId = req.body.action.data.card.id;
+//        if (
+//          cardLabels.every((cardLabel) => {
+//            return allNecessaryLabelsForDoneCard.find((label) => {
+//              return label === cardLabel.id;
+//            });
+//          })
+//        ) {
+//          const priority =
+//            req.body.action.data.old.idValue === null ? true : false;
 
-  //    const cardData = await getCardDataByCardId(cardId);
-  //    if (cardData.idList === process.env.TRELLO_LIST_DONE_ID) {
-  //      const cardLabels = await getCardLabelsByCardId(cardId);
+//          socketInstance.io().emit('changingPriorityInCustomField', {
+//            priority,
+//          });
+//        }
+//      }
+//    }
 
-  //      if (
-  //        cardLabels.every((cardLabel) => {
-  //          return allNecessaryLabelsForDoneCard.find((label) => {
-  //            return label === cardLabel.id;
-  //          });
-  //        })
-  //      ) {
-  //        const { doneTasks, approvedTasks } =
-  //          await getTrelloCardsFromDoneListByApprovedAndNot();
+//    //ловим снятие наклейки "not published" в листе "done"
+//    if (
+//      req?.body?.action?.type === 'removeLabelFromCard' &&
+//      req?.body?.action?.data?.text === 'Not published'
+//    ) {
+//      const cardData = await getCardDataByCardId(req.body.action.data.card.id);
 
-  //        const priority =
-  //          req.body.action.data.old.idValue === null ? true : false;
+//      if (cardData.idList === '61a1c05f03075c0ea01b62af') {
+//        socketInstance.io().emit('changingNotPublishedLabel');
+//      }
+//    }
 
-  //        socketInstance.io().emit('changingPriorityInCustomField', {
-  //          doneTasks,
-  //          approvedTasks,
-  //          priority,
-  //        });
-  //      }
-  //    }
-  //  }
+//    //ловим перемещение карточки из листа "done" в другой
+//    if (
+//      req?.body?.action?.data?.listBefore &&
+//      req?.body?.action?.data?.listBefore?.name === 'Done' &&
+//      req?.body?.action?.data?.listAfter &&
+//      req?.body?.action?.data?.listAfter?.name !== 'Done' &&
+//      req?.body?.model?.name === 'Done'
+//    ) {
+//      socketInstance.io().emit('movingFromDone');
+//    }
 
-  //  //ловим снятие наклейки "not published" в листе "done"
-  //  if (
-  //    req?.body?.action?.type === 'removeLabelFromCard' &&
-  //    req?.body?.action?.data?.text === 'Not published'
-  //  ) {
-  //    const cardData = await getCardDataByCardId(req.body.action.data.card.id);
+//    //ловим перемещение карточки из листа "Your videos for review" в другой
+//    if (
+//      req?.body?.action?.data?.listBefore &&
+//      req?.body?.action?.data?.listBefore?.id ===
+//        process.env.TRELLO_LIST_REVIEW_ID &&
+//      req?.body?.action?.data?.listAfter &&
+//      req?.body?.action?.data?.listAfter?.id !==
+//        process.env.TRELLO_LIST_REVIEW_ID
+//    ) {
+//      const memberCreatorId = req.body.action.memberCreator.id;
 
-  //    if (cardData.idList === '61a1c05f03075c0ea01b62af') {
-  //      const { doneTasks, approvedTasks } =
-  //        await getTrelloCardsFromDoneListByApprovedAndNot();
+//      const memberCreatorData = await getTrelloMemberById(memberCreatorId);
 
-  //      socketInstance.io().emit('changingNotPublishedLabel', {
-  //        doneTasks,
-  //        approvedTasks,
-  //      });
-  //    }
-  //  }
+//      const objDB = {
+//        user: `@${memberCreatorData.username}`,
+//      };
 
-  //  //ловим перемещение карточки из листа "done" в другой
-  //  if (
-  //    req?.body?.action?.data?.listBefore &&
-  //    req?.body?.action?.data?.listBefore?.name === 'Done' &&
-  //    req?.body?.action?.data?.listAfter &&
-  //    req?.body?.action?.data?.listAfter?.name !== 'Done' &&
-  //    req?.body?.model?.name === 'Done'
-  //  ) {
-  //    const { doneTasks, approvedTasks } =
-  //      await getTrelloCardsFromDoneListByApprovedAndNot();
+//      await createNewMove(objDB);
+//    }
 
-  //    socketInstance.io().emit('movingFromDone', {
-  //      doneTasks,
-  //      approvedTasks,
-  //    });
-  //  }
+//    //ловим архивирование карточки в листе "done"
+//    if (
+//      req?.body?.action?.data?.card?.closed === true &&
+//      req?.body?.model?.name === 'Done'
+//    ) {
+//      const cardData = await getCardDataByCardId(req.body.action.data.card.id);
 
-  //  //ловим перемещение карточки из листа "Your videos for review" в другой
-  //  if (
-  //    req?.body?.action?.data?.listBefore &&
-  //    req?.body?.action?.data?.listBefore?.id ===
-  //      process.env.TRELLO_LIST_REVIEW_ID &&
-  //    req?.body?.action?.data?.listAfter &&
-  //    req?.body?.action?.data?.listAfter?.id !==
-  //      process.env.TRELLO_LIST_REVIEW_ID
-  //  ) {
-  //    const memberCreatorId = req.body.action.memberCreator.id;
+//      if (cardData.idList === '61a1c05f03075c0ea01b62af') {
+//        socketInstance.io().emit('archivingTheCard');
+//      }
+//    }
 
-  //    const memberCreatorData = await getTrelloMemberById(memberCreatorId);
+//    //ловим новый комментарий в карточке
+//    if (
+//      req?.body?.action?.type === 'commentCard' &&
+//      req?.body?.action?.data?.text.includes('@')
+//    ) {
+//      socketInstance.io().emit('addNewComment', {
+//        textOfComment: req.body.action.data.text,
+//        cardId: req.body.action.data.card.id,
+//        actionId: req.body.action.id,
+//        cardUrl: `https://trello.com/c/${req.body.action.data.card.shortLink}`,
+//      });
+//    }
 
-  //    const objDB = {
-  //      user: `@${memberCreatorData.username}`,
-  //    };
+//    //ловим удаление комментария в карточке
+//    if (req?.body?.action?.type === 'deleteComment') {
+//      socketInstance.io().emit('deleteComment', req?.body?.action);
+//    }
 
-  //    await createNewMove(objDB);
-  //  }
+//    //ловим удаление комментария в карточке
+//    if (req?.body?.action?.type === 'deleteComment') {
+//      socketInstance.io().emit('deleteComment', req?.body?.action);
+//    }
 
-  //  //ловим архивирование карточки в листе "done"
-  //  if (
-  //    req?.body?.action?.data?.card?.closed === true &&
-  //    req?.body?.model?.name === 'Done'
-  //  ) {
-  //    const cardData = await getCardDataByCardId(req.body.action.data.card.id);
+//    //if (
+//    //  req?.body?.action?.type === 'addLabelToCard' &&
+//    //  req?.body?.action?.data?.label?.name === 'Expired'
+//    //) {
+//    //  const cardId = req.body.action.data.card.id;
 
-  //    if (cardData.idList === '61a1c05f03075c0ea01b62af') {
-  //      const { doneTasks, approvedTasks } =
-  //        await getTrelloCardsFromDoneListByApprovedAndNot();
+//    //  const trelloCard = await getCardDataByCardId(cardId);
 
-  //      socketInstance.io().emit('archivingTheCard', {
-  //        doneTasks,
-  //        approvedTasks,
-  //      });
-  //    }
-  //  }
+//    //  const CustomFieldReminderInTrelloCard = trelloCard.customFieldItems.find(
+//    //    (customField) =>
+//    //      customField.idCustomField === process.env.TRELLO_CUSTOM_FIELD_REMINDER
+//    //  );
 
-  //  //ловим новый комментарий в карточке
-  //  if (
-  //    req?.body?.action?.type === 'commentCard' &&
-  //    req?.body?.action?.data?.text.includes('@')
-  //  ) {
-  //    socketInstance.io().emit('addNewComment', {
-  //      textOfComment: req.body.action.data.text,
-  //      cardId: req.body.action.data.card.id,
-  //      actionId: req.body.action.id,
-  //      cardUrl: `https://trello.com/c/${req.body.action.data.card.shortLink}`,
-  //    });
-  //  }
+//    //  if (CustomFieldReminderInTrelloCard) {
+//    //    const dueCardInMlsc = moment(trelloCard.due).valueOf();
 
-  //  //ловим удаление комментария в карточке
-  //  if (req?.body?.action?.type === 'deleteComment') {
-  //    socketInstance.io().emit('deleteComment', req?.body?.action);
-  //  }
+//    //    const customFieldData = await getCustomField(
+//    //      CustomFieldReminderInTrelloCard.idCustomField
+//    //    );
 
-  //  //ловим удаление комментария в карточке
-  //  if (req?.body?.action?.type === 'deleteComment') {
-  //    socketInstance.io().emit('deleteComment', req?.body?.action);
-  //  }
+//    //    const customFieldOption = customFieldData.options.find(
+//    //      (option) => option.id === CustomFieldReminderInTrelloCard.idValue
+//    //    );
 
-  //  //if (
-  //  //  req?.body?.action?.type === 'addLabelToCard' &&
-  //  //  req?.body?.action?.data?.label?.name === 'Expired'
-  //  //) {
-  //  //  const cardId = req.body.action.data.card.id;
+//    //    const dateMlscUntilNextReminder =
+//    //      await calculatingTimeUntilNextReminder(customFieldOption);
 
-  //  //  const trelloCard = await getCardDataByCardId(cardId);
+//    //    await updateTrelloCard(cardId, {
+//    //      due: +dueCardInMlsc + +dateMlscUntilNextReminder,
+//    //    });
 
-  //  //  const CustomFieldReminderInTrelloCard = trelloCard.customFieldItems.find(
-  //  //    (customField) =>
-  //  //      customField.idCustomField === process.env.TRELLO_CUSTOM_FIELD_REMINDER
-  //  //  );
+//    //    await removeLabelFromTrelloCard(
+//    //      cardId,
+//    //      process.env.TRELLO_LABEL_EXPIRED
+//    //    );
 
-  //  //  if (CustomFieldReminderInTrelloCard) {
-  //  //    const dueCardInMlsc = moment(trelloCard.due).valueOf();
+//    //    socketInstance.io().emit('newReminder', trelloCard);
+//    //  }
+//    //}
 
-  //  //    const customFieldData = await getCustomField(
-  //  //      CustomFieldReminderInTrelloCard.idCustomField
-  //  //    );
-
-  //  //    const customFieldOption = customFieldData.options.find(
-  //  //      (option) => option.id === CustomFieldReminderInTrelloCard.idValue
-  //  //    );
-
-  //  //    const dateMlscUntilNextReminder =
-  //  //      await calculatingTimeUntilNextReminder(customFieldOption);
-
-  //  //    await updateTrelloCard(cardId, {
-  //  //      due: +dueCardInMlsc + +dateMlscUntilNextReminder,
-  //  //    });
-
-  //  //    await removeLabelFromTrelloCard(
-  //  //      cardId,
-  //  //      process.env.TRELLO_LABEL_EXPIRED
-  //  //    );
-
-  //  //    socketInstance.io().emit('newReminder', trelloCard);
-  //  //  }
-  //  //}
-
-  //  res.status(200).json({ message: 'changes in trello have been detected' });
-  //} catch (err) {
-  //  console.log(err, 'trelloCallback');
-  //}
-});
+//    res.status(200).json({ message: 'changes in trello have been detected' });
+//  } catch (err) {
+//    console.log(err, 'trelloCallback');
+//  }
+//});
 
 let PORT = process.env.PORT || 8888;
 

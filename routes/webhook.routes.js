@@ -10,7 +10,6 @@ const {
 } = require('../controllers/movedToDoneList.controller');
 
 const {
-  getTrelloCardsFromDoneListByApprovedAndNot,
   getPriorityCardByCardId,
   getCardLabelsByCardId,
   updateTrelloCard,
@@ -74,22 +73,27 @@ router.post('/trello/doneList', async (req, res) => {
         });
       }
 
-      //обновляем список для отправки на клиент
-      const { doneTasks, approvedTasks } =
-        await getTrelloCardsFromDoneListByApprovedAndNot();
-
       const { priority } = await getPriorityCardByCardId(cardId);
+
+      socketInstance.io().emit('triggerForAnUpdateInPublishing', { priority });
+    }
+
+    //-----------------------------ловим изменение наклеек в done листе-----------------------------------
+
+    if (
+      changedData?.action?.type === 'updateCard' &&
+      changedData.action.data.card.idLabels
+    ) {
+      console.log('Changing the labels in the card');
 
       socketInstance
         .io()
-        .emit('movingCardToDone', { doneTasks, approvedTasks, priority });
+        .emit('triggerForAnUpdateInPublishing', { priority: null });
     }
-
-    //---------------------------------------------------------------------------------------------------------------
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {
-    console.log(err);
+    console.log('trello webhook error');
     return res.status(200).json({ status: 'error' });
   }
 });

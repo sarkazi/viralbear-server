@@ -268,6 +268,12 @@ const updateCustomFieldByTrelloCard = async (
   );
 };
 
+const deleteLabelFromTrelloCard = async (trelloCardId, labelId) => {
+  return await trelloInstance.delete(
+    `/1/cards/${trelloCardId}/idLabels/${labelId}`
+  );
+};
+
 const getCustomField = async (customFieldId) => {
   const { data } = await trelloInstance.get(`/1/customFields/${customFieldId}`);
 
@@ -343,6 +349,17 @@ const getTrelloMemberById = async (memberId) => {
   return data;
 };
 
+const inviteMemberOnBoard = async ({ email, nickname }) => {
+  const { data } = await trelloInstance.get(
+    `/1/boards/${process.env.TRELLO_WORKSPACE_ID}/members?email=${email}`,
+    {
+      fullName: nickname,
+    }
+  );
+
+  return data;
+};
+
 module.exports = {
   getAllCommentsByBoard,
   getTrelloCardsFromDoneListByApprovedAndNot,
@@ -365,4 +382,6 @@ module.exports = {
   getAllCardsByListId,
   getAllMembers,
   getTrelloMemberById,
+  inviteMemberOnBoard,
+  deleteLabelFromTrelloCard,
 };
