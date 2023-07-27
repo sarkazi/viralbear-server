@@ -10,7 +10,6 @@ const socketInstance = require('./socket.instance');
 const moment = require('moment');
 
 const {
-  getTrelloCardsFromDoneListByApprovedAndNot,
   getPriorityCardByCardId,
   getCardDataByCardId,
   getTrelloCardsFromMonthlyGoalsList,

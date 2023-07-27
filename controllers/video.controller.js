@@ -971,6 +971,8 @@ const convertingVideoToHorizontal = async (video, userId) => {
 
             const loaded = Math.round((progress.percent * 100) / 100);
 
+            console.log(userId, 8989);
+
             socketInstance
               .io()
               .sockets.in(userId)

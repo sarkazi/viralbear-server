@@ -47,10 +47,10 @@ router.post('/trello/doneList', async (req, res) => {
         const researcherUsernameInTrello =
           changedData.action.memberCreator.username;
 
-        const researcherInDatabase = await getUserBy(
-          'nickname',
-          `@${researcherUsernameInTrello}`
-        );
+        const researcherInDatabase = await getUserBy({
+          param: 'nickname',
+          value: `@${researcherUsernameInTrello}`,
+        });
 
         //записываем событие о перемещенной карточке в базу
         await writeNewMoveToDone({
@@ -75,7 +75,12 @@ router.post('/trello/doneList', async (req, res) => {
 
       const { priority } = await getPriorityCardByCardId(cardId);
 
-      socketInstance.io().emit('triggerForAnUpdateInPublishing', { priority });
+      socketInstance
+        .io()
+        .emit('triggerForAnUpdateInPublishing', {
+          priority,
+          event: 'new card in done',
+        });
     }
 
     //-----------------------------ловим изменение наклеек в done листе-----------------------------------

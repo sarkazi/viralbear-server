@@ -5,7 +5,6 @@ const trelloInstance = require('../api/trello.instance');
 
 const {
   getAllCommentsByBoard,
-  getTrelloCardsFromDoneListByApprovedAndNot,
   getAllCardsByListId,
   getAllMembers,
   getCardDataByCardId,
@@ -16,6 +15,11 @@ const {
 } = require('../controllers/viewedMention.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
+
+const {
+  findReadyForPublication,
+  findByFixed,
+} = require('../controllers/video.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -77,12 +81,90 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
 
 router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
   try {
-    const cards = await getTrelloCardsFromDoneListByApprovedAndNot();
+    const prePublishingVideos = await findReadyForPublication();
+    const videosWithUnfixedEdits = await findByFixed();
+
+    const doneCardsFromTrello = await getAllCardsByListId(
+      process.env.TRELLO_LIST_DONE_ID
+    );
+
+    const requiredCards = doneCardsFromTrello.filter((card) => {
+      return (
+        card.labels.some((label) => label.id === '61a1d74565c249483548bf9a') &&
+        card.labels.some((label) => label.id === '6243c7bd3718c276cb21e2cb')
+      );
+    });
+
+    let summaryData = await Promise.all(
+      requiredCards.map(async (card) => {
+        let vbForm = null;
+
+        if (
+          card.customFieldItems.find(
+            (el) => el.idCustomField === '63e659f754cea8f9978e3b63'
+          )
+        ) {
+          const vbFormId = card.customFieldItems.find(
+            (el) => el.idCustomField === '63e659f754cea8f9978e3b63'
+          ).value.number;
+
+          vbForm = await findOne({
+            searchBy: 'formId',
+            param: `VB${vbFormId}`,
+          });
+        }
+
+        return {
+          id: card.id,
+          name:
+            card.name.length >= 20
+              ? card.name.substring(0, 20) + '...'
+              : card.name,
+          priority: card.customFieldItems.find(
+            (customField) => customField.idValue === '62c7e0032a86d7161f8cadb2'
+          )
+            ? true
+            : false,
+
+          hasAdvance:
+            vbForm && vbForm?.refFormId?.advancePayment ? true : false,
+          list: card.customFieldItems.find(
+            (customField) => customField.idValue === '6360c514c95f85019ca4d612'
+          )
+            ? 'approve'
+            : 'done',
+          url: card.url,
+        };
+      })
+    );
+
+    summaryData = summaryData.reduce(
+      (res, card) => {
+        res[card.list === 'approve' ? 'approve' : 'done'].push(card);
+        return res;
+      },
+      { approve: [], done: [] }
+    );
+
+    const apiData = {
+      doneTasks: summaryData.done,
+      approvedTasks: summaryData.approve
+        .filter((approvedCard) => {
+          return prePublishingVideos.every((video) => {
+            return approvedCard.id !== video.trelloData.trelloCardId;
+          });
+        })
+        .filter((approvedCard) => {
+          return videosWithUnfixedEdits.every((video) => {
+            return approvedCard.id !== video.trelloData.trelloCardId;
+          });
+        }),
+    };
 
     return res.status(200).json({
       message: 'Cards from the "done" list have been received',
       status: 'success',
-      apiData: cards,
+      apiData,
     });
   } catch (err) {
     console.log(err);

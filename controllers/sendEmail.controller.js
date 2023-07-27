@@ -37,9 +37,9 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
   await mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
     to:
-      refForm && researcherEmail
+      refForm && !!researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
-        : process.env.SERVICE_LICENSING_EMAIL,
+        : process.env.SERVICE_INFO_EMAIL,
     subject: `New video was submitted! ${formId}`,
     html: `
 

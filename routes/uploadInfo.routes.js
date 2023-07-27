@@ -350,8 +350,6 @@ router.get('/findOne', async (req, res) => {
 
     const form = await findOne(objDB);
 
-    
-
     if (!form) {
       return res.status(200).json({
         message: `Form found in the database`,
@@ -387,8 +385,6 @@ router.post(
       const { pdf } = req.files;
       const { formId } = req.body;
 
-     
-
       if (!pdf) {
         return res.status(400).json({
           message: 'missing pdf file',
@@ -418,40 +414,24 @@ router.post(
       const vbForm = await findOne(objToSearchVbForm);
 
       if (!vbForm) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: `Form with id "${formId}" not found`,
           status: 'warning',
         });
       }
 
       if (vbForm.agreementLink) {
-        return res.status(400).json({
+        return res.status(200).json({
           message: 'The agreement link already exists',
           status: 'warning',
         });
       }
 
-      const author = await getUserById(vbForm.sender);
-
-      if (!author) {
+      if (!vbForm.sender) {
         return res.status(200).json({
-          message: 'The user with this id was not found',
+          message: 'The sender of the vb form was not found in the database',
           status: 'warning',
         });
-      }
-
-      let referer = null;
-      let refForm = null;
-
-      if (vbForm?.refFormId) {
-        refForm = await findOneRefFormByParam({
-          searchBy: '_id',
-          value: vbForm.refFormId,
-        });
-
-        if (refForm) {
-          referer = await getUserById(refForm?.researcher);
-        }
       }
 
       const resStorage = await new Promise(async (resolve, reject) => {
@@ -472,13 +452,13 @@ router.post(
       const agreementLink = resStorage.response.Location;
 
       if (!agreementLink) {
-        return res.status(400).json({
+        return res.status(200).json({
           message: 'Error when uploading pdf file to storage',
-          status: 'error',
+          status: 'warning',
         });
       }
 
-      const accountActivationLink = refForm
+      const accountActivationLink = vbForm?.refFormId
         ? `${process.env.CLIENT_URI}/licensors/?unq=${vbForm._id}`
         : '';
 
@@ -490,8 +470,8 @@ router.post(
       });
 
       const dataForSendingMainInfo = {
-        name: author.name,
-        clientEmail: author.email,
+        name: vbForm.sender.name,
+        clientEmail: vbForm.sender.email,
         videoLinks: vbForm.videoLinks,
         didYouRecord: vbForm.didYouRecord,
         ...(vbForm.operator && { operator: vbForm.operator }),
@@ -502,29 +482,31 @@ router.post(
         didNotGiveRights: vbForm.didNotGiveRights,
         ip: vbForm.ip,
         createdAt: vbForm.createdAt,
-        ...(refForm &&
-          refForm.advancePayment && { advancePayment: refForm.advancePayment }),
-        ...(refForm &&
-          refForm.percentage && { percentage: refForm.percentage }),
-        ...(referer && {
-          researcherEmail: referer.email,
-        }),
         agreementLink: agreementLink,
         formId: vbForm.formId,
         refForm: vbForm.refFormId ? true : false,
+        ...(vbForm?.refFormId?.advancePayment && {
+          advancePayment: vbForm.refFormId.advancePayment,
+        }),
+        ...(vbForm?.refFormId?.percentage && {
+          percentage: vbForm.refFormId.percentage,
+        }),
+        ...(vbForm?.refFormId?.researcher && {
+          researcherEmail: vbForm?.refFormId?.researcher?.email,
+        }),
       };
 
       const dataForSendingAgreement = {
-        name: author.name,
+        name: vbForm.sender.name,
         agreementLink,
-        email: author.email,
+        email: vbForm.sender.email,
         ...(accountActivationLink && {
           accountActivationLink,
         }),
       };
 
       if (vbForm.refFormId) {
-        const linkData = await findLinkByVideoId(refForm.videoId);
+        const linkData = await findLinkByVideoId(vbForm.refFormId.videoId);
 
         if (linkData) {
           const trelloCard = await getCardDataByCardId(linkData.trelloCardId);
@@ -544,14 +526,14 @@ router.post(
       await sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
       await sendAgreementToClientMail(dataForSendingAgreement);
 
-      if (refForm && referer) {
+      if (vbForm?.refFormId?.researcher?.email) {
         await sendEmail({
           emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
-          emailTo: referer.email,
+          emailTo: vbForm.refFormId.researcher.email,
           subject: `Link to the personal account of the author`,
           html: `
-          Hello ${referer.name}.<br/>
-          This is a link to the personal account of the author ${author.name} with email ${author.email}:<br/>
+          Hello ${vbForm.refFormId.researcher.name}.<br/>
+          This is a link to the personal account of the author ${vbForm?.sender?.name} with email ${vbForm?.sender?.email}:<br/>
           ${accountActivationLink}<br/>
           Have a nice day!
           `,
@@ -559,7 +541,7 @@ router.post(
       }
 
       return res.status(200).json({
-        message: `The agreement was uploaded to the storage and sent to "${vbForm.email}"`,
+        message: `The agreement was uploaded to the storage and sent to "${vbForm?.sender?.email}"`,
         status: 'success',
       });
     } catch (err) {

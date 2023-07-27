@@ -1,6 +1,7 @@
 const { Schema, model } = require('mongoose');
 
 const roles = ['admin', 'researcher', 'author', 'editor', 'stringer'];
+const positions = ['owner', 'researcher', 'editor', 'smm', 'seniorResearcher'];
 const paymentMethods = ['other', 'payPal', 'bankTransfer'];
 
 const schema = new Schema({
@@ -16,6 +17,10 @@ const schema = new Schema({
     type: String,
     required: true,
   },
+  avatarUrl: {
+    type: String,
+    required: false,
+  },
   nickname: {
     type: String,
     required: false,
@@ -24,6 +29,11 @@ const schema = new Schema({
     type: String,
     required: true,
     enum: roles,
+  },
+  position: {
+    type: String,
+    required: false,
+    enum: positions,
   },
   percentage: {
     type: Number,
@@ -112,75 +122,6 @@ const schema = new Schema({
     type: Boolean,
     required: false,
   },
-
-  //earnedForCompany: {
-  //  type: Number,
-  //  required: true,
-  //  default: 0,
-  //},
-  //earnedTotal: {
-  //  type: Number,
-  //  //required: true,
-  //  //default: 0,
-  //},
-  //earnedForYourself: {
-  //  total: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //},
-  //sentVideosCount: {
-  //  total: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //},
-  //approvedVideosCount: {
-  //  total: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //},
-  //acquiredVideosCount: {
-  //  total: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //  dateLimit: {
-  //    type: Number,
-  //    required: true,
-  //    default: 0,
-  //  },
-  //},
-  //defaultPaymentAmount: {
-  //  type: Number,
-  //  required: true,
-  //  default: 0,
-  //},
-  //earnedTillNextPayment: {
-  //  type: Number,
-  //  required: true,
-  //  default: 0,
-  //},
 });
 
 module.exports = model('User', schema);

@@ -30,18 +30,15 @@ const getAllUsers = async ({
   me,
   userId,
   roles,
-  canBeAssigned,
+
   fieldsInTheResponse,
   nicknames,
 }) => {
   return await User.find(
     {
       ...(me === false && { _id: { $ne: userId } }),
-      ...(roles && roles.length && { role: { $in: roles } }),
+      ...(roles?.length && { role: { $in: roles } }),
       ...(nicknames && { nickname: { $in: nicknames } }),
-      ...((canBeAssigned === true || canBeAssigned === false) && {
-        canBeAssigned,
-      }),
     },
     {
       ...(fieldsInTheResponse &&

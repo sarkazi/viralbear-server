@@ -3,6 +3,8 @@ const router = express.Router();
 const { genSalt, hash: hashBcrypt } = require('bcryptjs');
 const moment = require('moment');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -61,29 +63,83 @@ const {
 
 const { inviteMemberOnBoard } = require('../controllers/trello.controller');
 
+const { uploadFileToStorage } = require('../controllers/storage.controller');
+
+const storage = multer.memoryStorage();
+
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { me, roles, canBeAssigned, fieldsInTheResponse } = req.query;
+    const { me, roles, canBeAssigned, fieldsInTheResponse, sortByPosition } =
+      req.query;
 
     const userId = req.user.id;
 
     let users = await getAllUsers({
       me: JSON.parse(me),
       userId,
-      roles,
-      ...(canBeAssigned !== undefined &&
-        (JSON.parse(canBeAssigned) === true ||
-          JSON.parse(canBeAssigned) === false) && {
-          canBeAssigned: JSON.parse(canBeAssigned),
-        }),
+      roles: roles ? roles : [],
       ...(fieldsInTheResponse && {
         fieldsInTheResponse,
       }),
     });
 
+    if (canBeAssigned && typeof JSON.parse(canBeAssigned)) {
+      users = users.filter((user) => {
+        if (user.role !== 'researcher' || user.position === 'smm') {
+          return user.position !== 'developer';
+        } else {
+          return user?.canBeAssigned && user.position !== 'developer';
+        }
+      });
+    }
+
+    const priority = {
+      owner: 1,
+      editor: 2,
+      smm: 3,
+      seniorResearcher: 4,
+      researcher: 5,
+    };
+
+    if (sortByPosition && typeof JSON.parse(sortByPosition)) {
+      const defineDescForUsers = ({ position, country }) => {
+        switch (position) {
+          case 'owner':
+            return 'Owner and CEO';
+          case 'editor':
+            return 'Editor and publisher';
+          case 'smm':
+            return 'SMM';
+          case 'seniorResearcher':
+            return `Senior researcher${country ? ` | ${country}` : ''}`;
+          case 'researcher':
+            return `Researcher${country ? ` | ${country}` : ''}`;
+        }
+      };
+
+      users = users
+        .sort((current, next) => {
+          return priority[current.position] - priority[next.position];
+        })
+        .map((user) => {
+          return {
+            id: user._id,
+            name: user.name,
+            avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
+            description: defineDescForUsers({
+              position: user.position,
+              country: user.country,
+            }),
+            canBeAssigned: user.canBeAssigned,
+          };
+        });
+    }
+
+    console.log(users, 7878787);
+
     return res.status(200).json({
       status: 'success',
-      message: 'The list of workers has been received',
+      message: 'The list of employees has been received',
       apiData: users,
     });
   } catch (err) {
@@ -156,6 +212,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       country,
       paymentInfo,
       canBeAssigned,
+      position,
     } = req.body;
 
     const isValidate = validationForRequiredInputDataInUserModel(
@@ -169,8 +226,6 @@ router.post('/createOne', authMiddleware, async (req, res) => {
         .status(200)
         .json({ message: 'Missing data to create a user', status: 'warning' });
     }
-
-    const test = await inviteMemberOnBoard({ email });
 
     const candidate = await getUserByEmail(email);
 
@@ -202,6 +257,9 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       }),
       ...(typeof canBeAssigned === 'boolean' && {
         canBeAssigned,
+      }),
+      ...(position && {
+        position,
       }),
     };
 
@@ -289,99 +347,136 @@ router.post('/sendPassword', sendPassword);
 
 router.post('/recoveryPassword', recoveryPassword);
 
-router.patch('/updateOne', authMiddleware, async (req, res) => {
-  try {
-    const { userId, rolesUsersForResponse } = req.query;
+router.patch(
+  '/updateOne',
+  authMiddleware,
+  multer({ storage: storage }).fields([
+    {
+      name: 'avatarFile',
+      maxCount: 1,
+    },
+  ]),
+  async (req, res) => {
+    try {
+      const { userId, rolesUsersForResponse } = req.query;
 
-    const userIdToUpdate = userId ? userId : req.user.id;
+      const { avatarFile } = req.files;
 
-    const user = await getUserById(userIdToUpdate);
+      const userIdToUpdate = userId ? userId : req.user.id;
 
-    if (!user) {
-      return res.status(200).json({
-        message: 'User not found',
-        status: 'warning',
-      });
-    }
+      const user = await getUserById(userIdToUpdate);
 
-    const {
-      name,
-      nickname,
-      role,
-      email,
-      percentage,
-      advancePayment,
-      country,
-      balance,
-      paymentInfo,
-      canBeAssigned,
-    } = req.body;
-
-    if (user.role === 'author') {
-      const isValidate = validationForRequiredInputDataInUserModel(
-        user.role,
-        req.body,
-        'update'
-      );
-
-      if (!isValidate) {
+      if (!user) {
         return res.status(200).json({
-          message: 'Missing value for update payment information',
+          message: 'User not found',
           status: 'warning',
         });
       }
-    }
 
-    objDB = {
-      ...(name && { name }),
-      ...(nickname && { nickname: `@${nickname}` }),
-      ...(role && { role }),
-      ...(email && { email }),
-      ...(percentage && { percentage }),
-      ...(advancePayment && { advancePayment }),
-      ...(country && { country }),
-      ...(paymentInfo && { paymentInfo }),
-      ...(typeof canBeAssigned === 'boolean' && {
+      const {
+        name,
+        nickname,
+        role,
+        email,
+        percentage,
+        advancePayment,
+        country,
+        balance,
+        paymentInfo,
         canBeAssigned,
-      }),
-      ...(balance && { lastPaymentDate: moment().toDate() }),
-    };
+        position,
+      } = req.body;
 
-    objDBForIncrement = {
-      ...(balance && { balance }),
-    };
+      if (user.role === 'author') {
+        const isValidate = validationForRequiredInputDataInUserModel(
+          user.role,
+          req.body,
+          'update'
+        );
 
-    await updateUser({
-      userId: userIdToUpdate,
-      objDB,
-      objDBForIncrement: {},
-    });
+        if (!isValidate) {
+          return res.status(200).json({
+            message: 'Missing value for update payment information',
+            status: 'warning',
+          });
+        }
+      }
 
-    let apiData;
+      let avatarUrl = null;
 
-    if (rolesUsersForResponse) {
-      apiData = await getAllUsers({
-        me: true,
-        userId: null,
-        role: rolesUsersForResponse,
+      if (avatarFile) {
+        const { response } = await new Promise(async (resolve, reject) => {
+          await uploadFileToStorage(
+            null,
+            'avatarsOfUsers',
+            `avatar-${userId}`,
+            avatarFile[0].buffer,
+            avatarFile[0].mimetype,
+            path.extname(avatarFile[0].originalname),
+            resolve,
+            reject,
+            null,
+            null,
+            userId
+          );
+        });
+
+        avatarUrl = response?.Location;
+      }
+
+      objDB = {
+        ...(name && { name }),
+        ...(position && { position }),
+        ...(nickname && { nickname: `@${nickname}` }),
+        ...(role && { role }),
+        ...(email && { email }),
+        ...(percentage && { percentage }),
+        ...(advancePayment && { advancePayment }),
+        ...(country && { country }),
+        ...(paymentInfo && { paymentInfo }),
+        ...(avatarUrl && { avatarUrl }),
+        ...(typeof canBeAssigned === 'boolean' && {
+          canBeAssigned,
+        }),
+        ...(balance && { lastPaymentDate: moment().toDate() }),
+      };
+
+      objDBForIncrement = {
+        ...(balance && { balance }),
+      };
+
+      await updateUser({
+        userId: userIdToUpdate,
+        objDB,
+        objDBForIncrement: {},
       });
-    } else {
-      apiData = await getUserById(userId);
-    }
 
-    return res.status(200).json({
-      message: 'User data has been successfully updated',
-      status: 'success',
-      apiData,
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      message: 'Server side error',
-      status: 'error',
-    });
+      let apiData;
+
+      if (rolesUsersForResponse) {
+        apiData = await getAllUsers({
+          me: true,
+          userId: null,
+          role: rolesUsersForResponse,
+        });
+      } else {
+        apiData = await getUserById(userId);
+      }
+
+      return res.status(200).json({
+        message: 'User data has been successfully updated',
+        status: 'success',
+        apiData,
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        message: 'Server side error',
+        status: 'error',
+      });
+    }
   }
-});
+);
 
 router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
   const { roles } = req.query;

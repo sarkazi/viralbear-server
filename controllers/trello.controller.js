@@ -44,77 +44,6 @@ const getAllCardsByListId = async (listId) => {
   return data;
 };
 
-const getTrelloCardsFromDoneListByApprovedAndNot = async () => {
-  const prePublishingVideos = await findReadyForPublication();
-
-  const doneCardsFromTrello = await getAllCardsByListId(
-    process.env.TRELLO_LIST_DONE_ID
-  );
-
-  const requiredCards = doneCardsFromTrello.filter((card) => {
-    return (
-      card.labels.some((label) => label.id === '61a1d74565c249483548bf9a') &&
-      card.labels.some((label) => label.id === '6243c7bd3718c276cb21e2cb')
-    );
-  });
-
-  let summaryData = await Promise.all(
-    requiredCards.map(async (card) => {
-      let vbForm = null;
-
-      if (
-        card.customFieldItems.find(
-          (el) => el.idCustomField === '63e659f754cea8f9978e3b63'
-        )
-      ) {
-        const vbFormId = card.customFieldItems.find(
-          (el) => el.idCustomField === '63e659f754cea8f9978e3b63'
-        ).value.number;
-
-        vbForm = await findOne({ searchBy: 'formId', param: `VB${vbFormId}` });
-      }
-
-      return {
-        id: card.id,
-        name:
-          card.name.length >= 20
-            ? card.name.substring(0, 20) + '...'
-            : card.name,
-        priority: card.customFieldItems.find(
-          (customField) => customField.idValue === '62c7e0032a86d7161f8cadb2'
-        )
-          ? true
-          : false,
-
-        hasAdvance: vbForm && vbForm?.refFormId?.advancePayment ? true : false,
-        list: card.customFieldItems.find(
-          (customField) => customField.idValue === '6360c514c95f85019ca4d612'
-        )
-          ? 'approve'
-          : 'done',
-        url: card.url,
-      };
-    })
-  );
-
-  summaryData = summaryData.reduce(
-    (res, card) => {
-      res[card.list === 'approve' ? 'approve' : 'done'].push(card);
-      return res;
-    },
-    { approve: [], done: [] }
-  );
-
-  return {
-    doneTasks: summaryData.done,
-    approvedTasks: summaryData.approve.filter((approvedCard) => {
-      return prePublishingVideos.every((prePublishVideo) => {
-        return approvedCard.id !== prePublishVideo.trelloData.trelloCardId;
-      });
-    }),
-  };
-};
-
 const getPriorityCardByCardId = async (trelloCardId) => {
   const cardData = await getCardDataByCardId(trelloCardId);
 
@@ -362,7 +291,7 @@ const inviteMemberOnBoard = async ({ email, nickname }) => {
 
 module.exports = {
   getAllCommentsByBoard,
-  getTrelloCardsFromDoneListByApprovedAndNot,
+
   getPriorityCardByCardId,
   getCardDataByCardId,
   getTrelloCardsFromMonthlyGoalsList,

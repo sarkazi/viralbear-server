@@ -76,7 +76,7 @@ const {
 } = require('../controllers/storage.controller');
 
 const {
-  getTrelloCardsFromDoneListByApprovedAndNot,
+  
   deleteLabelFromTrelloCard,
   updateCustomFieldByTrelloCard,
 } = require('../controllers/trello.controller');
@@ -230,7 +230,6 @@ router.post(
                   await uploadFileToStorage(
                     video[0].originalname,
                     'reuters-videos',
-
                     videoId,
                     buffer,
                     video[0].mimetype,

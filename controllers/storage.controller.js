@@ -45,8 +45,6 @@ const uploadFileToStorage = async (
     .on('httpUploadProgress', (progress) => {
       const loaded = Math.round((progress.loaded * 100) / progress.total);
 
-      console.log(loaded, userId, eventName);
-
       socketInstance
         .io()
         .sockets.in(userId)

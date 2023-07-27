@@ -34,9 +34,8 @@ const {
 const { findWorkersForCard } = require('../controllers/user.controller');
 
 router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
-  const { list, workers, reminders, title, authorNickname, link } = req.body;
-
-  console.log(req.body, 888);
+  const { list, workers, reminders, title, authorNickname, link, priority } =
+    req.body;
 
   const convertedLink = conversionIncorrectLinks(link);
 
@@ -53,8 +52,8 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
 
     if (!videoId) {
       return res
-        .status(400)
-        .json({ message: 'Link is invalid', status: 'error' });
+        .status(200)
+        .json({ message: 'Link is invalid', status: 'warning' });
     }
 
     const linkInfo = await findLinkByVideoId(videoId);
@@ -75,25 +74,25 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
 
     if (!selfWorker) {
       return res
-        .status(404)
-        .json({ message: 'Worker not found', status: 'error' });
+        .status(200)
+        .json({ message: 'Worker not found', status: 'warning' });
     }
 
     const foundWorkers = await findWorkersForCard(workers, selfWorker.name);
 
     if (!foundWorkers.length) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: 'Not a single user with the role of "worker" was found',
-        status: 'error',
+        status: 'warning',
       });
     }
 
     const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
 
     if (!foundWorkersTrelloIds.length) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: 'Not a single employee was found in trello',
-        status: 'error',
+        status: 'warning',
       });
     }
 
@@ -105,29 +104,40 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       foundWorkersTrelloIds
     );
 
-    //if (reminders) {
-    //  const reminderCustomFieldValue =
-    //    await definingValueOfCustomFieldReminderInTrello(
-    //      process.env.TRELLO_CUSTOM_FIELD_REMINDER,
-    //      reminders
-    //    );
+    if (JSON.parse(priority)) {
+      //меняем кастомное поле "priority" в карточке trello
+      await updateCustomFieldByTrelloCard(
+        trelloResponseAfterCreatingCard.id,
+        process.env.TRELLO_CUSTOM_FIELD_PRIORITY,
+        {
+          idValue: '62c7e0032a86d7161f8cadb2',
+        }
+      );
+    }
 
-    //  await updateCustomFieldByTrelloCard(
-    //    trelloResponseAfterCreatingCard.id,
-    //    process.env.TRELLO_CUSTOM_FIELD_REMINDER,
-    //    { idValue: reminderCustomFieldValue.id }
-    //  );
+    if (reminders) {
+      const reminderCustomFieldValue =
+        await definingValueOfCustomFieldReminderInTrello(
+          process.env.TRELLO_CUSTOM_FIELD_REMINDER,
+          reminders
+        );
 
-    //  const dateMlscUntilNextReminder = await calculatingTimeUntilNextReminder(
-    //    reminderCustomFieldValue
-    //  );
+      await updateCustomFieldByTrelloCard(
+        trelloResponseAfterCreatingCard.id,
+        process.env.TRELLO_CUSTOM_FIELD_REMINDER,
+        { idValue: reminderCustomFieldValue.id }
+      );
 
-    //  const currentTime = moment().valueOf();
+      //const dateMlscUntilNextReminder = await calculatingTimeUntilNextReminder(
+      //  reminderCustomFieldValue
+      //);
 
-    //  await updateTrelloCard(trelloResponseAfterCreatingCard.id, {
-    //    due: +dateMlscUntilNextReminder + +currentTime,
-    //  });
-    //}
+      //const currentTime = moment().valueOf();
+
+      //await updateTrelloCard(trelloResponseAfterCreatingCard.id, {
+      //  due: +dateMlscUntilNextReminder + +currentTime,
+      //});
+    }
 
     await createNewLink(
       selfWorker.email,

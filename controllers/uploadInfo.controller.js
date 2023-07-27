@@ -7,16 +7,25 @@ const findOne = async (objDB) => {
   return await UploadInfo.findOne({
     [searchBy]: param,
   })
-  .populate({
-    path: 'refFormId sender',
-    select: {
-      percentage: 1,
-      advancePayment: 1,
-      exclusivity: 1,
-      email: 1,
-      name: 1,
-    },
-  });
+    .populate({
+      path: 'refFormId',
+      populate: {
+        path: 'researcher',
+        select: { email: 1, name: 1 },
+      },
+      select: {
+        percentage: 1,
+        advancePayment: 1,
+        exclusivity: 1,
+      },
+    })
+    .populate({
+      path: 'sender',
+      select: {
+        email: 1,
+        name: 1,
+      },
+    });
 };
 
 const findLastAddedVbForm = async () => {
