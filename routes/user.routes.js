@@ -135,8 +135,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         });
     }
 
-    console.log(users, 7878787);
-
     return res.status(200).json({
       status: 'success',
       message: 'The list of employees has been received',
@@ -358,9 +356,9 @@ router.patch(
   ]),
   async (req, res) => {
     try {
-      const { userId, rolesUsersForResponse } = req.query;
+      const files = req.files;
 
-      const { avatarFile } = req.files;
+      const { userId, rolesUsersForResponse } = req.query;
 
       const userIdToUpdate = userId ? userId : req.user.id;
 
@@ -404,15 +402,15 @@ router.patch(
 
       let avatarUrl = null;
 
-      if (avatarFile) {
+      if (files?.avatarFile) {
         const { response } = await new Promise(async (resolve, reject) => {
           await uploadFileToStorage(
             null,
             'avatarsOfUsers',
             `avatar-${userId}`,
-            avatarFile[0].buffer,
-            avatarFile[0].mimetype,
-            path.extname(avatarFile[0].originalname),
+            files.avatarFile[0].buffer,
+            files.avatarFile[0].mimetype,
+            path.extname(files.avatarFile[0].originalname),
             resolve,
             reject,
             null,
@@ -1434,10 +1432,8 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
     const { group } = req.query;
 
     const videosWithVbCode = await getAllVideos({
-      vbCode: {
-        vbForm: { $exists: true, $ne: '' },
-      },
-      isApproved: { isApproved: true },
+      vbCode: true,
+      isApproved: true,
     });
 
     if (videosWithVbCode.length) {
@@ -1454,66 +1450,58 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
 
           if (vbForm) {
             if (vbForm?.sender) {
-              const authorRelatedWithVbForm = await getUserBy({
-                param: '_id',
-                value: vbForm.sender,
-              });
-
-              if (authorRelatedWithVbForm) {
+              if (vbForm?.refFormId) {
                 let percentAmount = 0;
                 let advanceAmount = 0;
                 let toBePaid = 0;
                 let totalBalance = 0;
 
                 if (
-                  authorRelatedWithVbForm?.advancePayment &&
+                  vbForm.refFormId?.advancePayment &&
                   typeof vbForm.advancePaymentReceived === 'boolean' &&
                   !vbForm.advancePaymentReceived
                 ) {
-                  advanceAmount = authorRelatedWithVbForm.advancePayment;
-                  toBePaid = authorRelatedWithVbForm.advancePayment;
+                  advanceAmount = vbForm.refFormId.advancePayment;
+                  toBePaid = vbForm.refFormId.advancePayment;
                 }
 
                 if (
-                  authorRelatedWithVbForm?.advancePayment &&
+                  vbForm.refFormId?.advancePayment &&
                   typeof vbForm.advancePaymentReceived === 'boolean' &&
                   vbForm.advancePaymentReceived
                 ) {
-                  totalBalance = authorRelatedWithVbForm.advancePayment * -1;
+                  totalBalance = vbForm.refFormId.advancePayment * -1;
                 }
 
-                if (authorRelatedWithVbForm?.percentage) {
+                if (vbForm.refFormId?.percentage) {
                   salesOfThisVideo.map((sale) => {
                     if (sale.vbFormInfo.paidFor === false) {
                       percentAmount +=
-                        (sale.amount * authorRelatedWithVbForm.percentage) /
-                        100;
+                        (sale.amount * vbForm.refFormId.percentage) / 100;
                       toBePaid +=
-                        (sale.amount * authorRelatedWithVbForm.percentage) /
-                        100;
+                        (sale.amount * vbForm.refFormId.percentage) / 100;
                     } else {
                       totalBalance +=
-                        (sale.amount * authorRelatedWithVbForm.percentage) /
-                        100;
+                        (sale.amount * vbForm.refFormId.percentage) / 100;
                     }
                   });
                 }
 
                 return {
                   status: 'All right',
-                  authorEmail: authorRelatedWithVbForm.email,
-                  percentage: authorRelatedWithVbForm.percentage
-                    ? authorRelatedWithVbForm.percentage
+                  authorEmail: vbForm.sender.email,
+                  percentage: vbForm.refFormId.percentage
+                    ? vbForm.refFormId.percentage
                     : 0,
                   advance: {
                     value:
                       typeof vbForm.advancePaymentReceived === 'boolean' &&
-                      authorRelatedWithVbForm.advancePayment
-                        ? authorRelatedWithVbForm.advancePayment
+                      vbForm.refFormId.advancePayment
+                        ? vbForm.refFormId.advancePayment
                         : 0,
                     paid:
                       typeof vbForm.advancePaymentReceived !== 'boolean' &&
-                      !authorRelatedWithVbForm.advancePayment
+                      !vbForm.refFormId.advancePayment
                         ? null
                         : vbForm.advancePaymentReceived === true
                         ? true
@@ -1522,7 +1510,7 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
                   videoId: video.videoData.videoId,
                   videoTitle: video.videoData.title,
                   paymentInfo:
-                    authorRelatedWithVbForm.paymentInfo.variant === undefined
+                    vbForm.sender?.paymentInfo?.variant === undefined
                       ? false
                       : true,
                   amount: {
@@ -1536,7 +1524,7 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
                 };
               } else {
                 return {
-                  status: 'Author not found',
+                  status: 'VB form without referral link',
                   authorEmail: null,
                   percentage: null,
                   advance: {

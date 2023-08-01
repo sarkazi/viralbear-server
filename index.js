@@ -2,35 +2,44 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const cors = require('cors');
-const multer = require('multer');
+//const multer = require('multer');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv').config();
 const cookieParser = require('cookie-parser');
 const socketInstance = require('./socket.instance');
-const moment = require('moment');
+//const moment = require('moment');
 
-const {
-  getPriorityCardByCardId,
-  getCardDataByCardId,
-  getTrelloCardsFromMonthlyGoalsList,
-  createNewAttachmentForTrelloCard,
-  createNewChecklistItemForTrelloCard,
-  getAllChecklistsByTrelloCardId,
-  getAllCommentsByBoard,
-  getCardLabelsByCardId,
-  updateTrelloCard,
-  calculatingTimeUntilNextReminder,
-  removeLabelFromTrelloCard,
-  getCustomField,
-  getTrelloMemberById,
-} = require('./controllers/trello.controller');
+//const {
+//  getPriorityCardByCardId,
+//  getCardDataByCardId,
+//  getTrelloCardsFromMonthlyGoalsList,
+//  createNewAttachmentForTrelloCard,
+//  createNewChecklistItemForTrelloCard,
+//  getAllChecklistsByTrelloCardId,
+//  getAllCommentsByBoard,
+//  getCardLabelsByCardId,
+//  updateTrelloCard,
+//  calculatingTimeUntilNextReminder,
+//  removeLabelFromTrelloCard,
+//  getCustomField,
+//  getTrelloMemberById,
+//} = require('./controllers/trello.controller');
 
-const {
-  updateUserByIncrement,
-  getWorkers,
-} = require('./controllers/user.controller');
+//const {
+//  updateUserByIncrement,
+//  getWorkers,
+//} = require('./controllers/user.controller');
 
 mongoose.set('strictQuery', false);
+
+app.use(cors());
+
+app.use(express.static('mrssFiles'));
+app.use(express.json({ limit: '50mb', extended: true }));
+app.use(express.urlencoded({ limit: '50mb' }));
+app.set('view engine', 'ejs');
+app.set('views', path.resolve(__dirname, 'ejs'));
+app.use(express.static(path.join(__dirname, 'build')));
 
 const videoRouter = require('./routes/video.routes');
 const uploadInfoRouter = require('./routes/uploadInfo.routes');
@@ -45,16 +54,6 @@ const salesRouter = require('./routes/sales.routes');
 const locationRouter = require('./routes/location.routes');
 const webhookRouter = require('./routes/webhook.routes');
 const publicUsersRouter = require('./routes/public.users.routes');
-
-app.use(cors());
-
-app.use(express.static('mrssFiles'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb' }));
-app.use(express.json({ extended: true }));
-app.set('view engine', 'ejs');
-app.set('views', path.resolve(__dirname, 'ejs'));
-app.use(express.static(path.join(__dirname, 'build')));
 
 const socketServer = require('http').createServer(app);
 

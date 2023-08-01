@@ -576,7 +576,7 @@ const getAllVideos = async ({
 }) => {
   return Video.find(
     {
-      ...(vbCode && { vbForm: { $exists: true, $ne: '' } }),
+      ...(vbCode && { vbForm: { $exists: true } }),
       ...(typeof isApproved === 'boolean' && { isApproved }),
       ...(researcherEmail && {
         'trelloData.researchers': {

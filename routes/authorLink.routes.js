@@ -31,7 +31,7 @@ router.post('/create', authMiddleware, async (req, res) => {
   } = req.body;
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
-    return res.status(400).json({
+    return res.status(200).json({
       message: 'Missing parameters for link generation',
       status: 'warning',
     });
@@ -48,9 +48,9 @@ router.post('/create', authMiddleware, async (req, res) => {
     const user = await getUserById(req.user.id);
 
     if (!user) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: 'User not found',
-        status: 'error',
+        status: 'warning',
       });
     }
 
@@ -60,16 +60,16 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     if (!videoLink) {
       return res
-        .status(400)
-        .json({ message: 'Link is invalid', status: 'error' });
+        .status(200)
+        .json({ message: 'Link is invalid', status: 'warning' });
     }
 
     const videoId = await pullIdFromUrl(videoLink);
 
     if (!videoId) {
       return res
-        .status(400)
-        .json({ message: 'Link is invalid', status: 'error' });
+        .status(200)
+        .json({ message: 'Link is invalid', status: 'warning' });
     }
 
     const authorLink = await findAuthorLinkByVideoId(videoId);
@@ -108,7 +108,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    return res.status(400).json({
+    return res.status(500).json({
       message: 'Server side error',
       status: 'error',
     });

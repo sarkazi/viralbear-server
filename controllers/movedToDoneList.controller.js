@@ -28,7 +28,9 @@ const getCountApprovedTrelloCardBy = async ({
   return await MovedToDoneListSchema.find({
     [searchBy]: value,
     ...(forLastDays && {
-      $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
+      createdAt: {
+        $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
+      },
     }),
   })
     .countDocuments()

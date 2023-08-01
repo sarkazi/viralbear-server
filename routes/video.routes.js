@@ -76,7 +76,6 @@ const {
 } = require('../controllers/storage.controller');
 
 const {
-  
   deleteLabelFromTrelloCard,
   updateCustomFieldByTrelloCard,
 } = require('../controllers/trello.controller');
