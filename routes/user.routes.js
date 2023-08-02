@@ -78,49 +78,45 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       me: JSON.parse(me),
       userId,
       roles: roles ? roles : [],
+      canBeAssigned,
       ...(fieldsInTheResponse && {
         fieldsInTheResponse,
       }),
     });
 
-    if (canBeAssigned && typeof JSON.parse(canBeAssigned)) {
-      users = users.filter((user) => {
-        if (user.role !== 'researcher' || user.position === 'smm') {
-          return user.position !== 'developer';
-        } else {
-          return user?.canBeAssigned && user.position !== 'developer';
-        }
-      });
-    }
-
-    const priority = {
-      owner: 1,
-      editor: 2,
-      smm: 3,
-      seniorResearcher: 4,
-      researcher: 5,
-    };
-
     if (sortByPosition && typeof JSON.parse(sortByPosition)) {
       const defineDescForUsers = ({ position, country }) => {
-        switch (position) {
-          case 'owner':
-            return 'Owner and CEO';
-          case 'editor':
-            return 'Editor and publisher';
-          case 'smm':
-            return 'SMM';
-          case 'seniorResearcher':
-            return `Senior researcher${country ? ` | ${country}` : ''}`;
-          case 'researcher':
-            return `Researcher${country ? ` | ${country}` : ''}`;
+        if (position.includes('owner') || position.includes('ceo')) {
+          return 'Owner and CEO';
+        } else if (
+          position.includes('researcher') &&
+          !position.includes('senior')
+        ) {
+          return `Researcher${country ? ` | ${country}` : ''}`;
+        } else if (
+          position.includes('researcher') &&
+          position.includes('senior')
+        ) {
+          return `Senior researcher${country ? ` | ${country}` : ''}`;
+        } else {
+          return position;
         }
       };
 
       users = users
-        .sort((current, next) => {
-          return priority[current.position] - priority[next.position];
-        })
+        .reduce(
+          (res, item) => {
+            res[
+              !item.position.includes('ceo') || !item.position.includes('owner')
+                ? 'first'
+                : !item.position.includes('researcher')
+                ? 'third'
+                : 'second'
+            ].push(item);
+            return res;
+          },
+          { first: [], second: [], third: [] }
+        )
         .map((user) => {
           return {
             id: user._id,
@@ -133,7 +129,117 @@ router.get('/getAll', authMiddleware, async (req, res) => {
             canBeAssigned: user.canBeAssigned,
           };
         });
+
+      users = {
+        first: users.first,
+        second: users.second,
+        third: users.third.sort(cur, (next) => {
+          if (cur.position.includes('senior')) {
+            return cur - next;
+          }
+        }),
+      };
+
+      console.log(users, 8989);
     }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'The list of employees has been received',
+      apiData: users,
+    });
+  } catch (err) {
+    console.log(err);
+    return res
+      .status(500)
+      .json({ status: 'error', message: 'Server side error' });
+  }
+});
+
+router.get('/findToDisplayOnTheSite', async (req, res) => {
+  try {
+    let users = await getAllUsers({
+      exist: ['position'],
+      displayOnTheSite: true,
+    });
+
+    const defineDescForUsers = ({ position, country }) => {
+      if (position.includes('owner') || position.includes('ceo')) {
+        return 'Owner and CEO';
+      } else if (
+        position.includes('researcher') &&
+        !position.includes('senior')
+      ) {
+        return `Researcher${country ? ` | ${country}` : ''}`;
+      } else if (
+        position.includes('researcher') &&
+        position.includes('senior')
+      ) {
+        return `Senior researcher${country ? ` | ${country}` : ''}`;
+      } else {
+        return position;
+      }
+    };
+
+    users = users.reduce(
+      (res, item) => {
+        res[
+          item.position.includes('ceo') || item.position.includes('owner')
+            ? 'first'
+            : item.position.includes('researcher')
+            ? 'third'
+            : 'second'
+        ].push(item);
+        return res;
+      },
+      { first: [], second: [], third: [] }
+    );
+
+    users = {
+      first: users.first.map((user) => {
+        return {
+          id: user._id,
+          name: user.name,
+          avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
+          description: defineDescForUsers({
+            position: user.position,
+            country: user.country,
+          }),
+          canBeAssigned: user.canBeAssigned,
+        };
+      }),
+      second: users.second.map((user) => {
+        return {
+          id: user._id,
+          name: user.name,
+          avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
+          description: defineDescForUsers({
+            position: user.position,
+            country: user.country,
+          }),
+          canBeAssigned: user.canBeAssigned,
+        };
+      }),
+
+      third: users.third
+        .sort((cur, next) => {
+          if (cur.position.includes('senior')) {
+            return cur - next;
+          }
+        })
+        .map((user) => {
+          return {
+            id: user._id,
+            name: user.name,
+            avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
+            description: defineDescForUsers({
+              position: user.position,
+              country: user.country,
+            }),
+            canBeAssigned: user.canBeAssigned,
+          };
+        }),
+    };
 
     return res.status(200).json({
       status: 'success',
@@ -210,6 +316,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       country,
       paymentInfo,
       canBeAssigned,
+      displayOnTheSite,
       position,
     } = req.body;
 
@@ -256,6 +363,9 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       ...(typeof canBeAssigned === 'boolean' && {
         canBeAssigned,
       }),
+      ...(typeof displayOnTheSite === 'boolean' && {
+        displayOnTheSite,
+      }),
       ...(position && {
         position,
       }),
@@ -266,71 +376,6 @@ router.post('/createOne', authMiddleware, async (req, res) => {
     return res.status(200).json({
       message: 'A new user has been successfully created',
       status: 'success',
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      message: 'Server side error',
-      status: 'error',
-    });
-  }
-});
-
-router.post('/authorRegister', async (req, res) => {
-  try {
-    const { vbFormId, password: reqPassword } = req.body;
-
-    if (!vbFormId) {
-      return res.status(200).json({
-        message:
-          'There is no referral hash. Contact your administrator or try again',
-        status: 'warning',
-      });
-    }
-
-    const objToSearchVbForm = {
-      searchBy: '_id',
-      param: vbFormId,
-    };
-
-    const vbForm = await findOne(objToSearchVbForm);
-
-    if (!vbForm) {
-      return res.status(200).json({
-        message:
-          'The form was not found. Contact your administrator or try again',
-        status: 'warning',
-      });
-    }
-
-    const candidate = await getUserById(vbForm.sender);
-
-    if (!candidate) {
-      return res.status(200).json({
-        message: 'A user with this email not found',
-        status: 'warning',
-      });
-    }
-
-    const salt = await genSalt(10);
-
-    const objForUpdateUAuthor = {
-      password: await hashBcrypt(reqPassword, salt),
-      activatedTheAccount: true,
-    };
-
-    await updateUser({
-      userId: vbForm.sender,
-      objDB: objForUpdateUAuthor,
-      objDBForIncrement: {},
-    });
-
-    const { accessToken, refreshToken } = generateTokens(candidate);
-
-    return res.status(200).json({
-      apiData: { accessToken, refreshToken, role: candidate.role },
-      status: 'success',
-      message: 'Congratulations on registering on the service!',
     });
   } catch (err) {
     console.log(err);
@@ -382,6 +427,7 @@ router.patch(
         balance,
         paymentInfo,
         canBeAssigned,
+        displayOnTheSite,
         position,
       } = req.body;
 
@@ -435,6 +481,9 @@ router.patch(
         ...(avatarUrl && { avatarUrl }),
         ...(typeof canBeAssigned === 'boolean' && {
           canBeAssigned,
+        }),
+        ...(typeof displayOnTheSite === 'boolean' && {
+          displayOnTheSite,
         }),
         ...(balance && { lastPaymentDate: moment().toDate() }),
       };
@@ -626,7 +675,8 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
 
         const videosWithUnpaidAdvance = await getAllVideos({
           isApproved: true,
-          researcherEmail: user.email,
+          searchForResearcherBy: 'email',
+          valueResearcherBySearch: user.email,
           advanceHasBeenPaid: false,
         });
 
@@ -1047,7 +1097,8 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     if (paymentFor === 'advance') {
       const videoCountWithUnpaidAdvance = await getAllVideos({
         isApproved: true,
-        researcherEmail: user.email,
+        searchForResearcherBy: 'email',
+        valueResearcherBySearch: user.email,
         advanceHasBeenPaid: false,
       });
 
@@ -1140,7 +1191,280 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
+router.post('/findByValueList', async (req, res) => {
+  try {
+    const { emailList } = req.body;
+
+    const users = await findUsersByValueList({
+      param: 'email',
+      valueList: emailList,
+    });
+
+    return res.status(200).json({
+      message: 'The workers"s balance has been successfully replenished',
+      status: 'success',
+      apiData: users,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
+
+router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
+  try {
+    const { group } = req.query;
+
+    const videosWithVbCode = await getAllVideos({
+      vbCode: true,
+      isApproved: true,
+    });
+
+    if (videosWithVbCode.length) {
+      let authorsVideoStatistics = await Promise.all(
+        videosWithVbCode.map(async (video) => {
+          const vbForm = await findOne({
+            searchBy: '_id',
+            param: video.vbForm,
+          });
+
+          const salesOfThisVideo = await getAllSales({
+            videoId: video.videoData.videoId,
+          });
+
+          if (vbForm) {
+            if (vbForm?.sender) {
+              if (vbForm?.refFormId) {
+                let percentAmount = 0;
+                let advanceAmount = 0;
+                let toBePaid = 0;
+                let totalBalance = 0;
+
+                if (
+                  vbForm.refFormId?.advancePayment &&
+                  typeof vbForm.advancePaymentReceived === 'boolean' &&
+                  !vbForm.advancePaymentReceived
+                ) {
+                  advanceAmount = vbForm.refFormId.advancePayment;
+                  toBePaid = vbForm.refFormId.advancePayment;
+                }
+
+                if (
+                  vbForm.refFormId?.advancePayment &&
+                  typeof vbForm.advancePaymentReceived === 'boolean' &&
+                  vbForm.advancePaymentReceived
+                ) {
+                  totalBalance = vbForm.refFormId.advancePayment * -1;
+                }
+
+                if (vbForm.refFormId?.percentage) {
+                  salesOfThisVideo.map((sale) => {
+                    if (sale.vbFormInfo.paidFor === false) {
+                      percentAmount +=
+                        (sale.amount * vbForm.refFormId.percentage) / 100;
+                      toBePaid +=
+                        (sale.amount * vbForm.refFormId.percentage) / 100;
+                    } else {
+                      totalBalance +=
+                        (sale.amount * vbForm.refFormId.percentage) / 100;
+                    }
+                  });
+                }
+
+                return {
+                  status: 'All right',
+                  authorEmail: vbForm.sender.email,
+                  percentage: vbForm.refFormId.percentage
+                    ? vbForm.refFormId.percentage
+                    : 0,
+                  advance: {
+                    value:
+                      typeof vbForm.advancePaymentReceived === 'boolean' &&
+                      vbForm.refFormId.advancePayment
+                        ? vbForm.refFormId.advancePayment
+                        : 0,
+                    paid:
+                      typeof vbForm.advancePaymentReceived !== 'boolean' &&
+                      !vbForm.refFormId.advancePayment
+                        ? null
+                        : vbForm.advancePaymentReceived === true
+                        ? true
+                        : false,
+                  },
+                  videoId: video.videoData.videoId,
+                  videoTitle: video.videoData.title,
+                  paymentInfo:
+                    vbForm.sender?.paymentInfo?.variant === undefined
+                      ? false
+                      : true,
+                  amount: {
+                    percent: +percentAmount.toFixed(2),
+                    advance: +advanceAmount.toFixed(2),
+                    toBePaid: +toBePaid.toFixed(2),
+                    totalBalance: +totalBalance.toFixed(2),
+                  },
+                  vbFormUid: vbForm.formId,
+                  salesCount: salesOfThisVideo.length,
+                };
+              } else {
+                return {
+                  status: 'VB form without referral link',
+                  authorEmail: null,
+                  percentage: null,
+                  advance: {
+                    value: null,
+                    paid: null,
+                  },
+                  videoId: video.videoData.videoId,
+                  videoTitle: video.videoData.title,
+                  paymentInfo: null,
+                  amount: {
+                    percent: null,
+                    advance: null,
+                    toBePaid: null,
+                    totalBalance: null,
+                  },
+                  vbFormUid: vbForm.formId,
+                  salesCount: salesOfThisVideo.length,
+                };
+              }
+            } else {
+              return {
+                status: 'VB form without sender',
+                authorEmail: null,
+                percentage: null,
+                advance: {
+                  value: null,
+                  paid: null,
+                },
+                videoId: video.videoData.videoId,
+                videoTitle: video.videoData.title,
+                paymentInfo: null,
+                amount: {
+                  percent: null,
+                  advance: null,
+                  toBePaid: null,
+                  totalBalance: null,
+                },
+                vbFormUid: vbForm.formId,
+                salesCount: salesOfThisVideo.length,
+              };
+            }
+          } else {
+            return {
+              status: 'VB form not found',
+              authorEmail: null,
+              percentage: null,
+              advance: {
+                value: null,
+                paid: null,
+              },
+              videoId: video.videoData.videoId,
+              videoTitle: video.videoData.title,
+              paymentInfo: null,
+              amount: {
+                percent: null,
+                advance: null,
+                toBePaid: null,
+                totalBalance: null,
+              },
+              vbFormUid: null,
+              salesCount: salesOfThisVideo.length,
+            };
+          }
+        })
+      );
+
+      authorsVideoStatistics = authorsVideoStatistics.reduce(
+        (res, videoData) => {
+          if (videoData.advance.value === 0 && videoData.percentage === 0) {
+            res['ignore'].push(videoData);
+          } else if (
+            videoData.advance.value === 0 ||
+            videoData.amount.toBePaid <= 75
+          ) {
+            res['other'].push(videoData);
+          } else if (
+            !videoData.paymentInfo &&
+            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
+          ) {
+            res['noPayment'].push(videoData);
+          } else if (
+            videoData.paymentInfo &&
+            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
+          ) {
+            res['ready'].push(videoData);
+          }
+          return res;
+        },
+        { ready: [], noPayment: [], other: [], ignore: [] }
+      );
+
+      const defineApiData = () => {
+        switch (group) {
+          case 'ready':
+            return authorsVideoStatistics.ready;
+          case 'noPayment':
+            return authorsVideoStatistics.noPayment;
+          case 'other':
+            return authorsVideoStatistics.other;
+        }
+      };
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Statistics on authors have been successfully collected',
+        apiData: defineApiData(),
+      });
+    } else {
+      return res.status(200).json({
+        status: 'success',
+        message: 'Statistics on authors have been successfully collected',
+        apiData: [],
+      });
+    }
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
+
+router.get('/authors/getPaymentDetails', authMiddleware, async (req, res) => {
+  try {
+    const { searchBy, value } = req.query;
+
+    const author = await getUserBy({ param: searchBy, value });
+
+    if (!author) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'Author not found',
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Statistics on authors have been successfully collected',
+      apiData: author?.paymentInfo ? author.paymentInfo : {},
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
+
+router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
   try {
     const { videoId, amountToTopUp } = req.body;
     const { paymentFor } = req.query;
@@ -1404,19 +1728,61 @@ router.post('/topUpAuthorBalance', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/findByValueList', async (req, res) => {
+router.post('/authors/register', async (req, res) => {
   try {
-    const { emailList } = req.body;
+    const { vbFormId, password: reqPassword } = req.body;
 
-    const users = await findUsersByValueList({
-      param: 'email',
-      valueList: emailList,
+    if (!vbFormId) {
+      return res.status(200).json({
+        message:
+          'There is no referral hash. Contact your administrator or try again',
+        status: 'warning',
+      });
+    }
+
+    const objToSearchVbForm = {
+      searchBy: '_id',
+      param: vbFormId,
+    };
+
+    const vbForm = await findOne(objToSearchVbForm);
+
+    if (!vbForm) {
+      return res.status(200).json({
+        message:
+          'The form was not found. Contact your administrator or try again',
+        status: 'warning',
+      });
+    }
+
+    const candidate = await getUserById(vbForm.sender);
+
+    if (!candidate) {
+      return res.status(200).json({
+        message: 'A user with this email not found',
+        status: 'warning',
+      });
+    }
+
+    const salt = await genSalt(10);
+
+    const objForUpdateUAuthor = {
+      password: await hashBcrypt(reqPassword, salt),
+      activatedTheAccount: true,
+    };
+
+    await updateUser({
+      userId: vbForm.sender,
+      objDB: objForUpdateUAuthor,
+      objDBForIncrement: {},
     });
 
+    const { accessToken, refreshToken } = generateTokens(candidate);
+
     return res.status(200).json({
-      message: 'The workers"s balance has been successfully replenished',
+      apiData: { accessToken, refreshToken, role: candidate.role },
       status: 'success',
-      apiData: users,
+      message: 'Congratulations on registering on the service!',
     });
   } catch (err) {
     console.log(err);
@@ -1427,105 +1793,95 @@ router.post('/findByValueList', async (req, res) => {
   }
 });
 
-router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
-  try {
-    const { group } = req.query;
+router.get(
+  '/researchers/collectStatOnAcquiredVideos',
+  authMiddleware,
+  async (req, res) => {
+    const userId = req.user.id;
 
-    const videosWithVbCode = await getAllVideos({
-      vbCode: true,
-      isApproved: true,
-    });
+    try {
+      const { forLastDays } = req.query;
 
-    if (videosWithVbCode.length) {
-      let authorsVideoStatistics = await Promise.all(
-        videosWithVbCode.map(async (video) => {
-          const vbForm = await findOne({
-            searchBy: '_id',
-            param: video.vbForm,
-          });
+      let acquiredVideosStat = [];
 
-          const salesOfThisVideo = await getAllSales({
-            videoId: video.videoData.videoId,
-          });
+      const videosWithVbCode = await getAllVideos({
+        vbCode: true,
+        isApproved: true,
+        searchForResearcherBy: 'id',
+        valueResearcherBySearch: userId,
+        ...(forLastDays && { forLastDays }),
+      });
 
-          if (vbForm) {
-            if (vbForm?.sender) {
-              if (vbForm?.refFormId) {
-                let percentAmount = 0;
-                let advanceAmount = 0;
-                let toBePaid = 0;
-                let totalBalance = 0;
+      if (videosWithVbCode.length) {
+        acquiredVideosStat = await Promise.all(
+          videosWithVbCode.map(async (video) => {
+            const vbForm = await findOne({
+              searchBy: '_id',
+              param: video.vbForm,
+            });
 
-                if (
-                  vbForm.refFormId?.advancePayment &&
-                  typeof vbForm.advancePaymentReceived === 'boolean' &&
-                  !vbForm.advancePaymentReceived
-                ) {
-                  advanceAmount = vbForm.refFormId.advancePayment;
-                  toBePaid = vbForm.refFormId.advancePayment;
+            if (vbForm) {
+              if (vbForm?.sender) {
+                if (vbForm?.refFormId) {
+                  return {
+                    status: 'All right',
+                    authorData: {
+                      id: vbForm.sender._id,
+                      email: vbForm.sender.email,
+                    },
+                    percentage: vbForm.refFormId.percentage
+                      ? vbForm.refFormId.percentage
+                      : 0,
+                    advance: {
+                      value:
+                        typeof vbForm.advancePaymentReceived === 'boolean' &&
+                        vbForm.refFormId.advancePayment
+                          ? vbForm.refFormId.advancePayment
+                          : 0,
+                      paid:
+                        typeof vbForm.advancePaymentReceived !== 'boolean' &&
+                        !vbForm.refFormId.advancePayment
+                          ? null
+                          : vbForm.advancePaymentReceived === true
+                          ? true
+                          : false,
+                    },
+                    videoId: video.videoData.videoId,
+                    videoTitle: video.videoData.title,
+                    paymentInfo:
+                      vbForm.sender?.paymentInfo?.variant === undefined
+                        ? false
+                        : true,
+                    vbFormUid: vbForm.formId,
+                  };
+                } else {
+                  return {
+                    status: 'VB form without referral link',
+                    authorData: {
+                      id: vbForm.sender._id,
+                      email: vbForm.sender.email,
+                    },
+                    percentage: null,
+                    advance: {
+                      value: null,
+                      paid: null,
+                    },
+                    videoId: video.videoData.videoId,
+                    videoTitle: video.videoData.title,
+                    paymentInfo:
+                      vbForm.sender?.paymentInfo?.variant === undefined
+                        ? false
+                        : true,
+                    vbFormUid: vbForm.formId,
+                  };
                 }
-
-                if (
-                  vbForm.refFormId?.advancePayment &&
-                  typeof vbForm.advancePaymentReceived === 'boolean' &&
-                  vbForm.advancePaymentReceived
-                ) {
-                  totalBalance = vbForm.refFormId.advancePayment * -1;
-                }
-
-                if (vbForm.refFormId?.percentage) {
-                  salesOfThisVideo.map((sale) => {
-                    if (sale.vbFormInfo.paidFor === false) {
-                      percentAmount +=
-                        (sale.amount * vbForm.refFormId.percentage) / 100;
-                      toBePaid +=
-                        (sale.amount * vbForm.refFormId.percentage) / 100;
-                    } else {
-                      totalBalance +=
-                        (sale.amount * vbForm.refFormId.percentage) / 100;
-                    }
-                  });
-                }
-
-                return {
-                  status: 'All right',
-                  authorEmail: vbForm.sender.email,
-                  percentage: vbForm.refFormId.percentage
-                    ? vbForm.refFormId.percentage
-                    : 0,
-                  advance: {
-                    value:
-                      typeof vbForm.advancePaymentReceived === 'boolean' &&
-                      vbForm.refFormId.advancePayment
-                        ? vbForm.refFormId.advancePayment
-                        : 0,
-                    paid:
-                      typeof vbForm.advancePaymentReceived !== 'boolean' &&
-                      !vbForm.refFormId.advancePayment
-                        ? null
-                        : vbForm.advancePaymentReceived === true
-                        ? true
-                        : false,
-                  },
-                  videoId: video.videoData.videoId,
-                  videoTitle: video.videoData.title,
-                  paymentInfo:
-                    vbForm.sender?.paymentInfo?.variant === undefined
-                      ? false
-                      : true,
-                  amount: {
-                    percent: +percentAmount.toFixed(2),
-                    advance: +advanceAmount.toFixed(2),
-                    toBePaid: +toBePaid.toFixed(2),
-                    totalBalance: +totalBalance.toFixed(2),
-                  },
-                  vbFormUid: vbForm.formId,
-                  salesCount: salesOfThisVideo.length,
-                };
               } else {
                 return {
-                  status: 'VB form without referral link',
-                  authorEmail: null,
+                  status: 'VB form without sender',
+                  authorData: {
+                    id: null,
+                    email: null,
+                  },
                   percentage: null,
                   advance: {
                     value: null,
@@ -1534,20 +1890,16 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
                   videoId: video.videoData.videoId,
                   videoTitle: video.videoData.title,
                   paymentInfo: null,
-                  amount: {
-                    percent: null,
-                    advance: null,
-                    toBePaid: null,
-                    totalBalance: null,
-                  },
                   vbFormUid: vbForm.formId,
-                  salesCount: salesOfThisVideo.length,
                 };
               }
             } else {
               return {
-                status: 'VB form without sender',
-                authorEmail: null,
+                status: 'VB form not found',
+                authorData: {
+                  id: null,
+                  email: null,
+                },
                 percentage: null,
                 advance: {
                   value: null,
@@ -1556,111 +1908,25 @@ router.get('/collectStatOnAuthorsVideo', authMiddleware, async (req, res) => {
                 videoId: video.videoData.videoId,
                 videoTitle: video.videoData.title,
                 paymentInfo: null,
-                amount: {
-                  percent: null,
-                  advance: null,
-                  toBePaid: null,
-                  totalBalance: null,
-                },
-                vbFormUid: vbForm.formId,
-                salesCount: salesOfThisVideo.length,
+                vbFormUid: null,
               };
             }
-          } else {
-            return {
-              status: 'VB form not found',
-              authorEmail: null,
-              percentage: null,
-              advance: {
-                value: null,
-                paid: null,
-              },
-              videoId: video.videoData.videoId,
-              videoTitle: video.videoData.title,
-              paymentInfo: null,
-              amount: {
-                percent: null,
-                advance: null,
-                toBePaid: null,
-                totalBalance: null,
-              },
-              vbFormUid: null,
-              salesCount: salesOfThisVideo.length,
-            };
-          }
-        })
-      );
-
-      authorsVideoStatistics = authorsVideoStatistics.reduce(
-        (res, videoData) => {
-          if (videoData.advance.value === 0 && videoData.percentage === 0) {
-            res['ignore'].push(videoData);
-          } else if (
-            videoData.advance.value === 0 ||
-            videoData.amount.toBePaid <= 75
-          ) {
-            res['other'].push(videoData);
-          } else if (
-            !videoData.paymentInfo &&
-            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
-          ) {
-            res['noPayment'].push(videoData);
-          } else if (
-            videoData.paymentInfo &&
-            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
-          ) {
-            res['ready'].push(videoData);
-          }
-          return res;
-        },
-        { ready: [], noPayment: [], other: [], ignore: [] }
-      );
-
-      const defineApiData = () => {
-        switch (group) {
-          case 'ready':
-            return authorsVideoStatistics.ready;
-          case 'noPayment':
-            return authorsVideoStatistics.noPayment;
-          case 'other':
-            return authorsVideoStatistics.other;
-        }
-      };
+          })
+        );
+      }
 
       return res.status(200).json({
         status: 'success',
-        message: 'Statistics on authors have been successfully collected',
-        apiData: defineApiData(),
+        message: 'Employee statistics on purchased videos received',
+        apiData: acquiredVideosStat,
       });
-    } else {
-      return res.status(200).json({
-        status: 'success',
-        message: 'Statistics on authors have been successfully collected',
-        apiData: [],
+    } catch (err) {
+      return res.status(500).json({
+        message: 'Server side error',
+        status: 'error',
       });
     }
-  } catch (err) {
-    console.log(err);
   }
-});
-
-router.get('/test', async (req, res) => {
-  try {
-    await updateVideosBy({
-      updateBy: 'trelloData.researchers',
-      value: {
-        $elemMatch: {
-          email: researcherEmail,
-          ...(advanceHasBeenPaid && advanceHasBeenPaid),
-        },
-      },
-      dataForUpdate: { advanceHasBeenPaid: true },
-    });
-
-    return res.status(200).json({ mes: 'збс' });
-  } catch (err) {
-    console.log(err);
-  }
-});
+);
 
 module.exports = router;

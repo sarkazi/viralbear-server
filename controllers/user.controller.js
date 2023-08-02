@@ -30,14 +30,25 @@ const getAllUsers = async ({
   me,
   userId,
   roles,
-
+  canBeAssigned,
   fieldsInTheResponse,
   nicknames,
+  exist,
+  displayOnTheSite,
 }) => {
   return await User.find(
     {
       ...(me === false && { _id: { $ne: userId } }),
       ...(roles?.length && { role: { $in: roles } }),
+      ...(exist?.length &&
+        exist.reduce((a, v) => ({ ...a, [v]: { $exists: true } }), {})),
+      ...(canBeAssigned &&
+        typeof JSON.parse(canBeAssigned) === 'boolean' && {
+          canBeAssigned: JSON.parse(canBeAssigned),
+        }),
+      ...(displayOnTheSite && {
+        displayOnTheSite,
+      }),
       ...(nicknames && { nickname: { $in: nicknames } }),
     },
     {

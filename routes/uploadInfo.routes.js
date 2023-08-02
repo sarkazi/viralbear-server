@@ -458,13 +458,31 @@ router.post(
         });
       }
 
-      const accountActivationLink = vbForm?.refFormId
-        ? `${process.env.CLIENT_URI}/licensors/?unq=${vbForm._id}`
-        : '';
+      const accountActivationLink = `${process.env.CLIENT_URI}/licensors/?unq=${vbForm._id}`;
+
+      const TextOfMailForAuthor = !vbForm.refFormId
+        ? `
+      Hello ${vbForm.sender.name}.<br/>
+      Thank you for uploading the video to our platform. The agreement file is in the attachment of this letter.<br/>
+      Have a nice day!
+      `
+        : !vbForm.sender?.activatedTheAccount
+        ? `
+        Hello ${vbForm.sender.name}.<br/>
+        Thank you for uploading the video to our platform.<br/>
+        Follow the links and set the password for the viralbear.media personal account: ${accountActivationLink}. The agreement file is in the attachment of this letter.<br/>
+        Have a nice day!
+        `
+        : `
+        Hello ${vbForm.sender.name}.<br/>
+        Thank you for uploading the video to our platform.<br/>
+        Log in to viralbear.media with your details: ${process.env.CLIENT_URI}. The agreement file is in the attachment of this letter.<br/>
+        Have a nice day!
+        `;
 
       await updateVbFormByFormId(formId, {
         agreementLink,
-        ...(accountActivationLink && {
+        ...(vbForm?.refFormId && {
           accountActivationLink,
         }),
       });
@@ -500,9 +518,7 @@ router.post(
         name: vbForm.sender.name,
         agreementLink,
         email: vbForm.sender.email,
-        ...(accountActivationLink && {
-          accountActivationLink,
-        }),
+        text: TextOfMailForAuthor,
       };
 
       if (vbForm.refFormId) {
@@ -526,7 +542,10 @@ router.post(
       await sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
       await sendAgreementToClientMail(dataForSendingAgreement);
 
-      if (vbForm?.refFormId?.researcher?.email) {
+      if (
+        vbForm?.refFormId?.researcher?.email &&
+        !vbForm.sender?.activatedTheAccount
+      ) {
         await sendEmail({
           emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
           emailTo: vbForm.refFormId.researcher.email,

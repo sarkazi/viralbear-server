@@ -34,7 +34,7 @@ const mutex = new Mutex();
 const {
   refreshMrssFiles,
   findByIsBrandSafe,
-  creatingAndSavingFeeds,
+  //creatingAndSavingFeeds,
   findLastVideo,
   findByFixed,
   findById,
@@ -179,26 +179,27 @@ router.post(
               status: 'warning',
             });
           }
-        }
 
-        const videoWithVBForm = await findVideoByValue({
-          searchBy: 'vbForm',
-          value: vbForm._id,
-        });
-
-        if (videoWithVBForm) {
-          return res.status(200).json({
-            message: 'a video with such a "VB code" is already in the database',
-            status: 'warning',
+          const videoWithVBForm = await findVideoByValue({
+            searchBy: 'vbForm',
+            value: vbForm._id,
           });
+
+          if (videoWithVBForm) {
+            return res.status(200).json({
+              message:
+                'a video with such a "VB code" is already in the database',
+              status: 'warning',
+            });
+          }
         }
 
         const countryCode = await findTheCountryCodeByName(country);
 
         if (!countryCode) {
-          return res.status(500).json({
+          return res.status(200).json({
             message: 'Could not determine the country code',
-            status: 'error',
+            status: 'warning',
           });
         }
 
@@ -355,13 +356,6 @@ router.post(
         };
 
         const newVideo = await createNewVideo(bodyForNewVideo);
-
-        if (!newVideo) {
-          return res.status(400).json({
-            message: 'Error while adding a new video',
-            status: 'error',
-          });
-        }
 
         socketInstance.io().emit('triggerForAnUpdateInPublishing', {
           event: 'ready for publication',
@@ -648,69 +642,69 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
         'videoData.videoId',
         'bucket.cloudScreenLink',
       ],
-    }).populate({ path: 'vbForm', select: { formId: 1 } });
+    });
 
-    let videos = await Promise.all(
-      videosWithVbCode.map(async (video) => {
-        const vbForm = await findOne({
-          searchBy: '_id',
-          param: video.vbForm,
-        });
+    //let videos = await Promise.all(
+    //  videosWithVbCode.map(async (video) => {
+    //    const vbForm = await findOne({
+    //      searchBy: '_id',
+    //      param: video.vbForm,
+    //    });
 
-        if (vbForm?.sender && vbForm.sender.toString() === userId.toString()) {
-          const sales = await getAllSales({ videoId: video.videoData.videoId });
+    //    if (vbForm?.sender && vbForm.sender.toString() === userId.toString()) {
+    //      const sales = await getAllSales({ videoId: video.videoData.videoId });
 
-          let refForm = null;
-          let revenue = 0;
+    //      let refForm = null;
+    //      let revenue = 0;
 
-          if (vbForm?.refFormId) {
-            refForm = await findOneRefFormByParam({
-              searchBy: '_id',
-              value: vbForm.refFormId,
-            });
-          }
+    //      if (vbForm?.refFormId) {
+    //        refForm = await findOneRefFormByParam({
+    //          searchBy: '_id',
+    //          value: vbForm.refFormId,
+    //        });
+    //      }
 
-          if (sales.length && refForm && refForm?.percentage) {
-            revenue = sales.reduce(
-              (acc, sale) => acc + (sale.amount * refForm.percentage) / 100,
-              0
-            );
-          }
+    //      if (sales.length && refForm && refForm?.percentage) {
+    //        revenue = sales.reduce(
+    //          (acc, sale) => acc + (sale.amount * refForm.percentage) / 100,
+    //          0
+    //        );
+    //      }
 
-          console.log(refForm, revenue);
+    //      console.log(refForm, revenue);
 
-          return {
-            title: video.videoData.title,
-            videoId: video.videoData.videoId,
-            screenPath: video.bucket.cloudScreenLink,
-            agreementDate: moment(vbForm.createdAt).format(),
-            videoByThisAuthor: true,
-            revenue: +revenue.toFixed(2),
-            percentage:
-              refForm && refForm?.percentage ? refForm?.percentage : 0,
-          };
-        } else {
-          return { ...video._doc, videoByThisAuthor: false };
-        }
-      })
-    );
+    //      return {
+    //        title: video.videoData.title,
+    //        videoId: video.videoData.videoId,
+    //        screenPath: video.bucket.cloudScreenLink,
+    //        agreementDate: moment(vbForm.createdAt).format(),
+    //        videoByThisAuthor: true,
+    //        revenue: +revenue.toFixed(2),
+    //        percentage:
+    //          refForm && refForm?.percentage ? refForm?.percentage : 0,
+    //      };
+    //    } else {
+    //      return { ...video._doc, videoByThisAuthor: false };
+    //    }
+    //  })
+    //);
 
-    videos = videos.reduce(
-      (res, videoData) => {
-        if (videoData.videoByThisAuthor) {
-          res['videosByThisAuthor'].push(videoData);
-        } else {
-          res['videosIsNotByThisAuthor'].push(videoData);
-        }
-        return res;
-      },
-      { videosByThisAuthor: [], videosIsNotByThisAuthor: [] }
-    );
+    //videos = videos.reduce(
+    //  (res, videoData) => {
+    //    if (videoData.videoByThisAuthor) {
+    //      res['videosByThisAuthor'].push(videoData);
+    //    } else {
+    //      res['videosIsNotByThisAuthor'].push(videoData);
+    //    }
+    //    return res;
+    //  },
+    //  { videosByThisAuthor: [], videosIsNotByThisAuthor: [] }
+    //);
 
     return res.status(200).json({
       message: `Videos with statistics received`,
       status: 'success',
-      apiData: videos.videosByThisAuthor,
+      //apiData: videos.videosByThisAuthor,
     });
   } catch (err) {
     console.log(err);
@@ -937,6 +931,21 @@ router.patch(
         if (!vbForm) {
           return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
+            status: 'warning',
+          });
+        }
+
+        const videoWithVBForm = await findVideoByValue({
+          searchBy: 'vbForm',
+          value: vbForm._id,
+        });
+
+        if (
+          videoWithVBForm &&
+          videoWithVBForm._id.toString() !== video._id.toString()
+        ) {
+          return res.status(200).json({
+            message: 'a video with such a "VB code" is already in the database',
             status: 'warning',
           });
         }
@@ -1212,15 +1221,6 @@ router.patch(
       });
 
       if (updatedVideo.isApproved === true) {
-        const { status } = await creatingAndSavingFeeds(updatedVideo);
-
-        if (status === 'warning') {
-          return res.status(404).json({
-            message: 'Missing values for saving feeds',
-            status: 'warning',
-          });
-        }
-
         await refreshMrssFiles();
       }
 
@@ -1314,6 +1314,21 @@ router.patch(
         if (!vbForm) {
           return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
+            status: 'warning',
+          });
+        }
+
+        const videoWithVBForm = await findVideoByValue({
+          searchBy: 'vbForm',
+          value: vbForm._id,
+        });
+
+        if (
+          videoWithVBForm &&
+          videoWithVBForm._id.toString() !== video._id.toString()
+        ) {
+          return res.status(200).json({
+            message: 'a video with such a "VB code" is already in the database',
             status: 'warning',
           });
         }
@@ -1592,15 +1607,6 @@ router.patch(
       });
 
       if (updatedVideo.isApproved === true) {
-        const { status } = await creatingAndSavingFeeds(updatedVideo);
-
-        if (status === 'warning') {
-          return res.status(404).json({
-            message: 'Missing values for saving feeds',
-            status: 'warning',
-          });
-        }
-
         await refreshMrssFiles();
       }
 
@@ -1735,6 +1741,21 @@ router.patch(
         if (!vbForm) {
           return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
+            status: 'warning',
+          });
+        }
+
+        const videoWithVBForm = await findVideoByValue({
+          searchBy: 'vbForm',
+          value: vbForm._id,
+        });
+
+        if (
+          videoWithVBForm &&
+          videoWithVBForm._id.toString() !== video._id.toString()
+        ) {
+          return res.status(200).json({
+            message: 'a video with such a "VB code" is already in the database',
             status: 'warning',
           });
         }
@@ -1998,15 +2019,6 @@ router.patch(
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
-
-      const { status } = await creatingAndSavingFeeds(updatedVideo);
-
-      if (status === 'warning') {
-        return res.status(200).json({
-          message: 'Missing values for saving feeds',
-          status: 'warning',
-        });
-      }
 
       await refreshMrssFiles();
 

@@ -176,18 +176,18 @@ const schema = new Schema(
       type: Date,
       required: false,
     },
-    mRSS: {
-      type: String,
-      required: false,
-    },
-    mRSS2: {
-      type: String,
-      required: false,
-    },
-    mRSSConvertedVideos: {
-      type: String,
-      required: false,
-    },
+    //mRSS: {
+    //  type: String,
+    //  required: false,
+    //},
+    //mRSS2: {
+    //  type: String,
+    //  required: false,
+    //},
+    //mRSSConvertedVideos: {
+    //  type: String,
+    //  required: false,
+    //},
   },
   { timestamps: true }
 );

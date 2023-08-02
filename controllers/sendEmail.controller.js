@@ -95,25 +95,13 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
 };
 
 const sendAgreementToClientMail = async (dataForSendingAgreement) => {
-  const { name, email, agreementLink, accountActivationLink } =
-    dataForSendingAgreement;
+  const { email, agreementLink, text } = dataForSendingAgreement;
 
   await mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
     to: email,
     subject: `You just submitted your video to «VIRALBEAR» LLC`,
-    html: accountActivationLink
-      ? `
-    Hello ${name}.<br/>
-    Thank you for uploading the video to our platform.<br/>
-    Link to your personal account on viralbear.media: ${accountActivationLink}. The agreement file is in the attachment of this letter.<br/>
-    Have a nice day!
-    `
-      : `
-    Hello ${name}.<br/>
-    Thank you for uploading the video to our platform. The agreement file is in the attachment of this letter.<br/>
-    Have a nice day!
-    `,
+    html: text,
     attachments: [
       {
         filename: 'agreement.pdf',
@@ -140,7 +128,7 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
     to:
       refForm && researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
-        : process.env.SERVICE_LICENSING_EMAIL,
+        : process.env.SERVICE_INFO_EMAIL,
     subject: `information from the survey (form «${formId}»)`,
     html: `
          <b>Where was this video filmed: ${

@@ -1,7 +1,6 @@
 const { Schema, model } = require('mongoose');
 
 const roles = ['admin', 'researcher', 'author', 'editor', 'stringer'];
-const positions = ['owner', 'researcher', 'editor', 'smm', 'seniorResearcher'];
 const paymentMethods = ['other', 'payPal', 'bankTransfer'];
 
 const schema = new Schema({
@@ -33,7 +32,6 @@ const schema = new Schema({
   position: {
     type: String,
     required: false,
-    enum: positions,
   },
   percentage: {
     type: Number,
@@ -41,6 +39,11 @@ const schema = new Schema({
   },
   canBeAssigned: {
     type: Boolean,
+    required: false,
+  },
+  displayOnTheSite: {
+    type: Boolean,
+    default: false,
     required: false,
   },
   advancePayment: {
