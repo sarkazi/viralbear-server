@@ -38,7 +38,7 @@ const getAllUsers = async ({
 }) => {
   return await User.find(
     {
-      ...(me === false && { _id: { $ne: userId } }),
+      ...(me && JSON.parse(me) === false && { _id: { $ne: userId } }),
       ...(roles?.length && { role: { $in: roles } }),
       ...(exist?.length &&
         exist.reduce((a, v) => ({ ...a, [v]: { $exists: true } }), {})),

@@ -75,7 +75,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     let users = await getAllUsers({
-      me: JSON.parse(me),
+      me,
       userId,
       roles: roles ? roles : [],
       canBeAssigned,
@@ -163,30 +163,13 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
       displayOnTheSite: true,
     });
 
-    const defineDescForUsers = ({ position, country }) => {
-      if (position.includes('owner') || position.includes('ceo')) {
-        return 'Owner and CEO';
-      } else if (
-        position.includes('researcher') &&
-        !position.includes('senior')
-      ) {
-        return `Researcher${country ? ` | ${country}` : ''}`;
-      } else if (
-        position.includes('researcher') &&
-        position.includes('senior')
-      ) {
-        return `Senior researcher${country ? ` | ${country}` : ''}`;
-      } else {
-        return position;
-      }
-    };
-
     users = users.reduce(
       (res, item) => {
         res[
-          item.position.includes('ceo') || item.position.includes('owner')
+          item.position.toLowerCase().includes('ceo') ||
+          item.position.toLowerCase().includes('owner')
             ? 'first'
-            : item.position.includes('researcher')
+            : item.position.toLowerCase().includes('researcher')
             ? 'third'
             : 'second'
         ].push(item);
@@ -202,11 +185,8 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
           name: user.name,
           email: user.email,
           avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
-          description: defineDescForUsers({
-            position: user.position,
-            country: user.country,
-          }),
-          canBeAssigned: user.canBeAssigned,
+          ...(user?.position && { position: user?.position }),
+          ...(user?.country && { country: user?.country }),
         };
       }),
       second: users.second.map((user) => {
@@ -215,17 +195,14 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
           name: user.name,
           email: user.email,
           avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
-          description: defineDescForUsers({
-            position: user.position,
-            country: user.country,
-          }),
-          canBeAssigned: user.canBeAssigned,
+          ...(user?.position && { position: user?.position }),
+          ...(user?.country && { country: user?.country }),
         };
       }),
 
       third: users.third
         .sort((cur, next) => {
-          if (cur.position.includes('senior')) {
+          if (cur.position.toLowerCase().includes('senior')) {
             return cur - next;
           }
         })
@@ -235,11 +212,8 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
             name: user.name,
             email: user.email,
             avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
-            description: defineDescForUsers({
-              position: user.position,
-              country: user.country,
-            }),
-            canBeAssigned: user.canBeAssigned,
+            ...(user?.position && { position: user?.position }),
+            ...(user?.country && { country: user?.country }),
           };
         }),
     };
@@ -256,8 +230,6 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
       .json({ status: 'error', message: 'Server side error' });
   }
 });
-
-//вернуть middleware
 
 router.get('/getById/:userId', async (req, res) => {
   try {
@@ -1407,13 +1379,14 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
       );
 
       const defineApiData = () => {
-        switch (group) {
-          case 'ready':
-            return authorsVideoStatistics.ready;
-          case 'noPayment':
-            return authorsVideoStatistics.noPayment;
-          case 'other':
-            return authorsVideoStatistics.other;
+        if (group === 'ready') {
+          return authorsVideoStatistics.ready;
+        } else if (group === 'noPayment') {
+          return authorsVideoStatistics.noPayment;
+        } else if (group === 'other') {
+          return authorsVideoStatistics.other;
+        } else {
+          return [];
         }
       };
 
