@@ -20,6 +20,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     agreementLink,
     formId,
     refForm,
+    trelloCardUrl,
   } = dataForSendingMessage;
 
   const linkMarkup = videoLinks
@@ -39,7 +40,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     to:
       refForm && !!researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
-        : process.env.SERVICE_INFO_EMAIL,
+        : process.env.SERVICE_LICENSING_EMAIL,
     subject: `New video was submitted! ${formId}`,
     html: `
 
@@ -86,6 +87,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
    <b>Advance payment: ${advancePayment ? advancePayment : '-'}</b><br>
    <b>Percentage: ${percentage ? percentage : '-'}</b><br>
    <b>Researcher email: ${researcherEmail ? researcherEmail : '-'}</b><br>
+   <b>Trello card URL: ${trelloCardUrl ? trelloCardUrl : '-'}</b><br>
    <b>IP: ${ip}</b><br>
    <b>Submitted date: ${createdAt}</b><br>
    <b>Contract: ${agreementLink}</b><br>
@@ -128,7 +130,7 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
     to:
       refForm && researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
-        : process.env.SERVICE_INFO_EMAIL,
+        : process.env.SERVICE_LICENSING_EMAIL,
     subject: `information from the survey (form «${formId}»)`,
     html: `
          <b>Where was this video filmed: ${

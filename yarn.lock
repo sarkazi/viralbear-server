@@ -2144,6 +2144,11 @@
   dependencies:
     "svg-arc-to-cubic-bezier" "^3.0.0"
 
+"normalize-url@^8.0.0":
+  "integrity" "sha512-uVFpKhj5MheNBJRTiMZ9pE/7hD1QTeEvugSJW/OmLzAp78PB5O6adfMNTvmfKhXBkvCzC+rqifWcVYpGFwTjnw=="
+  "resolved" "https://registry.npmmirror.com/normalize-url/-/normalize-url-8.0.0.tgz"
+  "version" "8.0.0"
+
 "nth-check@^2.0.1":
   "integrity" "sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w=="
   "resolved" "https://registry.npmmirror.com/nth-check/-/nth-check-2.1.1.tgz"

@@ -195,6 +195,10 @@ const getCountLinksByUserEmail = async (userValue, dateLimit) => {
     .sort({ createdAt: -1 });
 };
 
+const findLinkBy = async ({ searchBy, value }) => {
+  return Links.findOne({ [searchBy]: value });
+};
+
 module.exports = {
   getAllLinks,
   findBaseUrl,
@@ -203,4 +207,5 @@ module.exports = {
   createNewLink,
   conversionIncorrectLinks,
   getCountLinksByUserEmail,
+  findLinkBy,
 };

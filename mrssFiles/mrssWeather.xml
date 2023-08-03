@@ -10,24 +10,6 @@
             <dfpvideo:version>2</dfpvideo:version>
               
                   <item>
-                  <media:title>dfdg</media:title>
-                  <media:description>fgf</media:description>
-                  <media:keywords>gfdg</media:keywords>
-                  <media:city>gfdg</media:city>
-                  <media:country>Angola</media:country>
-                  <media:regionCode>AO</media:regionCode>
-                  <media:categoryCode>GEN</media:categoryCode>
-                  <media:category>Weather</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
-                  <media:filmingDate>Wed, 2 Aug 2023</media:filmingDate>
-                  <guid>2605</guid>
-                  <pubDate>Wed, 02 Aug 2023 19:42:49 GMT</pubDate>
-                  <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2605.jpg" />
-                  <media:content url="https://viralbear2.storage.yandexcloud.net/videos/2605.mp4" />
-                  <dfpvideo:lastModifiedDate/>
-                  </item>
-                           
-                  <item>
                   <media:title>Terrifying Yokohama guerrilla rainstorm unleashes chaos with its fierce winds and torrential downpour</media:title>
                   <media:description>In Yokohama, Japan, on August 1, 2023, @Tomo_YNU captured a chilling video of a rainstorm known as Guerrilla. This local phenomenon is characterized by an unpredictable formation of cumulonimbus clouds, resulting in a short but intense downpour of over 100 mm per hour of rain. The video showcases the fury of the Guerrilla rainstorm, with powerful winds swaying trees in its path. The dangerous nature of this event highlights the need for caution and preparedness during such occurrences in Yokohama.</media:description>
                   <media:keywords>rainstorm,guerrilla,yokohama,japan,video,downpour,cumulonimbus,clouds,intense,winds,trees,dangerous,unpredictable,weather,phenomenon,local,short,mm,hour,rain</media:keywords>
@@ -1008,6 +990,30 @@ In a video shared on social media on March 5, 2023, @macphail_haley can be seen 
                   <pubDate>Invalid Date</pubDate>
                   <media:thumbnail url="https://viralbear.storage.yandexcloud.net/images/1662.jpg" />
                   <media:content url="https://viralbear.storage.yandexcloud.net/images/1662.mp4" />
+                  <dfpvideo:lastModifiedDate/>
+                  </item>
+                           
+                  <item>
+                  <media:title>Northern Lights Time Lapses on British Airways Flight from Billund to London</media:title>
+                  <media:description>On a recent flight from Billund, Denmark to London, passengers were treated to a stunning display of the Northern Lights. The breathtaking view was captured by passenger Ben Applin, who managed to get some incredible time lapses despite the challenges of filming on a plane.
+
+The display of the Northern Lights, also known as Aurora Borealis, is a rare and beautiful phenomenon that can only be seen in certain parts of the world. Passengers on the British Airways flight were lucky enough to witness this natural wonder from the comfort of their seats.
+
+In a tweet, Ben Applin thanked the pilot for dimming the cabin lights to allow passengers to enjoy the stunning view. The time lapses he captured are a testament to his skill as a photographer, and serve as a reminder of the awe-inspiring power of nature.
+
+The Northern Lights are caused by the interaction of charged particles from the sun with the Earth's magnetic field. This creates a stunning display of colorful lights in the sky, which is visible in certain parts of the world during certain times of the year.</media:description>
+                  <media:keywords>Northern Lights,Aurora,British Airways,flight,time lapses,Denmark,London,pilot,dimmed lights</media:keywords>
+                  <media:city>Billund</media:city>
+                  <media:country>Denmark</media:country>
+                  <media:regionCode>undefined</media:regionCode>
+                  <media:categoryCode>undefined</media:categoryCode>
+                  <media:category>Weather</media:category>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
+                  <media:filmingDate>Sun, 26 Feb 2023</media:filmingDate>
+                  <guid>1650</guid>
+                  <pubDate>Invalid Date</pubDate>
+                  <media:thumbnail url="https://viralbear.storage.yandexcloud.net/images/1650.jpg" />
+                  <media:content url="https://viralbear.storage.yandexcloud.net/images/1650.mp4" />
                   <dfpvideo:lastModifiedDate/>
                   </item>
                            

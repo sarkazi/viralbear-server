@@ -33,6 +33,10 @@ const schema = new Schema({
     type: Boolean,
     required: true,
   },
+  trelloCardUrl: {
+    type: String,
+    required: false,
+  },
 });
 
 module.exports = model('AuthorLink', schema);

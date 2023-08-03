@@ -12,6 +12,7 @@ const {
   conversionIncorrectLinks,
   findBaseUrl,
   pullIdFromUrl,
+  findLinkBy,
 } = require('../controllers/links.controller');
 
 const {
@@ -27,8 +28,11 @@ router.post('/create', authMiddleware, async (req, res) => {
     advancePayment,
     videoLink: reqVideoLink,
     confirmDeletion,
+    confirmIncorrect,
     exclusivity,
   } = req.body;
+
+  console.log(confirmIncorrect, 89787);
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(200).json({
@@ -56,15 +60,15 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     const convertedLink = conversionIncorrectLinks(reqVideoLink);
 
-    const videoLink = await findBaseUrl(convertedLink);
+    //const videoLink = await findBaseUrl(convertedLink);
 
-    if (!videoLink) {
-      return res
-        .status(200)
-        .json({ message: 'Link is invalid', status: 'warning' });
-    }
+    //if (!videoLink) {
+    //  return res
+    //    .status(200)
+    //    .json({ message: 'Link is invalid', status: 'warning' });
+    //}
 
-    const videoId = await pullIdFromUrl(videoLink);
+    const videoId = await pullIdFromUrl(convertedLink);
 
     if (!videoId) {
       return res
@@ -72,14 +76,28 @@ router.post('/create', authMiddleware, async (req, res) => {
         .json({ message: 'Link is invalid', status: 'warning' });
     }
 
+    const link = await findLinkBy({ searchBy: 'unixid', value: videoId });
+
+    if (!link) {
+      if (!confirmIncorrect) {
+        return res.status(200).json({
+          message:
+            'There is no Trello card for this video. Are you sure that this link is correct?',
+          status: 'await',
+          type: 'incorrect',
+        });
+      }
+    }
+
     const authorLink = await findAuthorLinkByVideoId(videoId);
 
     if (authorLink) {
-      if (confirmDeletion === false) {
+      if (!confirmDeletion) {
         return res.status(200).json({
           message:
             'A unique form has already been generated for this video. Generate a new one?',
           status: 'await',
+          type: 'repeat',
         });
       } else {
         await deleteAuthorLink({ videoId });
@@ -94,9 +112,10 @@ router.post('/create', authMiddleware, async (req, res) => {
       researcher: user._id,
       formHash,
       formLink: `${process.env.CLIENT_URI}/submitVideo?unq=${formHash}`,
-      videoLink,
+      videoLink: convertedLink,
       videoId,
       exclusivity,
+      ...(link?.trelloCardUrl && { trelloCardUrl: link.trelloCardUrl }),
     };
 
     const newAuthorLink = await createNewAuthorLink(bodyForNewAuthorLink);

@@ -79,7 +79,10 @@ router.patch('/addAdditionalInfo', async (req, res) => {
       });
     }
 
-    const vbForm = await findOne(formId.replace('VB', ''));
+    const vbForm = await findOne({
+      searchBy: 'formId',
+      param: formId,
+    });
 
     if (!vbForm) {
       return res.status(200).json({
@@ -94,8 +97,10 @@ router.patch('/addAdditionalInfo', async (req, res) => {
       ...(whoAppears && { whoAppears }),
       ...(whyDecide && { whyDecide }),
       ...(whatHappen && { whatHappen }),
-      refForm: vbForm.refHash ? true : false,
-      ...(vbForm.refHash && { researcherEmail: vbForm.researcher.email }),
+      refForm: vbForm?.refFormId ? true : false,
+      ...(vbForm?.refFormId?.researcher?.email && {
+        researcherEmail: vbForm.refFormId.researcher.email,
+      }),
     };
 
     await updateVbFormByFormId(formId, objDB);
@@ -487,6 +492,8 @@ router.post(
         }),
       });
 
+      console.log(vbForm, 222222);
+
       const dataForSendingMainInfo = {
         name: vbForm.sender.name,
         clientEmail: vbForm.sender.email,
@@ -503,6 +510,9 @@ router.post(
         agreementLink: agreementLink,
         formId: vbForm.formId,
         refForm: vbForm.refFormId ? true : false,
+        ...(vbForm?.refFormId?.trelloCardUrl && {
+          trelloCardUrl: vbForm.refFormId.trelloCardUrl,
+        }),
         ...(vbForm?.refFormId?.advancePayment && {
           advancePayment: vbForm.refFormId.advancePayment,
         }),

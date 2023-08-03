@@ -200,6 +200,7 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
         return {
           id: user._id,
           name: user.name,
+          email: user.email,
           avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
           description: defineDescForUsers({
             position: user.position,
@@ -212,6 +213,7 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
         return {
           id: user._id,
           name: user.name,
+          email: user.email,
           avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
           description: defineDescForUsers({
             position: user.position,
@@ -231,6 +233,7 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
           return {
             id: user._id,
             name: user.name,
+            email: user.email,
             avatarUrl: user?.avatarUrl ? user.avatarUrl : null,
             description: defineDescForUsers({
               position: user.position,

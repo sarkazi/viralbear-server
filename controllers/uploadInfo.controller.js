@@ -17,6 +17,7 @@ const findOne = async (objDB) => {
         percentage: 1,
         advancePayment: 1,
         exclusivity: 1,
+        trelloCardUrl: 1,
       },
     })
     .populate({
