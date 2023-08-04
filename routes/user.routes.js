@@ -69,10 +69,20 @@ const storage = multer.memoryStorage();
 
 router.get('/getAll', authMiddleware, async (req, res) => {
   try {
-    const { me, roles, canBeAssigned, fieldsInTheResponse, sortByPosition } =
-      req.query;
+    const {
+      me,
+      roles,
+      canBeAssigned,
+      fieldsInTheResponse,
+      sortByPosition,
+      page,
+      limit,
+    } = req.query;
 
     const userId = req.user.id;
+
+    let count = 0;
+    let pageCount = 0;
 
     let users = await getAllUsers({
       me,
@@ -143,10 +153,40 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       console.log(users, 8989);
     }
 
+    if (limit && page) {
+      count = users.length;
+      pageCount = Math.ceil(count / limit);
+
+      const skip = (page - 1) * limit;
+
+      users = await getAllUsers({
+        me,
+        userId,
+        roles: roles ? roles : [],
+        canBeAssigned,
+        ...(fieldsInTheResponse && {
+          fieldsInTheResponse,
+        }),
+        skip,
+        limit,
+      });
+    }
+
+    const apiData = {
+      ...(limit &&
+        page && {
+          pagination: {
+            count,
+            pageCount,
+          },
+        }),
+      users,
+    };
+
     return res.status(200).json({
       status: 'success',
       message: 'The list of employees has been received',
-      apiData: users,
+      apiData,
     });
   } catch (err) {
     console.log(err);
@@ -280,24 +320,11 @@ router.get('/getBy/:value', authMiddleware, async (req, res) => {
 
 router.post('/createOne', authMiddleware, async (req, res) => {
   try {
-    const {
-      email,
-      password,
-      nickname,
-      name,
-      role,
-      percentage,
-      advancePayment,
-      country,
-      paymentInfo,
-      canBeAssigned,
-      displayOnTheSite,
-      position,
-    } = req.body;
+    const body = req.body;
 
     const isValidate = validationForRequiredInputDataInUserModel(
-      role,
-      req.body,
+      body.role,
+      body,
       null
     );
 
@@ -307,7 +334,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
         .json({ message: 'Missing data to create a user', status: 'warning' });
     }
 
-    const candidate = await getUserByEmail(email);
+    const candidate = await getUserByEmail(body.email);
 
     if (candidate) {
       return res.status(200).json({
@@ -316,33 +343,96 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       });
     }
 
+    let paymentInfo = null;
+
+    if (body?.paymentMethod) {
+      if (body.paymentMethod === 'bankTransfer') {
+        if (
+          !body?.phoneBankTransfer ||
+          !body?.emailBankTransfer ||
+          !body?.addressBankTransfer ||
+          !body?.zipCodeBankTransfer ||
+          !body?.bankNameBankTransfer ||
+          !body?.fullNameBankTransfer ||
+          !body?.accountNumberBankTransfer
+        ) {
+          return res.status(200).json({
+            message: 'Missing parameters for changing payment data',
+            status: 'warning',
+          });
+        }
+
+        paymentInfo = {
+          paymentInfo: {
+            variant: body.paymentMethod,
+            phoneNumber: body.phoneBankTransfer,
+            email: body.emailBankTransfer,
+            address: body.addressBankTransfer,
+            zipCode: body.zipCodeBankTransfer,
+            bankName: body.bankNameBankTransfer,
+            fullName: body.fullNameBankTransfer,
+            iban: body.accountNumberBankTransfer,
+          },
+        };
+      }
+
+      if (body.paymentMethod === 'payPal') {
+        if (!body?.payPalEmail) {
+          return res.status(200).json({
+            message: 'Missing parameters for changing payment data',
+            status: 'warning',
+          });
+        }
+
+        paymentInfo = {
+          paymentInfo: {
+            variant: body.paymentMethod,
+            payPalEmail: body.payPalEmail,
+          },
+        };
+      }
+
+      if (body.paymentMethod === 'other') {
+        if (!body?.textFieldOther) {
+          return res.status(200).json({
+            message: 'Missing parameters for changing payment data',
+            status: 'warning',
+          });
+        }
+
+        paymentInfo = {
+          paymentInfo: {
+            variant: body.paymentMethod,
+            value: body.textFieldOther,
+          },
+        };
+      }
+    }
+
     const salt = await genSalt(10);
 
     const objDB = {
-      ...(nickname && { nickname }),
-      name,
-      email: email,
-      password: await hashBcrypt(password, salt),
-      role,
-      ...(percentage && { percentage }),
-      ...(advancePayment && { advancePayment }),
-      ...(country && { country }),
-      ...(paymentInfo && {
-        paymentInfo,
+      name: body.name,
+      ...(body?.position && { position: body.position }),
+      password: await hashBcrypt(body.password, salt),
+      ...(body?.nickname && { nickname: `@${body.nickname}` }),
+      role: body.role,
+      email: body.email,
+      ...(body?.percentage && { percentage: body.percentage }),
+      ...(body?.advancePayment && { advancePayment: body.advancePayment }),
+      ...(body?.country && { country: body.country }),
+      ...(paymentInfo && paymentInfo),
+
+      ...(typeof body?.canBeAssigned === 'boolean' && {
+        canBeAssigned: body.canBeAssigned,
       }),
-      ...((role === 'author' ||
-        role === 'researcher' ||
-        role === 'stringer') && {
+      ...(typeof body?.displayOnTheSite === 'boolean' && {
+        displayOnTheSite: body.displayOnTheSite,
+      }),
+      ...((body.role === 'author' ||
+        body.role === 'researcher' ||
+        body.role === 'stringer') && {
         balance: 0,
-      }),
-      ...(typeof canBeAssigned === 'boolean' && {
-        canBeAssigned,
-      }),
-      ...(typeof displayOnTheSite === 'boolean' && {
-        displayOnTheSite,
-      }),
-      ...(position && {
-        position,
       }),
     };
 
@@ -382,7 +472,16 @@ router.patch(
 
       const userIdToUpdate = userId ? userId : req.user.id;
 
+      if (!userIdToUpdate) {
+        return res.status(200).json({
+          message: 'Empty user ID',
+          status: 'warning',
+        });
+      }
+
       const user = await getUserById(userIdToUpdate);
+
+      const body = req.body;
 
       if (!user) {
         return res.status(200).json({
@@ -391,25 +490,85 @@ router.patch(
         });
       }
 
-      const {
-        name,
-        nickname,
-        role,
-        email,
-        percentage,
-        advancePayment,
-        country,
-        balance,
-        paymentInfo,
-        canBeAssigned,
-        displayOnTheSite,
-        position,
-      } = req.body;
+      if (!body?.paymentMethod && !!user?.paymentInfo) {
+        await updateUser({
+          userId: userIdToUpdate,
+          objDBForUnset: { paymentInfo: 1 },
+          objDBForSet: {},
+          objDBForIncrement: {},
+        });
+      }
+
+      let paymentInfo = null;
+
+      if (body?.paymentMethod) {
+        if (body.paymentMethod === 'bankTransfer') {
+          if (
+            !body?.phoneBankTransfer ||
+            !body?.emailBankTransfer ||
+            !body?.addressBankTransfer ||
+            !body?.zipCodeBankTransfer ||
+            !body?.bankNameBankTransfer ||
+            !body?.fullNameBankTransfer ||
+            !body?.accountNumberBankTransfer
+          ) {
+            return res.status(200).json({
+              message: 'Missing parameters for changing payment data',
+              status: 'warning',
+            });
+          }
+
+          paymentInfo = {
+            paymentInfo: {
+              variant: body.paymentMethod,
+              phoneNumber: body.phoneBankTransfer,
+              email: body.emailBankTransfer,
+              address: body.addressBankTransfer,
+              zipCode: body.zipCodeBankTransfer,
+              bankName: body.bankNameBankTransfer,
+              fullName: body.fullNameBankTransfer,
+              iban: body.accountNumberBankTransfer,
+            },
+          };
+        }
+
+        if (body.paymentMethod === 'payPal') {
+          if (!body?.payPalEmail) {
+            return res.status(200).json({
+              message: 'Missing parameters for changing payment data',
+              status: 'warning',
+            });
+          }
+
+          paymentInfo = {
+            paymentInfo: {
+              variant: body.paymentMethod,
+              payPalEmail: body.payPalEmail,
+            },
+          };
+        }
+
+        if (body.paymentMethod === 'other') {
+          if (!body?.textFieldOther) {
+            return res.status(200).json({
+              message: 'Missing parameters for changing payment data',
+              status: 'warning',
+            });
+          }
+
+          paymentInfo = {
+            paymentInfo: {
+              variant: body.paymentMethod,
+              value: body.textFieldOther,
+            },
+          };
+        }
+      }
 
       if (user.role === 'author') {
         const isValidate = validationForRequiredInputDataInUserModel(
           user.role,
-          req.body,
+          body,
           'update'
         );
 
@@ -443,33 +602,34 @@ router.patch(
         avatarUrl = response?.Location;
       }
 
-      objDB = {
-        ...(name && { name }),
-        ...(position && { position }),
-        ...(nickname && { nickname: `@${nickname}` }),
-        ...(role && { role }),
-        ...(email && { email }),
-        ...(percentage && { percentage }),
-        ...(advancePayment && { advancePayment }),
-        ...(country && { country }),
-        ...(paymentInfo && { paymentInfo }),
-        ...(avatarUrl && { avatarUrl }),
-        ...(typeof canBeAssigned === 'boolean' && {
-          canBeAssigned,
+      objDBForSet = {
+        ...(body?.name && { name: body.name }),
+        ...(body?.position && { position: body.position }),
+        ...(body?.nickname && { nickname: `@${body.nickname}` }),
+        ...(body?.role && { role: body.role }),
+        ...(body?.email && { email: body.email }),
+        ...(body?.percentage && { percentage: body.percentage }),
+        ...(body?.advancePayment && { advancePayment: body.advancePayment }),
+        ...(body?.country && { country: body.country }),
+        ...(paymentInfo && paymentInfo),
+        ...(body?.avatarUrl && { avatarUrl: body.avatarUrl }),
+        ...(typeof body?.canBeAssigned === 'boolean' && {
+          canBeAssigned: body.canBeAssigned,
         }),
-        ...(typeof displayOnTheSite === 'boolean' && {
-          displayOnTheSite,
+        ...(typeof body?.displayOnTheSite === 'boolean' && {
+          displayOnTheSite: body.displayOnTheSite,
         }),
-        ...(balance && { lastPaymentDate: moment().toDate() }),
+        ...(body?.balance && { lastPaymentDate: moment().toDate() }),
       };
 
       objDBForIncrement = {
-        ...(balance && { balance }),
+        ...(body?.balance && { balance: body.balance }),
       };
 
       await updateUser({
         userId: userIdToUpdate,
-        objDB,
+        objDBForUnset: {},
+        objDBForSet,
         objDBForIncrement: {},
       });
 
@@ -1088,7 +1248,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherEmail: user.email,
       });
 
-      objDB = {
+      objDBForSet = {
         lastPaymentDate: moment().toDate(),
       };
 
@@ -1097,7 +1257,12 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         gettingPaid: amount,
       };
 
-      await updateUser({ userId, objDB, objDBForIncrement });
+      await updateUser({
+        userId,
+        objDBForUnset: {},
+        objDBForSet,
+        objDBForIncrement,
+      });
 
       return res.status(200).json({
         message: `An advance of $${amount} was paid to the employee`,
@@ -1132,7 +1297,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherId: user._id,
       });
 
-      objDB = {
+      objDBForSet = {
         lastPaymentDate: moment().toDate(),
       };
 
@@ -1141,7 +1306,12 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         gettingPaid: amount,
       };
 
-      await updateUser({ userId, objDB, objDBForIncrement });
+      await updateUser({
+        userId,
+        objDBForUnset: {},
+        objDBForSet,
+        objDBForIncrement,
+      });
 
       return res.status(200).json({
         message: `The interest of $${amount} was paid to the employee`,
@@ -1525,18 +1695,19 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         dataForUpdate: { advancePaymentReceived: true },
       });
 
-      const dataForUpdateUser = {
+      const objDBForSet = {
         lastPaymentDate: moment().toDate(),
       };
 
-      const dataForUpdateUserInc = {
+      const objDBForIncrement = {
         balance: amountToTopUp,
       };
 
       await updateUser({
         userId: author._id,
-        objDB: dataForUpdateUser,
-        objDBForIncrement: dataForUpdateUserInc,
+        objDBForUnset: {},
+        objDBForSet,
+        objDBForIncrement,
       });
 
       return res.status(200).json({
@@ -1587,18 +1758,19 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         dataForUpdate: dataForUpdateSales,
       });
 
-      const dataForUpdateUser = {
+      const objDBForSet = {
         lastPaymentDate: moment().toDate(),
       };
 
-      const dataForUpdateUserInc = {
+      const objDBForIncrement = {
         balance: amountToTopUp,
       };
 
       await updateUser({
         userId: author._id,
-        objDB: dataForUpdateUser,
-        objDBForIncrement: dataForUpdateUserInc,
+        objDBForUnset: {},
+        objDBForSet,
+        objDBForIncrement,
       });
 
       return res.status(200).json({
@@ -1666,18 +1838,19 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         dataForUpdate: { advancePaymentReceived: true },
       });
 
-      const dataForUpdateUser = {
+      const objDBForSet = {
         lastPaymentDate: moment().toDate(),
       };
 
-      const dataForUpdateUserInc = {
+      const objDBForIncrement = {
         balance: amountToTopUp,
       };
 
       await updateUser({
         userId: author._id,
-        objDB: dataForUpdateUser,
-        objDBForIncrement: dataForUpdateUserInc,
+        objDBForUnset: {},
+        objDBForSet,
+        objDBForIncrement,
       });
 
       const dataForUpdateSales = {
@@ -1742,14 +1915,15 @@ router.post('/authors/register', async (req, res) => {
 
     const salt = await genSalt(10);
 
-    const objForUpdateUAuthor = {
+    const objDBForSet = {
       password: await hashBcrypt(reqPassword, salt),
       activatedTheAccount: true,
     };
 
     await updateUser({
       userId: vbForm.sender,
-      objDB: objForUpdateUAuthor,
+      objDBForUnset: {},
+      objDBForSet,
       objDBForIncrement: {},
     });
 

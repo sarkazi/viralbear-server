@@ -550,8 +550,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
             param: sale._doc.vbFormInfo.uid,
           });
 
-          console.log(vbForm, 8978778);
-
           const authorRelatedWithVbForm = await getUserBy({
             param: '_id',
             value: vbForm.sender,

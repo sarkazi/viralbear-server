@@ -492,8 +492,6 @@ router.post(
         }),
       });
 
-      console.log(vbForm, 222222);
-
       const dataForSendingMainInfo = {
         name: vbForm.sender.name,
         clientEmail: vbForm.sender.email,

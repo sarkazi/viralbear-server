@@ -35,6 +35,8 @@ const getAllUsers = async ({
   nicknames,
   exist,
   displayOnTheSite,
+  skip,
+  limit,
 }) => {
   return await User.find(
     {
@@ -55,7 +57,12 @@ const getAllUsers = async ({
       ...(fieldsInTheResponse &&
         fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
     }
-  );
+  )
+    .collation(
+      skip && limit ? { locale: 'en_US', numericOrdering: true } : null
+    )
+    .limit(limit ? limit : null)
+    .skip(skip ? skip : null);
 };
 
 const getUserById = async (userId) => {
@@ -177,13 +184,14 @@ const findWorkersForCard = async (workers, selfWorkerName) => {
   });
 };
 
-const updateUser = async ({ userId, objDB, objDBForIncrement }) => {
+const updateUser = async ({ userId, objDBForUnset, objDBForSet, objDBForIncrement }) => {
   return await User.updateOne(
     {
       _id: userId,
     },
     {
-      ...(Object.keys(objDB).length && { $set: objDB }),
+      ...(Object.keys(objDBForSet).length && { $set: objDBForSet }),
+      ...(Object.keys(objDBForUnset).length && { $unset: objDBForUnset }),
       ...(Object.keys(objDBForIncrement).length && { $inc: objDBForIncrement }),
     }
   );

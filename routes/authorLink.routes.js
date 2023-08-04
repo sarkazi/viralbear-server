@@ -32,7 +32,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     exclusivity,
   } = req.body;
 
-  console.log(confirmIncorrect, 89787);
+
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(200).json({
