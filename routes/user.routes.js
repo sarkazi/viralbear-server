@@ -1403,6 +1403,8 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                   });
                 }
 
+                console.log(!vbForm.sender?.paymentInfo?.variant, 98798787);
+
                 return {
                   status: 'All right',
                   authorEmail: vbForm.sender.email,
@@ -1417,7 +1419,7 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                         : 0,
                     paid:
                       typeof vbForm.advancePaymentReceived !== 'boolean' &&
-                      !vbForm.refFormId.advancePayment
+                      !vbForm.refFormId?.advancePayment
                         ? null
                         : vbForm.advancePaymentReceived === true
                         ? true
@@ -1437,6 +1439,13 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                     totalBalance: +totalBalance.toFixed(2),
                   },
                   vbFormUid: vbForm.formId,
+                  researchers: video.trelloData?.researchers?.length
+                    ? video.trelloData?.researchers
+                        .map((researcher) => {
+                          return researcher.name;
+                        })
+                        .join(', ')
+                    : null,
                   salesCount: salesOfThisVideo.length,
                 };
               } else {
@@ -1458,6 +1467,13 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                     totalBalance: null,
                   },
                   vbFormUid: vbForm.formId,
+                  researchers: video.trelloData?.researchers?.length
+                    ? video.trelloData?.researchers
+                        .map((researcher) => {
+                          return researcher.name;
+                        })
+                        .join(', ')
+                    : null,
                   salesCount: salesOfThisVideo.length,
                 };
               }
@@ -1480,6 +1496,13 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                   totalBalance: null,
                 },
                 vbFormUid: vbForm.formId,
+                researchers: video.trelloData?.researchers?.length
+                  ? video.trelloData?.researchers
+                      .map((researcher) => {
+                        return researcher.name;
+                      })
+                      .join(', ')
+                  : null,
                 salesCount: salesOfThisVideo.length,
               };
             }
@@ -1502,6 +1525,13 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                 totalBalance: null,
               },
               vbFormUid: null,
+              researchers: video.trelloData?.researchers?.length
+                ? video.trelloData?.researchers
+                    .map((researcher) => {
+                      return researcher.name;
+                    })
+                    .join(', ')
+                : null,
               salesCount: salesOfThisVideo.length,
             };
           }
@@ -1510,23 +1540,20 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
 
       authorsVideoStatistics = authorsVideoStatistics.reduce(
         (res, videoData) => {
-          if (videoData.advance.value === 0 && videoData.percentage === 0) {
-            res['ignore'].push(videoData);
-          } else if (
-            videoData.advance.value === 0 ||
-            videoData.amount.toBePaid <= 75
-          ) {
+          if (videoData.amount.percent && videoData.amount.percent < 75) {
             res['other'].push(videoData);
           } else if (
-            !videoData.paymentInfo &&
-            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
+            (videoData.paymentInfo === false && videoData.amount.advance) ||
+            (videoData.paymentInfo === false && videoData.amount.percent >= 75)
           ) {
             res['noPayment'].push(videoData);
           } else if (
-            videoData.paymentInfo &&
-            (videoData.advance.paid === 'no' || videoData.amount.toBePaid > 75)
+            (videoData.paymentInfo && videoData.amount.advance) ||
+            (videoData.paymentInfo && videoData.amount.percent >= 75)
           ) {
             res['ready'].push(videoData);
+          } else {
+            res['ignore'].push(videoData);
           }
           return res;
         },
