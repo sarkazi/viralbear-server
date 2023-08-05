@@ -25,6 +25,7 @@ const findOne = async (objDB) => {
       select: {
         email: 1,
         name: 1,
+        paymentInfo: 1,
       },
     });
 };

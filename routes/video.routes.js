@@ -385,16 +385,26 @@ router.get('/findOne', authMiddleware, findLastVideo);
 
 router.get('/findOneBy', async (req, res) => {
   try {
-    const { searchBy, value } = req.query;
+    const { searchBy, searchValue } = req.query;
 
-    if (!searchBy || !value) {
+    if (!searchBy || !searchValue) {
       return res.status(200).json({
         status: 'warning',
         message: 'Missing parameters for video search',
       });
     }
 
-    const apiData = await findVideoByValue({ searchBy, value });
+    const apiData = await findVideoByValue({
+      searchBy,
+      value: searchBy === 'videoData.videoId' ? +searchValue : searchValue,
+    });
+
+    if (!apiData) {
+      return res.status(200).json({
+        status: 'warning',
+        message: `No such video was found`,
+      });
+    }
 
     return res.status(200).json({
       apiData,
@@ -741,116 +751,6 @@ router.get('/findOne/:id', async (req, res) => {
       message: `Server side error`,
       status: 'error',
     });
-  }
-});
-
-router.get('/findOneBy', async (req, res) => {
-  try {
-    const { searchBy, searchValue } = req.query;
-
-    console.log(req.query)
-
-    if (!searchBy || !searchValue) {
-      return res.status(200).json({
-        status: 'warning',
-        message: 'Missing parameters for video search',
-      });
-    }
-
-    let videoData = null;
-
-    const video = await findVideoByValue({
-      searchBy,
-      value: JSON.parse(searchValue),
-    });
-
-    videoData = {
-      ...video,
-    };
-
-    if (!video) {
-      return res.status(200).json({
-        status: 'warning',
-        message: 'No such video was found',
-      });
-    }
-
-    //if (pullUpVbFormData && JSON.parse(pullUpVbFormData) === true) {
-    //  videoData = {
-    //    title: video.videoData.title,
-    //    videoId: video.videoData.videoId,
-    //    image: video.bucket.cloudScreenLink,
-    //    authorEmail: '-',
-    //    percentage: '-',
-    //    advance: {
-    //      value: '-',
-    //      paid: '-',
-    //    },
-    //    paymentInfo: '-',
-    //    salesCount: '-',
-    //    published: video.isApproved === true ? 'yes' : 'no',
-    //  };
-
-    //  const salesOfThisVideo = await getAllSales({
-    //    videoId: video.videoData.videoId,
-    //  });
-
-    //  videoData = {
-    //    ...videoData,
-    //    salesCount: salesOfThisVideo.length,
-    //  };
-
-    //  if (video.vbForm) {
-    //    const vbForm = await findOne({
-    //      searchBy: '_id',
-    //      param: video.vbForm,
-    //    });
-
-    //    if (vbForm.sender) {
-    //      const authorRelatedWithVbForm = await getUserBy({
-    //        param: '_id',
-    //        value: vbForm.sender,
-    //      });
-
-    //      if (authorRelatedWithVbForm) {
-    //        videoData = {
-    //          ...videoData,
-    //          authorEmail: authorRelatedWithVbForm.email,
-    //          percentage: authorRelatedWithVbForm.percentage
-    //            ? authorRelatedWithVbForm.percentage
-    //            : 0,
-    //          advance: {
-    //            value:
-    //              typeof vbForm.advancePaymentReceived === 'boolean' &&
-    //              authorRelatedWithVbForm.advancePayment
-    //                ? authorRelatedWithVbForm.advancePayment
-    //                : 0,
-    //            paid:
-    //              typeof vbForm.advancePaymentReceived !== 'boolean' &&
-    //              !authorRelatedWithVbForm.advancePayment
-    //                ? '-'
-    //                : vbForm.advancePaymentReceived === true
-    //                ? 'yes'
-    //                : 'no',
-    //          },
-    //          paymentInfo:
-    //            authorRelatedWithVbForm.paymentInfo.variant === undefined
-    //              ? 'no'
-    //              : 'yes',
-    //          salesCount: salesOfThisVideo.length,
-    //        };
-    //      }
-    //    }
-    //  }
-    //}
-
-    return res.status(200).json({
-      message: `Video data received`,
-      status: 'success',
-      apiData: videoData,
-    });
-  } catch (err) {
-    console.log(err);
   }
 });
 

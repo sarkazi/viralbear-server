@@ -781,7 +781,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           forLastDays: null,
         });
 
-        let paidReferralFormsCount = 0;
+        let amountOfAdvancesToAuthors = 0;
 
         const referralFormsUsed = await findAllAuthorLinks({
           userId: user._id,
@@ -796,8 +796,12 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
                 param: refForm._id,
               });
 
-              if (vbForm && vbForm?.advancePaymentReceived === true) {
-                paidReferralFormsCount += 1;
+              if (
+                vbForm &&
+                vbForm?.advancePaymentReceived === true &&
+                vbForm?.refFormId?.advancePayment
+              ) {
+                amountOfAdvancesToAuthors += vbForm.refFormId.advancePayment;
               }
             })
           );
@@ -882,7 +886,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           },
           earnedCompanies: +earnedCompanies.toFixed(2),
           earnedTotal: +earnedTotal.toFixed(2),
-          paidReferralFormsCount,
+          amountOfAdvancesToAuthors,
           amountToBePaid: advance > percentage ? advance : percentage,
           paymentSubject: paymentSubject(),
         };
@@ -896,8 +900,8 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
         acc.gettingPaid = parseFloat(
           (acc.gettingPaid + user.gettingPaid).toFixed(2)
         );
-        acc.paidReferralFormsCount = parseFloat(
-          acc.paidReferralFormsCount + user.paidReferralFormsCount
+        acc.amountOfAdvancesToAuthors = parseFloat(
+          acc.amountOfAdvancesToAuthors + user.amountOfAdvancesToAuthors
         );
 
         //суммарный earnedTillNextPayment работников
@@ -1015,7 +1019,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
       {
         balance: 0,
         gettingPaid: 0,
-        paidReferralFormsCount: 0,
+        amountOfAdvancesToAuthors: 0,
         earnedYourself: {
           last30Days: 0,
           total: 0,
@@ -1088,25 +1092,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       0
     );
 
-    //const earnedTillNextPayment = earnedForYourself - user.balance;
-
     const linksCount = await getCountLinksByUserEmail(user.email, null);
-
-    //const acquiredVideosCountLast30DaysMainRole =
-    //  await getCountAcquiredVideosBy({
-    //    searchBy: 'trelloData.researchers',
-    //    value: user.email,
-    //    forLastDays: 30,
-    //    purchased: true,
-    //  });
-
-    //const acquiredVideosCountLast30DaysNoMainRole =
-    //  await getCountAcquiredVideosBy({
-    //    searchBy: 'trelloData.researchers',
-    //    value: user.email,
-    //    forLastDays: 30,
-    //    purchased: false,
-    //  });
 
     const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
       searchBy: 'trelloData.researchers',
@@ -1122,19 +1108,13 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       purchased: false,
     });
 
-    //const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
-    //  searchBy: 'researcherId',
-    //  value: user._id,
-    //  forLastDays: 30,
-    //});
-
     const approvedVideosCount = await getCountApprovedTrelloCardBy({
       searchBy: 'researcherId',
       value: user._id,
       forLastDays: null,
     });
 
-    let paidReferralFormsCount = 0;
+    let amountOfAdvancesToAuthors = 0;
 
     const referralFormsUsed = await findAllAuthorLinks({
       userId: user._id,
@@ -1149,8 +1129,12 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
             param: refForm._id,
           });
 
-          if (vbForm && vbForm?.advancePaymentReceived === true) {
-            paidReferralFormsCount += 1;
+          if (
+            vbForm &&
+            vbForm?.advancePaymentReceived === true &&
+            vbForm?.refFormId?.advancePayment
+          ) {
+            amountOfAdvancesToAuthors += vbForm.refFormId.advancePayment;
           }
         })
       );
@@ -1171,7 +1155,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       },
       percentage: user.percentage ? user.percentage : 0,
       advancePayment: user.advancePayment ? user.advancePayment : 0,
-      paidReferralFormsCount,
+      amountOfAdvancesToAuthors,
       name: user.name,
     };
 
@@ -1441,10 +1425,11 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                   },
                   videoId: video.videoData.videoId,
                   videoTitle: video.videoData.title,
-                  paymentInfo:
-                    vbForm.sender?.paymentInfo?.variant === undefined
-                      ? false
-                      : true,
+                  paymentInfo: !vbForm.sender
+                    ? null
+                    : !vbForm.sender?.paymentInfo?.variant
+                    ? false
+                    : true,
                   amount: {
                     percent: +percentAmount.toFixed(2),
                     advance: +advanceAmount.toFixed(2),
@@ -1653,17 +1638,25 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       });
     }
 
-    const author = await getUserBy({ param: '_id', value: vbForm.sender });
-
-    if (!author) {
+    if (!vbForm?.sender?.email) {
       return res.status(200).json({
-        message: `Author with id "${vbForm.sender}" not found`,
+        message: `Author not found`,
+        status: 'warning',
+      });
+    }
+
+    if (!vbForm?.refFormId) {
+      return res.status(200).json({
+        message: `Referral form not found`,
         status: 'warning',
       });
     }
 
     if (paymentFor === 'advance') {
-      if (author.advancePayment && vbForm.advancePaymentReceived === true) {
+      if (
+        vbForm.refFormId.advancePayment &&
+        vbForm.advancePaymentReceived === true
+      ) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
           status: 'warning',
@@ -1671,7 +1664,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       }
 
       if (
-        !author.advancePayment ||
+        !vbForm.refFormId?.advancePayment ||
         typeof vbForm.advancePaymentReceived !== 'boolean'
       ) {
         return res.status(200).json({
@@ -1680,7 +1673,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      advanceAmount = author.advancePayment;
+      advanceAmount = vbForm.refFormId.advancePayment;
 
       if (Math.ceil(advanceAmount) !== Math.ceil(amountToTopUp)) {
         return res.status(200).json({
@@ -1704,7 +1697,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       };
 
       await updateUser({
-        userId: author._id,
+        userId: vbForm.sender._id,
         objDBForUnset: {},
         objDBForSet,
         objDBForIncrement,
@@ -1729,7 +1722,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      if (!author.percentage) {
+      if (!vbForm.refFormId.percentage) {
         return res.status(200).json({
           message: `There is no percentage provided for this vb form`,
           status: 'warning',
@@ -1737,7 +1730,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       }
 
       const percentAmount = salesWithThisVideoId.reduce(
-        (acc, sale) => acc + (sale.amount * author.percentage) / 100,
+        (acc, sale) => acc + (sale.amount * vbForm.refFormId.percentage) / 100,
         0
       );
 
@@ -1767,7 +1760,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       };
 
       await updateUser({
-        userId: author._id,
+        userId: vbForm.sender._id,
         objDBForUnset: {},
         objDBForSet,
         objDBForIncrement,
@@ -1792,14 +1785,17 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      if (!author.percentage) {
+      if (!vbForm.refFormId.percentage) {
         return res.status(200).json({
           message: `There is no percentage provided for this vb form`,
           status: 'warning',
         });
       }
 
-      if (author.advancePayment && vbForm.advancePaymentReceived === true) {
+      if (
+        vbForm.refFormId.advancePayment &&
+        vbForm.advancePaymentReceived === true
+      ) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
           status: 'warning',
@@ -1807,7 +1803,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       }
 
       if (
-        !author.advancePayment ||
+        !vbForm.refFormId.advancePayment ||
         typeof vbForm.advancePaymentReceived !== 'boolean'
       ) {
         return res.status(200).json({
@@ -1816,10 +1812,10 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      advanceAmount = author.advancePayment;
+      advanceAmount = vbForm.refFormId.advancePayment;
 
       percentAmount = salesWithThisVideoId.reduce(
-        (acc, sale) => acc + (sale.amount * author.percentage) / 100,
+        (acc, sale) => acc + (sale.amount * vbForm.refFormId.percentage) / 100,
         0
       );
 
@@ -1847,7 +1843,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       };
 
       await updateUser({
-        userId: author._id,
+        userId: vbForm.sender._id,
         objDBForUnset: {},
         objDBForSet,
         objDBForIncrement,
