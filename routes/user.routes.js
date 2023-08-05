@@ -1403,8 +1403,6 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                   });
                 }
 
-                console.log(!vbForm.sender?.paymentInfo?.variant, 98798787);
-
                 return {
                   status: 'All right',
                   authorEmail: vbForm.sender.email,
@@ -1540,35 +1538,35 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
 
       authorsVideoStatistics = authorsVideoStatistics.reduce(
         (res, videoData) => {
-          if (videoData.amount.percent && videoData.amount.percent < 75) {
+          if (!!videoData.amount.percent && videoData.amount.percent < 75) {
             res['other'].push(videoData);
-          } else if (
-            (videoData.paymentInfo === false && videoData.amount.advance) ||
+          }
+          if (
+            (videoData.paymentInfo === false && !!videoData.amount.advance) ||
             (videoData.paymentInfo === false && videoData.amount.percent >= 75)
           ) {
             res['noPayment'].push(videoData);
-          } else if (
-            (videoData.paymentInfo && videoData.amount.advance) ||
-            (videoData.paymentInfo && videoData.amount.percent >= 75)
+          }
+          if (
+            (!!videoData.paymentInfo && !!videoData.amount.advance) ||
+            (!!videoData.paymentInfo && videoData.amount.percent >= 75)
           ) {
             res['ready'].push(videoData);
-          } else {
-            res['ignore'].push(videoData);
           }
           return res;
         },
-        { ready: [], noPayment: [], other: [], ignore: [] }
+        { ready: [], noPayment: [], other: [] }
       );
 
       const defineApiData = () => {
         if (group === 'ready') {
           return authorsVideoStatistics.ready;
-        } else if (group === 'noPayment') {
+        }
+        if (group === 'noPayment') {
           return authorsVideoStatistics.noPayment;
-        } else if (group === 'other') {
+        }
+        if (group === 'other') {
           return authorsVideoStatistics.other;
-        } else {
-          return [];
         }
       };
 
