@@ -47,7 +47,7 @@ const {
   findPrevVideoInFeed,
   findOneVideoInFeed,
   findReadyForPublication,
-
+  updateVideoBy,
   findTheCountryCodeByName,
   uploadContentOnBucket,
   createNewVideo,
@@ -445,7 +445,10 @@ router.get('/findAll', async (req, res) => {
       category,
       tag,
       location,
-      isApproved,
+      ...(isApproved &&
+        typeof JSON.parse(isApproved) === 'boolean' && {
+          isApproved: JSON.parse(isApproved),
+        }),
     });
 
     let count = 0;
@@ -1035,7 +1038,7 @@ router.patch(
         });
       }
 
-      if (JSON.parse(brandSafe) === false) {
+      if (brandSafe && JSON.parse(brandSafe) === false) {
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
@@ -1152,6 +1155,35 @@ router.patch(
     }
   }
 );
+
+router.patch('/updateByValue', authMiddleware, async (req, res) => {
+  try {
+    const { searchBy, searchValue, refreshFeeds } = req.query;
+    const { isApproved } = req.body;
+
+    await updateVideoBy({
+      searchBy,
+      searchValue,
+      dataToUpdate: { ...(typeof isApproved === 'boolean' && { isApproved }) },
+    });
+
+    if (refreshFeeds && JSON.parse(refreshFeeds)) {
+      await refreshMrssFiles();
+    }
+
+    return res.status(200).json({
+      message: `Video has been successfully updated`,
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      message: err?.message ? err?.message : 'Server side error',
+      status: 'error',
+    });
+  }
+});
 
 router.patch(
   '/fixedVideo/:id',

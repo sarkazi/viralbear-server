@@ -267,6 +267,25 @@ const updateVideoById = async ({ videoId, dataToDelete, dataToUpdate }) => {
   );
 };
 
+const updateVideoBy = async ({
+  searchBy,
+  searchValue,
+  dataToDelete,
+  dataToUpdate,
+}) => {
+  console.log(searchBy, searchValue, dataToDelete, dataToUpdate);
+
+  await Video.updateOne(
+    {
+      [searchBy]: searchValue,
+    },
+    {
+      ...(dataToDelete && { $unset: dataToDelete }),
+      ...(dataToUpdate && { $set: dataToUpdate }),
+    }
+  );
+};
+
 const findLastVideo = async (req, res) => {
   try {
     const lastAddedVideo = await Video.findOne({ isApproved: false })
@@ -601,8 +620,7 @@ const findAllVideos = async ({
           },
         ],
       }),
-      ...(typeof isApproved === 'boolean' &&
-        JSON.parse(isApproved) && { isApproved }),
+      ...(typeof isApproved === 'boolean' && { isApproved }),
     }
     //{
     //  ...(fieldsInTheResponse &&
@@ -1108,12 +1126,10 @@ module.exports = {
   findOneVideoInFeed,
   refreshMrssFiles,
   findReadyForPublication,
-
   findTheCountryCodeByName,
   uploadContentOnBucket,
   createNewVideo,
   findVideoById,
-  //creatingAndSavingFeeds,
   convertingVideoToHorizontal,
   readingAndUploadingConvertedVideoToBucket,
   updateVideoById,
@@ -1126,4 +1142,5 @@ module.exports = {
   getCountAcquiredVideosBy,
   updateVideosBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,
+  updateVideoBy,
 };
