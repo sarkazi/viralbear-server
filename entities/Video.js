@@ -161,7 +161,7 @@ const schema = new Schema(
     },
     exclusivity: {
       type: Boolean,
-      default: false,
+      required: true,
     },
     publishedInSocialMedia: {
       type: Boolean,

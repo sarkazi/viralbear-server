@@ -258,7 +258,6 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
         ...(vbForm?.whatHappen && { whatHappen: vbForm.whatHappen }),
         ...(vbForm?.whenFilmed && { whenFilmed: vbForm.whenFilmed }),
         ...(vbForm?.whoAppears && { whoAppears: vbForm.whoAppears }),
-
         ...(vbForm?.refFormId && {
           percentage: vbForm.refFormId.percentage,
           advancePayment: vbForm.refFormId.advancePayment,
@@ -276,11 +275,7 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       researchers: researchers.map((researcher) => {
         return researcher.name;
       }),
-      exclusivity: !vbForm?.refFormId
-        ? true
-        : vbForm.refFormId.exclusivity
-        ? true
-        : false,
+      exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
     };
 
     return res.status(200).json({

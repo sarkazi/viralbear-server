@@ -18,7 +18,7 @@
                   <media:regionCode>US</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Cool</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Wed, 2 Aug 2023</media:filmingDate>
                   <guid>2614</guid>
                   <pubDate>Thu, 03 Aug 2023 13:18:10 GMT</pubDate>
@@ -36,7 +36,7 @@
                   <media:regionCode>BY</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>Cool</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sun, 30 Jul 2023</media:filmingDate>
                   <guid>2612</guid>
                   <pubDate>Thu, 03 Aug 2023 08:14:07 GMT</pubDate>

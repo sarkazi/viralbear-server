@@ -10,24 +10,6 @@
             <dfpvideo:version>2</dfpvideo:version>
               
                   <item>
-                  <media:title>gfdg</media:title>
-                  <media:description>fdgdfg</media:description>
-                  <media:keywords>fdg</media:keywords>
-                  <media:city>gfd</media:city>
-                  <media:country>Andorra</media:country>
-                  <media:regionCode>AD</media:regionCode>
-                  <media:categoryCode>ODD</media:categoryCode>
-                  <media:category>News</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
-                  <media:filmingDate>Sat, 5 Aug 2023</media:filmingDate>
-                  <guid>2633</guid>
-                  <pubDate>Sat, 05 Aug 2023 11:48:52 GMT</pubDate>
-                  <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2633.jpg" />
-                  <media:content url="https://viralbear2.storage.yandexcloud.net/videos/2633.mp4" />
-                  <dfpvideo:lastModifiedDate/>
-                  </item>
-                           
-                  <item>
                   <media:title>Convicted thief escapes Blagoveshchensk pre-trial detention center through transmission window</media:title>
                   <media:description>In a daring escape, a young man convicted of theft managed to break free from a pre-trial detention center in Blagoveshchensk, Russia, through a transmission window on July 30, 2023. The incident occurred on Sunday during a visitation and transfer session, taking advantage of the warden's absence. After being on the run for a few hours, the fugitive was finally apprehended on the night of July 31st. According to the Russian Federal Penitentiary Service for the Amur Region, the escapee had been in detention since December 2022. Now facing severe consequences, the convict may be sentenced to forced labor or imprisonment for up to four years, as per Article 313 of the Criminal Code of Russia. Additionally, the court will charge him for the expenses incurred during the search operation. The Federal Penitentiary Service is currently conducting an internal audit to assess the security breach that allowed this escape to occur.</media:description>
                   <media:keywords>escape,convict,theft,pretrial,detention,Blagoveshchensk,Russia,transmission,window,caught,criminal,penalty,fugitive,imprisonment,search,audit,warden,apprehended,visitation,expenses</media:keywords>
@@ -36,7 +18,7 @@
                   <media:regionCode>RU</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>News</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sun, 30 Jul 2023</media:filmingDate>
                   <guid>2617</guid>
                   <pubDate>Thu, 03 Aug 2023 13:22:11 GMT</pubDate>
@@ -54,7 +36,7 @@
                   <media:regionCode>UA</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>News</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Mon, 24 Jul 2023</media:filmingDate>
                   <guid>2606</guid>
                   <pubDate>Thu, 03 Aug 2023 08:28:15 GMT</pubDate>
@@ -921,6 +903,26 @@ Reports depicted Russian invaders resorting to desperate measures to impede the 
                   <pubDate>Sat, 03 Jun 2023 00:00:00 GMT</pubDate>
                   <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/1f12455e-6251-4de5-a909-1d21fd64e899.jpg" />
                   <media:content url="https://viralbear.storage.yandexcloud.net/videos/56823d23-09c1-4719-b123-e264607b23ea.mp4" />
+                  <dfpvideo:lastModifiedDate/>
+                  </item>
+                           
+                  <item>
+                  <media:title>Massive fire engulfs Lake Louise staff residence, hundreds displaced</media:title>
+                  <media:description>On July 3rd, 2023, a massive fire broke out at Lake Louise, Alberta, Canada, engulfing the Charleston Residence and leaving hundreds of people displaced. The three-storey log building, which serves as accommodation for numerous staff members throughout the year, succumbed to the flames, causing widespread devastation. Prompt responses from the local police, fire departments, and EMS were witnessed, and buses were used to evacuate people from the scene to a muster point at the Lake Louise ski hill, as reported by the RCMP. The cause of the fire remains undetermined, and authorities have one person in custody in connection with the incident.
+
+According to estimates, the Charleston Residence was housing between 150 and 200 individuals at the time of the fire, with its capacity expanding to as many as 400 during the bustling winter season. While there were no reported fatalities, one person was taken to the hospital for assessment and treatment. The patient was reported to be in serious but stable condition, according to Alberta Health Services. Amid the chaos, @AlyssaWadey captured a video of the billowing smoke as she passed by on a nearby road, expressing her concerns and prayers for everyone's safety.</media:description>
+                  <media:keywords>fire,displacement,residence,Lake Louise,Alberta,Canada,staff,flames,police,fire department,EMS,buses,muster point,custody,unknown,fatalities,hospital,serious,stable,video,smoke</media:keywords>
+                  <media:city> Lake Louise, Alberta</media:city>
+                  <media:country>Canada</media:country>
+                  <media:regionCode>CA</media:regionCode>
+                  <media:categoryCode>DIS</media:categoryCode>
+                  <media:category>News</media:category>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
+                  <media:filmingDate>Mon, 3 Jul 2023</media:filmingDate>
+                  <guid>2367</guid>
+                  <pubDate>Sat, 03 Jun 2023 00:00:00 GMT</pubDate>
+                  <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/069fe6ec-4a4e-4d77-b3d4-136d5871f906.jpg" />
+                  <media:content url="https://viralbear.storage.yandexcloud.net/videos/00344874-5bb0-49e1-bd83-79de80ef41bc.mp4" />
                   <dfpvideo:lastModifiedDate/>
                   </item>
                            

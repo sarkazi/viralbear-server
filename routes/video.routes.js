@@ -727,21 +727,26 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
 
 router.get('/findRelated', findRelated);
 
-router.get('/findOne/:id', async (req, res) => {
+router.get('/findOneById/:videoId', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { videoId } = req.params;
 
-    const video = await findById(id);
+    const video = await findVideoByValue({
+      searchBy: 'videoData.videoId',
+      value: +videoId,
+    });
+
+    console.log(video, 76856875676854);
 
     if (!video) {
       return res.status(200).json({
-        message: `Video with id "${id}" was not found`,
+        message: `Video with id "${videoId}" was not found`,
         status: 'warning',
       });
     }
 
     return res.status(200).json({
-      message: `Video with id "${id}" was found`,
+      message: `Video with id "${videoId}" was found`,
       status: 'success',
       apiData: video,
     });
@@ -819,7 +824,11 @@ router.patch(
           videoId: +videoId,
           dataToDelete: {
             needToBeFixed: 1,
+            vbForm: 1,
             ...(!creditTo && { 'videoData.creditTo': 1 }),
+          },
+          dataToUpdate: {
+            exclusivity: false,
           },
         });
       }
@@ -856,6 +865,7 @@ router.patch(
           videoId: +videoId,
           dataToUpdate: {
             vbForm: vbForm._id,
+            exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
           },
         });
       }
@@ -1202,7 +1212,11 @@ router.patch(
           videoId: +videoId,
           dataToDelete: {
             needToBeFixed: 1,
+            vbForm: 1,
             ...(!creditTo && { 'videoData.creditTo': 1 }),
+          },
+          dataToUpdate: {
+            exclusivity: false,
           },
         });
       }
@@ -1239,6 +1253,7 @@ router.patch(
           videoId: +videoId,
           dataToUpdate: {
             vbForm: vbForm._id,
+            exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
           },
         });
       }
@@ -1629,7 +1644,11 @@ router.patch(
           videoId: +videoId,
           dataToDelete: {
             needToBeFixed: 1,
+            vbForm: 1,
             ...(!creditTo && { 'videoData.creditTo': 1 }),
+          },
+          dataToUpdate: {
+            exclusivity: false,
           },
         });
       }
@@ -1666,6 +1685,7 @@ router.patch(
           videoId: +videoId,
           dataToUpdate: {
             vbForm: vbForm._id,
+            exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
           },
         });
       }

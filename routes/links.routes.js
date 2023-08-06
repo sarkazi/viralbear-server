@@ -18,7 +18,6 @@ const {
   getUserById,
   updateUserByIncrement,
   getAllUsers,
-  updateStatForUsers,
 } = require('../controllers/user.controller');
 
 const {

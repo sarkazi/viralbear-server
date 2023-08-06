@@ -11,19 +11,19 @@
               
                   <item>
                   <media:title>gfdg</media:title>
-                  <media:description>fdgdfg</media:description>
-                  <media:keywords>fdg</media:keywords>
+                  <media:description>fgdfg</media:description>
+                  <media:keywords>dfg</media:keywords>
                   <media:city>gfd</media:city>
-                  <media:country>Andorra</media:country>
-                  <media:regionCode>AD</media:regionCode>
-                  <media:categoryCode>ODD</media:categoryCode>
-                  <media:category>News</media:category>
+                  <media:country>Angola</media:country>
+                  <media:regionCode>AO</media:regionCode>
+                  <media:categoryCode>WAR</media:categoryCode>
+                  <media:category>Road accidents</media:category>
                   <media:exclusivity>exclusive</media:exclusivity>
-                  <media:filmingDate>Sat, 5 Aug 2023</media:filmingDate>
-                  <guid>2633</guid>
-                  <pubDate>Sat, 05 Aug 2023 11:48:52 GMT</pubDate>
-                  <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2633.jpg" />
-                  <media:content url="https://viralbear2.storage.yandexcloud.net/videos/2633.mp4" />
+                  <media:filmingDate>Sun, 6 Aug 2023</media:filmingDate>
+                  <guid>2635</guid>
+                  <pubDate>Sun, 06 Aug 2023 10:17:17 GMT</pubDate>
+                  <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2635.jpg" />
+                  <media:content url="https://viralbear2.storage.yandexcloud.net/videos/2635.mp4" />
                   <dfpvideo:lastModifiedDate/>
                   </item>
                            
@@ -36,7 +36,7 @@
                   <media:regionCode>RU</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Thu, 18 May 2023</media:filmingDate>
                   <guid>2631</guid>
                   <pubDate>Fri, 04 Aug 2023 14:06:33 GMT</pubDate>
@@ -54,7 +54,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 18 Jul 2023</media:filmingDate>
                   <guid>2629</guid>
                   <pubDate>Fri, 04 Aug 2023 14:04:14 GMT</pubDate>
@@ -72,7 +72,7 @@
                   <media:regionCode>RU</media:regionCode>
                   <media:categoryCode>DIS</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 11 Jul 2023</media:filmingDate>
                   <guid>2628</guid>
                   <pubDate>Fri, 04 Aug 2023 14:02:51 GMT</pubDate>
@@ -90,7 +90,7 @@
                   <media:regionCode>GB</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sun, 11 Jun 2023</media:filmingDate>
                   <guid>2626</guid>
                   <pubDate>Fri, 04 Aug 2023 14:00:21 GMT</pubDate>
@@ -108,7 +108,7 @@
                   <media:regionCode>CN</media:regionCode>
                   <media:categoryCode>DIS</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Thu, 15 Jun 2023</media:filmingDate>
                   <guid>2625</guid>
                   <pubDate>Fri, 04 Aug 2023 13:59:40 GMT</pubDate>
@@ -126,7 +126,7 @@
                   <media:regionCode>CN</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Mon, 24 Jul 2023</media:filmingDate>
                   <guid>2624</guid>
                   <pubDate>Fri, 04 Aug 2023 13:57:46 GMT</pubDate>
@@ -144,7 +144,7 @@
                   <media:regionCode>CN</media:regionCode>
                   <media:categoryCode>DIS</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Thu, 20 Jul 2023</media:filmingDate>
                   <guid>2623</guid>
                   <pubDate>Fri, 04 Aug 2023 13:55:37 GMT</pubDate>
@@ -162,7 +162,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 18 Jul 2023</media:filmingDate>
                   <guid>2622</guid>
                   <pubDate>Fri, 04 Aug 2023 13:54:01 GMT</pubDate>
@@ -180,7 +180,7 @@
                   <media:regionCode>PH</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Wed, 12 Jul 2023</media:filmingDate>
                   <guid>2621</guid>
                   <pubDate>Fri, 04 Aug 2023 08:00:43 GMT</pubDate>
@@ -198,7 +198,7 @@
                   <media:regionCode>PH</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Fri, 21 Jul 2023</media:filmingDate>
                   <guid>2620</guid>
                   <pubDate>Fri, 04 Aug 2023 08:01:41 GMT</pubDate>
@@ -216,7 +216,7 @@
                   <media:regionCode>UA</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 11 Jul 2023</media:filmingDate>
                   <guid>2618</guid>
                   <pubDate>Thu, 03 Aug 2023 13:20:43 GMT</pubDate>
@@ -234,7 +234,7 @@
                   <media:regionCode>RU</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>News</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sun, 30 Jul 2023</media:filmingDate>
                   <guid>2617</guid>
                   <pubDate>Thu, 03 Aug 2023 13:22:11 GMT</pubDate>
@@ -252,7 +252,7 @@
                   <media:regionCode>US</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 18 Jul 2023</media:filmingDate>
                   <guid>2615</guid>
                   <pubDate>Thu, 03 Aug 2023 13:22:47 GMT</pubDate>
@@ -270,7 +270,7 @@
                   <media:regionCode>US</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sat, 17 Jun 2023</media:filmingDate>
                   <guid>2613</guid>
                   <pubDate>Thu, 03 Aug 2023 08:13:17 GMT</pubDate>
@@ -288,7 +288,7 @@
                   <media:regionCode>BY</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>Cool</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sun, 30 Jul 2023</media:filmingDate>
                   <guid>2612</guid>
                   <pubDate>Thu, 03 Aug 2023 08:14:07 GMT</pubDate>
@@ -306,7 +306,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Heartwarming</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sat, 22 Jul 2023</media:filmingDate>
                   <guid>2611</guid>
                   <pubDate>Thu, 03 Aug 2023 08:15:55 GMT</pubDate>
@@ -324,7 +324,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sun, 28 May 2023</media:filmingDate>
                   <guid>2610</guid>
                   <pubDate>Thu, 03 Aug 2023 08:16:32 GMT</pubDate>
@@ -342,7 +342,7 @@
                   <media:regionCode>RU</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sun, 9 Jul 2023</media:filmingDate>
                   <guid>2609</guid>
                   <pubDate>Thu, 03 Aug 2023 08:12:32 GMT</pubDate>
@@ -360,7 +360,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Thu, 6 Jul 2023</media:filmingDate>
                   <guid>2607</guid>
                   <pubDate>Thu, 03 Aug 2023 08:03:37 GMT</pubDate>
@@ -378,7 +378,7 @@
                   <media:regionCode>UA</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>News</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Mon, 24 Jul 2023</media:filmingDate>
                   <guid>2606</guid>
                   <pubDate>Thu, 03 Aug 2023 08:28:15 GMT</pubDate>
@@ -396,7 +396,7 @@
                   <media:regionCode>UA</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Animals</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Sat, 29 Jul 2023</media:filmingDate>
                   <guid>2605</guid>
                   <pubDate>Thu, 03 Aug 2023 07:59:28 GMT</pubDate>

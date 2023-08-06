@@ -18,7 +18,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 18 Jul 2023</media:filmingDate>
                   <guid>2629</guid>
                   <pubDate>Fri, 04 Aug 2023 14:04:14 GMT</pubDate>
@@ -36,7 +36,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 18 Jul 2023</media:filmingDate>
                   <guid>2622</guid>
                   <pubDate>Fri, 04 Aug 2023 13:54:01 GMT</pubDate>
@@ -54,7 +54,7 @@
                   <media:regionCode>PH</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Wed, 12 Jul 2023</media:filmingDate>
                   <guid>2621</guid>
                   <pubDate>Fri, 04 Aug 2023 08:00:43 GMT</pubDate>
@@ -72,7 +72,7 @@
                   <media:regionCode>PH</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Fri, 21 Jul 2023</media:filmingDate>
                   <guid>2620</guid>
                   <pubDate>Fri, 04 Aug 2023 08:01:41 GMT</pubDate>
@@ -90,7 +90,7 @@
                   <media:regionCode>ID</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Thu, 6 Jul 2023</media:filmingDate>
                   <guid>2607</guid>
                   <pubDate>Thu, 03 Aug 2023 08:03:37 GMT</pubDate>
@@ -162,7 +162,7 @@
                   <media:regionCode>PH</media:regionCode>
                   <media:categoryCode>ENT</media:categoryCode>
                   <media:category>Fails and Funnies</media:category>
-                  <media:exclusivity>non-exсlusive</media:exclusivity>
+                  <media:exclusivity>exclusive</media:exclusivity>
                   <media:filmingDate>Sat, 15 Jul 2023</media:filmingDate>
                   <guid>2567</guid>
                   <pubDate>Sat, 29 Jul 2023 07:54:50 GMT</pubDate>

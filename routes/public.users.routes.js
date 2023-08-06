@@ -17,7 +17,7 @@ const {
   getUserById,
   updateUser,
   getUserByEmail,
-  updateStatForUsers,
+
   getUserBySearchValue,
   findUsersByValueList,
   getUserBy,

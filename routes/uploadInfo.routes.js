@@ -302,7 +302,7 @@ router.post(
         param: `VB${vbCode}`,
       });
 
-      if (formHash) {
+      if (formHash && authorLinkWithThisHash) {
         await markRefFormAsUsed(authorLinkWithThisHash._id, { used: true });
       }
 

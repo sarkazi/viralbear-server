@@ -10,6 +10,24 @@
             <dfpvideo:version>2</dfpvideo:version>
               
                   <item>
+                  <media:title>gfdg</media:title>
+                  <media:description>fgdfg</media:description>
+                  <media:keywords>dfg</media:keywords>
+                  <media:city>gfd</media:city>
+                  <media:country>Angola</media:country>
+                  <media:regionCode>AO</media:regionCode>
+                  <media:categoryCode>WAR</media:categoryCode>
+                  <media:category>Road accidents</media:category>
+                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:filmingDate>Sun, 6 Aug 2023</media:filmingDate>
+                  <guid>2635</guid>
+                  <pubDate>Sun, 06 Aug 2023 10:17:17 GMT</pubDate>
+                  <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2635.jpg" />
+                  <media:content url="https://viralbear2.storage.yandexcloud.net/videos/2635.mp4" />
+                  <dfpvideo:lastModifiedDate/>
+                  </item>
+                           
+                  <item>
                   <media:title>Traffic police car collides with child in Bataysk, Russia: investigation underway</media:title>
                   <media:description>In an unfortunate incident on July 11, 2023, in Bataysk, Russia, a young boy was involved in a collision with a traffic police patrol car on Slavy Street, 7. The incident was caught on video by residents of the house and shared on social media. The footage shows the child being knocked down but managing to get back up and limping in shock towards the entrance of the house. Surprisingly, the inspector driving the patrol car did not approach the child after the accident but instead returned to the driver's seat. The Main Directorate of the Ministry of Internal Affairs of Russia for the Rostov Region stated that the child, born in 2014, suddenly ran out onto the road due to parked vehicles. An investigation into the circumstances surrounding the incident is currently underway.</media:description>
                   <media:keywords>accident,bataysk,russia,boy,traffic,police,patrol,car,video,social,media,collision,pedestrian,investigation,shock,limping,entrance,inspector,parked,vehicles</media:keywords>
@@ -18,7 +36,7 @@
                   <media:regionCode>RU</media:regionCode>
                   <media:categoryCode>DIS</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Tue, 11 Jul 2023</media:filmingDate>
                   <guid>2628</guid>
                   <pubDate>Fri, 04 Aug 2023 14:02:51 GMT</pubDate>
@@ -36,7 +54,7 @@
                   <media:regionCode>CN</media:regionCode>
                   <media:categoryCode>DIS</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Thu, 15 Jun 2023</media:filmingDate>
                   <guid>2625</guid>
                   <pubDate>Fri, 04 Aug 2023 13:59:40 GMT</pubDate>
@@ -54,7 +72,7 @@
                   <media:regionCode>CN</media:regionCode>
                   <media:categoryCode>GEN</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Mon, 24 Jul 2023</media:filmingDate>
                   <guid>2624</guid>
                   <pubDate>Fri, 04 Aug 2023 13:57:46 GMT</pubDate>
@@ -72,7 +90,7 @@
                   <media:regionCode>CN</media:regionCode>
                   <media:categoryCode>DIS</media:categoryCode>
                   <media:category>Road accidents</media:category>
-                  <media:exclusivity>exclusive</media:exclusivity>
+                  <media:exclusivity>non-exсlusive</media:exclusivity>
                   <media:filmingDate>Thu, 20 Jul 2023</media:filmingDate>
                   <guid>2623</guid>
                   <pubDate>Fri, 04 Aug 2023 13:55:37 GMT</pubDate>

@@ -19,7 +19,6 @@ const {
   getUserById,
   updateUser,
   getUserByEmail,
-  updateStatForUsers,
   getUserBySearchValue,
   findUsersByValueList,
   getUserBy,
@@ -59,7 +58,7 @@ const {
 
 const {
   getCountApprovedTrelloCardBy,
-} = require('../controllers/movedToDoneList.controller');
+} = require('../controllers/movedFromReviewList.controller');
 
 const { inviteMemberOnBoard } = require('../controllers/trello.controller');
 

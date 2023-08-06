@@ -32,8 +32,6 @@ router.post('/create', authMiddleware, async (req, res) => {
     exclusivity,
   } = req.body;
 
-
-
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(200).json({
       message: 'Missing parameters for link generation',
@@ -116,6 +114,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       videoId,
       exclusivity,
       ...(link?.trelloCardUrl && { trelloCardUrl: link.trelloCardUrl }),
+      ...(link?.trelloCardId && { trelloCardId: link.trelloCardId }),
     };
 
     const newAuthorLink = await createNewAuthorLink(bodyForNewAuthorLink);

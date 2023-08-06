@@ -10,6 +10,11 @@ const {
 } = require('../controllers/movedToDoneList.controller');
 
 const {
+  writeNewMoveFromReview,
+  findTheRecordOfTheCardMovedFromReview,
+} = require('../controllers/movedFromReviewList.controller');
+
+const {
   getPriorityCardByCardId,
   getCardLabelsByCardId,
   updateTrelloCard,
@@ -75,12 +80,10 @@ router.post('/trello/doneList', async (req, res) => {
 
       const { priority } = await getPriorityCardByCardId(cardId);
 
-      socketInstance
-        .io()
-        .emit('triggerForAnUpdateInPublishing', {
-          priority,
-          event: 'new card in done',
-        });
+      socketInstance.io().emit('triggerForAnUpdateInPublishing', {
+        priority,
+        event: 'new card in done',
+      });
     }
 
     //-----------------------------ловим изменение наклеек в done листе-----------------------------------
@@ -100,6 +103,52 @@ router.post('/trello/doneList', async (req, res) => {
   } catch (err) {
     console.log('trello webhook error');
     return res.status(200).json({ status: 'error' });
+  }
+});
+
+router.post('/trello/reviewList', async (req, res) => {
+  try {
+    const changedData = req.body;
+
+    if (
+      !!changedData?.action?.data?.listAfter &&
+      !!changedData?.action?.data?.listBefore &&
+      changedData.webhook.idModel === process.env.TRELLO_LIST_REVIEW_ID &&
+      changedData?.action?.data?.listBefore?.name
+        ?.toLowerCase()
+        ?.includes('review')
+    ) {
+      console.log(`webhook "${changedData.webhook.description}" сработал`);
+
+      //проверяем, существует ли уже запись в базе с этой карточкой
+
+      const recordInTheDatabaseAboutTheMovedCard =
+        await findTheRecordOfTheCardMovedFromReview(
+          changedData.action.data.card.id
+        );
+
+      //если не существует - записываем
+      if (!recordInTheDatabaseAboutTheMovedCard) {
+        const researcherUsernameInTrello =
+          changedData.action.memberCreator.username;
+
+        const researcherInDatabase = await getUserBy({
+          param: 'nickname',
+          value: `@${researcherUsernameInTrello}`,
+        });
+
+        //записываем событие о перемещенной карточке в базу
+        await writeNewMoveFromReview({
+          researcherId: researcherInDatabase._id,
+          listAfter: changedData.action.data.listAfter.name,
+          trelloCardId: changedData.action.data.card.id,
+        });
+      }
+    }
+
+    return res.status(200).json({ status: 'success' });
+  } catch (err) {
+    console.log(err);
   }
 });
 
