@@ -191,9 +191,9 @@ router.post(
                   if (!researcher) {
                     amountToResearcher = 0;
                   } else {
-                    if (researcher.advancePayment) {
+                    if (researcher.percentage) {
                       amountToResearcher = +(
-                        (amount * researcher.advancePayment) /
+                        (amount * researcher.percentage) /
                         100
                       ).toFixed(2);
                     } else {
