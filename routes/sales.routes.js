@@ -20,13 +20,16 @@ const {
 
 const { findOne } = require('../controllers/uploadInfo.controller');
 
-const determinationCompanyDataBasedOnPairedReport = require('../utils/determinationCompanyDataBasedOnPairedReport');
+const pullOutProcessingDataFromPairedReport = require('../utils/pullOutProcessingDataFromPairedReport');
+const definitionThePartnerCompanyByFileHeader = require('../utils/definitionThePartnerCompanyByFileHeader');
+const removeValuesWithoutKeyFieldInPairedReport = require('../utils/removeValuesWithoutKeyFieldInPairedReport');
 
 const storage = multer.memoryStorage();
 
 const {
   findById,
-  findVideoByTitle,
+
+  findVideoByValue,
 } = require('../controllers/video.controller');
 
 const moment = require('moment');
@@ -135,13 +138,18 @@ router.post(
         message: 'The file for parsing was not found',
       });
     }
+
     try {
       const workbook = xlsx.read(csv[0].buffer, {
         type: 'buffer',
         sheetStubs: true,
       });
 
-      const parseDocument = await Promise.all(
+      const fileHeaderValues = xlsx.utils
+        .sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 })
+        .shift();
+
+      const parseReport = await Promise.all(
         workbook.SheetNames.map(async (sheetName) => {
           return xlsx.utils.sheet_to_row_object_array(
             workbook.Sheets[sheetName]
@@ -149,20 +157,41 @@ router.post(
         })
       );
 
-      const processingData = await determinationCompanyDataBasedOnPairedReport(
-        parseDocument[0]
-      );
+      const companyName = definitionThePartnerCompanyByFileHeader({
+        fileHeaderValues,
+      });
+
+      if (!companyName) {
+        return res.status(200).json({
+          status: 'warning',
+          message:
+            'It was not possible to determine which partner company owns the report',
+        });
+      }
+
+      const filterParseReport = removeValuesWithoutKeyFieldInPairedReport({
+        parseReport: parseReport[0],
+        companyName,
+      });
+
+      const processingData = await pullOutProcessingDataFromPairedReport({
+        parseReport: filterParseReport,
+        companyName,
+      });
 
       const newReport = await Promise.all(
-        processingData.data.suitable.map(async (obj, index) => {
-          if (obj.videoId) {
+        processingData.data.map(async (obj, index) => {
+          if (!!obj.videoId) {
             if (obj.videoId < 1460) {
               return {
                 videoId: obj.videoId,
                 status: 'lessThen1460',
               };
             } else {
-              const videoDb = await findById(obj.videoId);
+              const videoDb = await findVideoByValue({
+                searchBy: 'videoData.videoId',
+                value: obj.videoId,
+              });
 
               if (!videoDb) {
                 return {
@@ -202,23 +231,6 @@ router.post(
                   }
                 }
 
-                let author = null;
-                let vbForm = null;
-
-                if (videoDb.vbForm) {
-                  vbForm = await findOne({
-                    searchBy: '_id',
-                    param: videoDb.vbForm,
-                  });
-
-                  if (vbForm.sender) {
-                    author = await getUserBy({
-                      param: '_id',
-                      value: vbForm.sender,
-                    });
-                  }
-                }
-
                 return {
                   researchers: videoResearchers.length
                     ? videoResearchers.map((researcher) => {
@@ -229,33 +241,38 @@ router.post(
                       })
                     : [],
                   videoId: obj.videoId,
-                  ...(vbForm && {
-                    vbForm: vbForm._id,
+                  ...(!!videoDb?.vbForm && {
+                    vbForm: videoDb.vbForm._id,
                   }),
                   usage: obj.usage ? obj.usage : null,
                   amount,
                   videoTitle: videoDb.videoData.title,
                   company: processingData.company,
                   amountToResearcher: amountToResearcher,
-                  date: moment().toString(),
+                  date: moment().format('ll'),
                   status: 'found',
-                  authorEmail: author ? author.email : null,
-                  advance: !author
+                  authorEmail: videoDb?.vbForm?.sender?.email
+                    ? videoDb.vbForm.sender.email
+                    : null,
+                  advance: !videoDb?.vbForm?.refFormId
                     ? null
-                    : !author.advancePayment
+                    : !videoDb.vbForm.refFormId?.advancePayment
                     ? 0
-                    : author.advancePayment,
-                  percentage: !author
+                    : videoDb.vbForm.refFormId.advancePayment,
+                  percentage: !videoDb?.vbForm?.refFormId
                     ? null
-                    : !author.percentage
+                    : !videoDb.vbForm.refFormId?.percentage
                     ? 0
-                    : author.percentage,
+                    : videoDb.vbForm.refFormId.percentage,
                   saleIdForClient: index + 1,
                 };
               }
             }
           } else {
-            const videoDb = await findVideoByTitle(obj.title);
+            const videoDb = await findVideoByValue({
+              searchBy: 'videoData.title',
+              value: obj.title,
+            });
 
             if (!videoDb) {
               return {
@@ -290,31 +307,14 @@ router.post(
                   if (!researcher) {
                     amountToResearcher = 0;
                   } else {
-                    if (researcher.advancePayment) {
+                    if (researcher.percentage) {
                       amountToResearcher = +(
-                        (amount * researcher.advancePayment) /
+                        (amount * researcher.percentage) /
                         100
                       ).toFixed(2);
                     } else {
                       amountToResearcher = +(amount * 0.4).toFixed(2);
                     }
-                  }
-                }
-
-                let author = null;
-                let vbForm = null;
-
-                if (videoDb.vbForm) {
-                  vbForm = await findOne({
-                    searchBy: '_id',
-                    param: videoDb?.vbForm,
-                  });
-
-                  if (vbForm.sender) {
-                    author = await getUserBy({
-                      param: '_id',
-                      value: vbForm.sender,
-                    });
                   }
                 }
 
@@ -328,8 +328,8 @@ router.post(
                       })
                     : [],
                   videoId: videoDb.videoData.videoId,
-                  ...(vbForm && {
-                    vbForm: vbForm._id,
+                  ...(!!videoDb?.vbForm && {
+                    vbForm: videoDb.vbForm._id,
                   }),
                   usage: obj.usage ? obj.usage : null,
                   amount,
@@ -338,17 +338,19 @@ router.post(
                   amountToResearcher: amountToResearcher,
                   date: moment().format('ll'),
                   status: 'found',
-                  authorEmail: author ? author.email : null,
-                  advance: !author
+                  authorEmail: videoDb?.vbForm?.sender?.email
+                    ? videoDb.vbForm.sender.email
+                    : null,
+                  advance: !videoDb?.vbForm?.refFormId
                     ? null
-                    : !author.advancePayment
+                    : !videoDb.vbForm.refFormId?.advancePayment
                     ? 0
-                    : author.advancePayment,
-                  percentage: !author
+                    : videoDb.vbForm.refFormId.advancePayment,
+                  percentage: !videoDb?.vbForm?.refFormId
                     ? null
-                    : !author.percentage
+                    : !videoDb.vbForm.refFormId?.percentage
                     ? 0
-                    : author.percentage,
+                    : videoDb.vbForm.refFormId.percentage,
                   saleIdForClient: index + 1,
                 };
               }
@@ -372,7 +374,7 @@ router.post(
       );
 
       const apiData = {
-        emptyVideoId: processingData.data.emptyField.length,
+        emptyKeyField: parseReport[0].length - filterParseReport.length,
         idLess1460: newReport.lessThen1460.length,
         suitable: newReport.suitable,
         notFounded: newReport.notFounded.length,
@@ -511,7 +513,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     }
 
     let userId = null;
-    let sumAmountAuthor = null;
 
     if (researcher) {
       const user = await getUserBy({ param: 'name', value: researcher });
@@ -538,56 +539,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         }),
     });
 
-    if (
-      relatedToTheVbForm &&
-      typeof JSON.parse(relatedToTheVbForm) === 'boolean' &&
-      JSON.parse(relatedToTheVbForm) === true
-    ) {
-      sales = await Promise.all(
-        sales.map(async (sale) => {
-          const vbForm = await findOne({
-            searchBy: '_id',
-            param: sale._doc.vbFormInfo.uid,
-          });
-
-          const authorRelatedWithVbForm = await getUserBy({
-            param: '_id',
-            value: vbForm.sender,
-          });
-
-          return {
-            ...sale._doc,
-            authorEmail: authorRelatedWithVbForm.email,
-            advance: {
-              value: authorRelatedWithVbForm.advancePayment
-                ? authorRelatedWithVbForm.advancePayment
-                : 0,
-              paidFor:
-                typeof vbForm.advancePaymentReceived !== 'boolean' ||
-                !authorRelatedWithVbForm.advancePayment
-                  ? '-'
-                  : vbForm.advancePaymentReceived
-                  ? 'yes'
-                  : 'no',
-            },
-            percentage: authorRelatedWithVbForm.percentage
-              ? authorRelatedWithVbForm.percentage
-              : 0,
-            authorEarnings: authorRelatedWithVbForm.percentage
-              ? +(
-                  (sale.amount * authorRelatedWithVbForm.percentage) /
-                  100
-                ).toFixed(2)
-              : 0,
-          };
-        })
-      );
-
-      sumAmountAuthor = sales.reduce((acc, item) => {
-        return acc + item.authorEarnings;
-      }, 0);
-    }
-
     const sumAmount = sales.reduce((acc, item) => {
       return acc + item.amount;
     }, 0);
@@ -600,9 +551,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       sales,
       sumAmount: +sumAmount.toFixed(2),
       sumAmountResearcher: +sumAmountResearcher.toFixed(2),
-      ...(typeof sumAmountAuthor === 'number' && {
-        sumAmountAuthor: +sumAmountAuthor.toFixed(2),
-      }),
     };
 
     return res.status(200).json({

@@ -134,21 +134,17 @@ const findLinkByVideoId = async (videoId) => {
   return linkInfo;
 };
 
-const createNewLink = async (
-  email,
-  name,
-  nickname,
+const createNewLink = async ({
+  researcherId,
   authorNickname,
   title,
   videoLink,
   videoId,
   trelloCardUrl,
-  trelloCardId
-) => {
+  trelloCardId,
+}) => {
   const linkInfo = await Links.create({
-    email,
-    name,
-    nick: nickname,
+    researcher: researcherId,
     authorsNick: authorNickname,
     title,
     link: videoLink,
@@ -196,7 +192,10 @@ const getCountLinksByUserEmail = async (userValue, dateLimit) => {
 };
 
 const findLinkBy = async ({ searchBy, value }) => {
-  return Links.findOne({ [searchBy]: value });
+  return Links.findOne({ [searchBy]: value }).populate({
+    path: 'researcher',
+    select: { email: 1, name: 1, nickname: 1 },
+  });
 };
 
 module.exports = {

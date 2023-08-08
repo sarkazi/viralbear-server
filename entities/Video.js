@@ -141,7 +141,6 @@ const schema = new Schema(
       type: Object,
       required: false,
     },
-
     vbForm: {
       type: Schema.Types.ObjectId,
       ref: 'UploadInfo',
@@ -172,22 +171,14 @@ const schema = new Schema(
       required: true,
       default: false,
     },
+    wasRemovedFromPublication: {
+      type: Boolean,
+      required: false,
+    },
     pubDate: {
       type: Date,
       required: false,
     },
-    //mRSS: {
-    //  type: String,
-    //  required: false,
-    //},
-    //mRSS2: {
-    //  type: String,
-    //  required: false,
-    //},
-    //mRSSConvertedVideos: {
-    //  type: String,
-    //  required: false,
-    //},
   },
   { timestamps: true }
 );

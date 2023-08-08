@@ -31,7 +31,15 @@ const getAllSales = async ({
     }),
   })
     .limit(count ? count : null)
-    .sort({ $natural: -1 });
+    .sort({ $natural: -1 })
+    .populate({
+      path: 'vbFormInfo.uid',
+      select: { formId: 1, sender: 1, refFormId: 1, advancePaymentReceived: 1 },
+      populate: {
+        path: 'sender refFormId',
+        select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
+      },
+    });
 };
 
 const deleteSaleById = async (saleId) => {

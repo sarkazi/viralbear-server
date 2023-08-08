@@ -138,17 +138,15 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       //});
     }
 
-    await createNewLink(
-      selfWorker.email,
-      selfWorker.name,
-      selfWorker.nickname,
-      title,
+    await createNewLink({
+      researcherId: selfWorker._id,
       authorNickname,
-      convertedLink,
+      title,
+      videoLink: convertedLink,
       videoId,
-      trelloResponseAfterCreatingCard.url,
-      trelloResponseAfterCreatingCard.id
-    );
+      trelloCardUrl: trelloResponseAfterCreatingCard.url,
+      trelloCardId: trelloResponseAfterCreatingCard.id,
+    });
 
     return res.status(200).json({
       status: 'success',

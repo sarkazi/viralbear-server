@@ -273,8 +273,6 @@ const updateVideoBy = async ({
   dataToDelete,
   dataToUpdate,
 }) => {
-  console.log(searchBy, searchValue, dataToDelete, dataToUpdate);
-
   await Video.updateOne(
     {
       [searchBy]: searchValue,
@@ -587,48 +585,6 @@ const findVideoById = async (id) => {
   return video;
 };
 
-const findVideoByTitle = async (title) => {
-  const video = await Video.findOne({ 'videoData.title': title });
-
-  return video;
-};
-
-const findAllVideos = async ({
-  durationPoints,
-  category,
-  tag,
-  location,
-  isApproved,
-}) => {
-  return Video.find(
-    {
-      ...(durationPoints && {
-        'videoData.duration': {
-          $gte: durationPoints?.start,
-          $lt: durationPoints?.finish,
-        },
-      }),
-      ...(category && { 'videoData.category': category }),
-      ...(tag && { 'videoData.tags': { $in: [tag] } }),
-      ...(location && {
-        $or: [
-          {
-            'videoData.city': location,
-          },
-          {
-            'videoData.country': location,
-          },
-        ],
-      }),
-      ...(typeof isApproved === 'boolean' && { isApproved }),
-    }
-    //{
-    //  ...(fieldsInTheResponse &&
-    //    fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
-    //}
-  ).collation({ locale: 'en', strength: 2 });
-};
-
 const findById = async (id) => {
   return await Video.findOne({ 'videoData.videoId': +id });
 };
@@ -641,11 +597,19 @@ const getAllVideos = async ({
   valueResearcherBySearch,
   advanceHasBeenPaid,
   forLastDays,
+  wasRemovedFromPublication,
+  durationPoints,
+  category,
+  tag,
+  location,
 }) => {
   return Video.find(
     {
       ...(vbCode && { vbForm: { $exists: true } }),
       ...(typeof isApproved === 'boolean' && { isApproved }),
+      ...(typeof wasRemovedFromPublication === 'boolean' && {
+        wasRemovedFromPublication,
+      }),
       ...(forLastDays && {
         createdAt: {
           $gte: moment()
@@ -666,12 +630,39 @@ const getAllVideos = async ({
             },
           },
         }),
+      ...(durationPoints && {
+        'videoData.duration': {
+          $gte: durationPoints?.start,
+          $lt: durationPoints?.finish,
+        },
+      }),
+      ...(category && { 'videoData.category': category }),
+      ...(tag && { 'videoData.tags': { $in: [tag] } }),
+      ...(location && {
+        $or: [
+          {
+            'videoData.city': location,
+          },
+          {
+            'videoData.country': location,
+          },
+        ],
+      }),
     },
     {
       ...(fieldsInTheResponse &&
         fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
     }
-  ).populate({ path: 'vbForm', select: { formId: 1 } });
+  )
+    .populate({
+      path: 'vbForm',
+      select: { formId: 1, sender: 1, refFormId: 1, advancePaymentReceived: 1 },
+      populate: {
+        path: 'sender refFormId',
+        select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
+      },
+    })
+    .collation({ locale: 'en', strength: 2 });
 };
 
 const publishingVideoInSocialMedia = async (req, res) => {
@@ -805,185 +796,6 @@ const findReadyForPublication = async () => {
 
   return videosReadyForPublication;
 };
-
-//const creatingAndSavingFeeds = async (video) => {
-//  const {
-//    videoData: {
-//      title,
-//      description,
-//      creditTo,
-//      videoId,
-//      tags,
-//      city,
-//      country,
-//      category,
-//      date,
-//      originalVideoLink,
-//      categoryReuters,
-//      countryCode,
-//    },
-//    bucket: { cloudVideoLink, cloudScreenLink, cloudConversionVideoLink },
-//    brandSafe,
-//    createdAt,
-//    updatedAt,
-//    pubDate,
-//    exclusivity,
-//  } = video;
-
-//  if (
-//    !title ||
-//    !description ||
-//    !videoId ||
-//    !tags ||
-//    !city ||
-//    !country ||
-//    !category ||
-//    !date ||
-//    !originalVideoLink ||
-//    !cloudVideoLink ||
-//    !cloudScreenLink ||
-//    !categoryReuters ||
-//    !countryCode
-//  ) {
-//    return { message: 'Missing values for saving feeds', status: 'warning' };
-//  }
-
-//let credit;
-//let creditMrss;
-//if (!creditTo || creditTo == '') {
-//  //credit = description;
-//  creditMrss = '';
-//} else {
-//  //  credit = `${description}
-
-//  //Credit to: ${creditTo}`;
-//  creditMrss = `Credit to: ${creditTo}`;
-//}
-
-//  const dateOfPublication = new Date(
-//    pubDate ? pubDate : updatedAt ? updatedAt : ''
-//  ).toGMTString();
-
-//  const filmingDate = moment(date).format(`ddd, D MMM YYYY`);
-
-//  if (brandSafe === true) {
-//    await video.updateOne({
-//      $set: {
-//        mRSS2: `<item>
-//             <media:title>${title.replace(/&/g, '&amp;')}</media:title>
-//             <media:description>${description.replace(/&/g, '&amp;')}${
-//          creditMrss ? ' ' : ''
-//        }${creditMrss}</media:description>
-//             <media:keywords>${tags}</media:keywords>
-//             <media:city>${city}</media:city>
-//             <media:country>${country}</media:country>
-//             <media:category>${category}</media:category>
-//             <media:filmingDate>${filmingDate}</media:filmingDate>
-//             <guid>${videoId}</guid>
-//             <pubDate>${dateOfPublication}</pubDate>
-//             <media:thumbnail url="${cloudScreenLink}"/>
-//             <media:content url="${cloudVideoLink}" />
-//             <dfpvideo:lastModifiedDate/>
-//             </item>`,
-//        mRSS: `<item>
-//             <media:title>${title.replace(/&/g, '&amp;')}</media:title>
-//             <media:description>${description.replace(/&/g, '&amp;')}${
-//          creditMrss ? ' ' : ''
-//        }${creditMrss}</media:description>
-//             <media:keywords>${tags}</media:keywords>
-//             <media:city>${city}</media:city>
-//             <media:country>${country}</media:country>
-//             <media:regionCode>${countryCode}</media:regionCode>
-//            <media:categoryCode>${categoryReuters}</media:categoryCode>
-//             <media:category>${category}</media:category>
-//             <media:exclusivity>${
-//               exclusivity ? 'exclusive' : 'non-exсlusive'
-//             }</media:exclusivity>
-//             <media:filmingDate>${filmingDate}</media:filmingDate>
-//             <guid>${videoId}</guid>
-//             <pubDate>${dateOfPublication}</pubDate>
-//             <media:thumbnail url="${cloudScreenLink}" />
-//             <media:content url="${cloudVideoLink}" />
-//             <dfpvideo:lastModifiedDate/>
-//             </item>`,
-//        ...(cloudConversionVideoLink && {
-//          mRSSConvertedVideos: `<item>
-//            <media:title>${title.replace(/&/g, '&amp;')}</media:title>
-//            <media:description>${description.replace(/&/g, '&amp;')}${
-//            creditMrss ? ' ' : ''
-//          }${creditMrss}</media:description>
-//            <media:keywords>${tags}</media:keywords>
-//            <media:city>${city}</media:city>
-//            <media:country>${country}</media:country>
-//            <media:regionCode>${countryCode}</media:regionCode>
-//           <media:categoryCode>${categoryReuters}</media:categoryCode>
-//            <media:category>${category}</media:category>
-//            <media:exclusivity>${
-//              exclusivity ? 'exclusive' : 'non-exсlusive'
-//            }</media:exclusivity>
-//            <media:filmingDate>${filmingDate}</media:filmingDate>
-//            <guid>${videoId}</guid>
-//            <pubDate>${dateOfPublication}</pubDate>
-//            <media:thumbnail url="${cloudScreenLink}" />
-//            <media:content url="${cloudConversionVideoLink}" />
-//            <dfpvideo:lastModifiedDate/>
-//            </item>`,
-//        }),
-//      },
-//    });
-//  } else {
-//    await video.updateOne({
-//      $set: {
-//        mRSS: `<item>
-//             <media:title>${title.replace(/&/g, '&amp;')}</media:title>
-//             <media:description>${description.replace(/&/g, '&amp;')}${
-//          creditMrss ? ' ' : ''
-//        }${creditMrss}</media:description>
-//             <media:keywords>${tags}</media:keywords>
-//             <media:city>${city}</media:city>
-//             <media:country>${country}</media:country>
-//             <media:regionCode>${countryCode}</media:regionCode>
-//             <media:categoryCode>${categoryReuters}</media:categoryCode>
-//             <media:category>${category}</media:category>
-//             <media:exclusivity>${
-//               exclusivity ? 'exclusive' : 'non-exсlusive'
-//             }</media:exclusivity>
-//             <media:filmingDate>${filmingDate}</media:filmingDate>
-//             <guid>${videoId}</guid>
-//             <pubDate>${dateOfPublication}</pubDate>
-//             <media:thumbnail url="${cloudScreenLink}" />
-//             <media:content url="${cloudVideoLink}" />
-//             <dfpvideo:lastModifiedDate/>
-//             </item>`,
-//        ...(cloudConversionVideoLink && {
-//          mRSSConvertedVideos: `<item>
-//              <media:title>${title.replace(/&/g, '&amp;')}</media:title>
-//              <media:description>${description.replace(/&/g, '&amp;')}${
-//            creditMrss ? ' ' : ''
-//          }${creditMrss}</media:description>
-//              <media:keywords>${tags}</media:keywords>
-//              <media:city>${city}</media:city>
-//              <media:country>${country}</media:country>
-//              <media:regionCode>${countryCode}</media:regionCode>
-//              <media:categoryCode>${categoryReuters}</media:categoryCode>
-//              <media:category>${category}</media:category>
-//              <media:exclusivity>${
-//                exclusivity ? 'exclusive' : 'non-exсlusive'
-//              }</media:exclusivity>
-//              <media:filmingDate>${filmingDate}</media:filmingDate>
-//              <guid>${videoId}</guid>
-//              <pubDate>${dateOfPublication}</pubDate>
-//              <media:thumbnail url="${cloudScreenLink}" />
-//              <media:content url="${cloudConversionVideoLink}" />
-//              <dfpvideo:lastModifiedDate/>
-//              </item>`,
-//        }),
-//      },
-//    });
-//  }
-
-//  return { message: 'Feeds saved successfully', status: 'success' };
-//};
 
 const convertingVideoToHorizontal = async (video, userId) => {
   const directoryForInputVideo = `./videos/${userId}`;
@@ -1135,10 +947,8 @@ module.exports = {
   updateVideoById,
   deleteVideoById,
   findByNotApproved,
-  findVideoByTitle,
   getAllVideos,
   findVideoByValue,
-  findAllVideos,
   getCountAcquiredVideosBy,
   updateVideosBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,

@@ -34,7 +34,6 @@ const mutex = new Mutex();
 const {
   refreshMrssFiles,
   findByIsBrandSafe,
-  //creatingAndSavingFeeds,
   findLastVideo,
   findByFixed,
   findById,
@@ -58,7 +57,6 @@ const {
   deleteVideoById,
   writingFileToDisk,
   getAllVideos,
-  findAllVideos,
   findVideoByValue,
 } = require('../controllers/video.controller');
 
@@ -432,6 +430,7 @@ router.get('/findAll', async (req, res) => {
     page,
     isApproved,
     limit,
+    wasRemovedFromPublication,
   } = req.query;
 
   let durationPoints = null;
@@ -440,7 +439,7 @@ router.get('/findAll', async (req, res) => {
     durationPoints = findStartEndPointOfDuration(duration);
   }
   try {
-    let videos = await findAllVideos({
+    let videos = await getAllVideos({
       durationPoints,
       category,
       tag,
@@ -448,6 +447,10 @@ router.get('/findAll', async (req, res) => {
       ...(isApproved &&
         typeof JSON.parse(isApproved) === 'boolean' && {
           isApproved: JSON.parse(isApproved),
+        }),
+      ...(wasRemovedFromPublication &&
+        typeof JSON.parse(wasRemovedFromPublication) === 'boolean' && {
+          wasRemovedFromPublication: JSON.parse(wasRemovedFromPublication),
         }),
     });
 
@@ -514,7 +517,6 @@ router.get('/findAll', async (req, res) => {
         });
       }
     }
-
     if (limit && page) {
       count = videos.length;
       pageCount = Math.ceil(count / limit);
@@ -538,7 +540,6 @@ router.get('/findAll', async (req, res) => {
         .limit(limit)
         .skip(skip);
     }
-
     const apiData = {
       ...(limit &&
         page && {
@@ -1159,12 +1160,17 @@ router.patch(
 router.patch('/updateByValue', authMiddleware, async (req, res) => {
   try {
     const { searchBy, searchValue, refreshFeeds } = req.query;
-    const { isApproved } = req.body;
+    const { isApproved, wasRemovedFromPublication } = req.body;
 
     await updateVideoBy({
       searchBy,
       searchValue,
-      dataToUpdate: { ...(typeof isApproved === 'boolean' && { isApproved }) },
+      dataToUpdate: {
+        ...(typeof isApproved === 'boolean' && { isApproved }),
+        ...(typeof wasRemovedFromPublication === 'boolean' && {
+          wasRemovedFromPublication,
+        }),
+      },
     });
 
     if (refreshFeeds && JSON.parse(refreshFeeds)) {

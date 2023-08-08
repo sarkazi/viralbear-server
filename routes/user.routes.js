@@ -1047,7 +1047,12 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
       message: 'Users with updated statistics received',
       status: 'success',
       apiData: {
-        users: employeeStat,
+        users: employeeStat.sort((prev, next) => {
+          return (
+            next.acquiredVideosCount.mainRole.last30Days -
+            prev.acquiredVideosCount.mainRole.last30Days
+          );
+        }),
         sumValues: totalSumOfStatFields,
       },
     });
@@ -1091,7 +1096,25 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       0
     );
 
+    const linksCountLast30Days = await getCountLinksByUserEmail(user.email, 30);
+
     const linksCount = await getCountLinksByUserEmail(user.email, null);
+
+    const acquiredVideosCountLast30DaysMainRole =
+      await getCountAcquiredVideosBy({
+        searchBy: 'trelloData.researchers',
+        value: user.email,
+        forLastDays: 30,
+        purchased: true,
+      });
+
+    const acquiredVideosCountLast30DaysNoMainRole =
+      await getCountAcquiredVideosBy({
+        searchBy: 'trelloData.researchers',
+        value: user.email,
+        forLastDays: 30,
+        purchased: false,
+      });
 
     const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
       searchBy: 'trelloData.researchers',
@@ -1105,6 +1128,12 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       value: user.email,
       forLastDays: null,
       purchased: false,
+    });
+
+    const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
+      searchBy: 'researcherId',
+      value: user._id,
+      forLastDays: 30,
     });
 
     const approvedVideosCount = await getCountApprovedTrelloCardBy({
@@ -1142,15 +1171,27 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     const apiData = {
       balance: user.balance,
       gettingPaid: user.gettingPaid,
-      approvedVideosCount,
       earnedForYourself: {
         allTime: earnedForYourself,
         last30Days: earnedYourselfLast30Days,
       },
-      linksCount,
+      sentVideosCount: {
+        allTime: linksCount,
+        last30Days: linksCountLast30Days,
+      },
       acquiredVideosCount: {
-        mainRole: acquiredVideosCountMainRole,
-        noMainRole: acquiredVideosCountNoMainRole,
+        noMainRole: {
+          allTime: acquiredVideosCountNoMainRole,
+          last30Days: acquiredVideosCountLast30DaysNoMainRole,
+        },
+        mainRole: {
+          allTime: acquiredVideosCountMainRole,
+          last30Days: acquiredVideosCountLast30DaysMainRole,
+        },
+      },
+      approvedVideosCount: {
+        allTime: approvedVideosCount,
+        last30Days: approvedVideosCountLast30Days,
       },
       percentage: user.percentage ? user.percentage : 0,
       advancePayment: user.advancePayment ? user.advancePayment : 0,

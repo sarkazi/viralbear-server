@@ -20,6 +20,8 @@ const {
   updateTrelloCard,
 } = require('../controllers/trello.controller');
 
+const { findLinkBy } = require('../controllers/links.controller');
+
 router.post('/trello/doneList', async (req, res) => {
   try {
     const allNecessaryLabelsForDoneCard = [
@@ -129,17 +131,29 @@ router.post('/trello/reviewList', async (req, res) => {
 
       //если не существует - записываем
       if (!recordInTheDatabaseAboutTheMovedCard) {
-        const researcherUsernameInTrello =
-          changedData.action.memberCreator.username;
+        const trelloCardId = changedData.action.data.card.id;
 
-        const researcherInDatabase = await getUserBy({
-          param: 'nickname',
-          value: `@${researcherUsernameInTrello}`,
+        const addedTrelloCard = await findLinkBy({
+          searchBy: 'trelloCardId',
+          value: trelloCardId,
         });
+
+        let cardCreatorId = null;
+
+        if (addedTrelloCard) {
+          cardCreatorId = addedTrelloCard.researcher._id;
+        } else {
+          const researcher = await getUserBy({
+            param: 'nickname',
+            value: `@${changedData.action.memberCreator.username}`,
+          });
+
+          cardCreatorId = researcher._id;
+        }
 
         //записываем событие о перемещенной карточке в базу
         await writeNewMoveFromReview({
-          researcherId: researcherInDatabase._id,
+          researcherId: cardCreatorId,
           listAfter: changedData.action.data.listAfter.name,
           trelloCardId: changedData.action.data.card.id,
         });

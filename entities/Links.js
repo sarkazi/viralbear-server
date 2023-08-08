@@ -1,16 +1,9 @@
 const { Schema, model } = require('mongoose');
 const schema = new Schema(
   {
-    email: {
-      type: String,
-      required: true,
-    },
-    name: {
-      type: String,
-      required: true,
-    },
-    nick: {
-      type: String,
+    researcher: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
       required: true,
     },
     authorsNick: {
