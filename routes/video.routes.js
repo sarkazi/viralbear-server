@@ -809,6 +809,7 @@ router.patch(
       brandSafe,
       socialMedia,
       reuters,
+      commentToAdmin,
     } = req.body;
 
     const { video: reqVideo, screen: reqScreen } = req.files;
@@ -1109,6 +1110,7 @@ router.patch(
           }),
           ...(city && { 'videoData.city': city }),
           ...(reuters && { reuters }),
+          ...(commentToAdmin && { commentToAdmin }),
           ...(date && { 'videoData.date': JSON.parse(date) }),
           ...(researchers && {
             'trelloData.researchers': researchersListForCreatingVideo,
@@ -1231,7 +1233,10 @@ router.patch(
       brandSafe,
       socialMedia,
       reuters,
+      commentToAdmin,
     } = req.body;
+
+  
 
     const { video: reqVideo, screen: reqScreen } = req.files;
 
@@ -1531,6 +1536,7 @@ router.patch(
           }),
           ...(city && { 'videoData.city': city }),
           ...(reuters && { reuters }),
+          ...(commentToAdmin && { commentToAdmin }),
           ...(date && { 'videoData.date': JSON.parse(date) }),
           ...(researchers && {
             'trelloData.researchers': researchersListForCreatingVideo,

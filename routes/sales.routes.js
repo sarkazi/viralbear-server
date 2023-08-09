@@ -849,6 +849,7 @@ router.get('/getTop', authMiddleware, async (req, res) => {
           }),
         },
       },
+
       {
         $group: {
           _id: '$videoId',
@@ -860,6 +861,7 @@ router.get('/getTop', authMiddleware, async (req, res) => {
           vbForm: { $first: '$vbFormInfo' },
         },
       },
+
       {
         $sort: { amount: -1 },
       },
@@ -868,7 +870,7 @@ router.get('/getTop', authMiddleware, async (req, res) => {
 
     let salesGroup = [];
 
-    const aggregationResult = Sales.aggregate(pipeline);
+    const aggregationResult = await Sales.aggregate(pipeline);
 
     for await (const doc of aggregationResult) {
       salesGroup.push(doc);
@@ -882,25 +884,17 @@ router.get('/getTop', authMiddleware, async (req, res) => {
             param: obj.vbForm.uid,
           });
 
-          if (vbForm.sender) {
-            const author = await getUserBy({
-              param: '_id',
-              value: vbForm.sender,
-            });
-
-            return {
-              ...obj,
-              authorEmail: author.email,
-              percentage: author.percentage ? author.percentage : 0,
-              advancePayment: author.advancePayment ? author.advancePayment : 0,
-              amount: +obj.amount.toFixed(2),
-            };
-          } else {
-            return {
-              ...obj,
-              amount: +obj.amount.toFixed(2),
-            };
-          }
+          return {
+            ...obj,
+            ...(vbForm?.sender?.email && { authorEmail: vbForm.sender.email }),
+            ...(typeof vbForm?.vbFormId?.percentage === 'number' && {
+              percentage: vbForm.vbFormId.percentage,
+            }),
+            ...(typeof vbForm?.vbFormId?.advancePayment === 'number' && {
+              advancePayment: vbForm.vbFormId.advancePayment,
+            }),
+            amount: +obj.amount.toFixed(2),
+          };
         } else {
           return {
             ...obj,

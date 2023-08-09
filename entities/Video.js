@@ -141,6 +141,10 @@ const schema = new Schema(
       type: Object,
       required: false,
     },
+    commentToAdmin: {
+      type: String,
+      required: false,
+    },
     vbForm: {
       type: Schema.Types.ObjectId,
       ref: 'UploadInfo',

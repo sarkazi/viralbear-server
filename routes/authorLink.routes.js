@@ -32,6 +32,8 @@ router.post('/create', authMiddleware, async (req, res) => {
     exclusivity,
   } = req.body;
 
+  console.log(req.body);
+
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(200).json({
       message: 'Missing parameters for link generation',
@@ -77,7 +79,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     const link = await findLinkBy({ searchBy: 'unixid', value: videoId });
 
     if (!link) {
-      if (!confirmIncorrect) {
+      if (confirmIncorrect === false) {
         return res.status(200).json({
           message:
             'There is no Trello card for this video. Are you sure that this link is correct?',
@@ -89,8 +91,8 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     const authorLink = await findAuthorLinkByVideoId(videoId);
 
-    if (authorLink) {
-      if (!confirmDeletion) {
+    if (!!authorLink) {
+      if (confirmDeletion === false) {
         return res.status(200).json({
           message:
             'A unique form has already been generated for this video. Generate a new one?',
@@ -113,6 +115,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       videoLink: convertedLink,
       videoId,
       exclusivity,
+
       ...(link?.trelloCardUrl && { trelloCardUrl: link.trelloCardUrl }),
       ...(link?.trelloCardId && { trelloCardId: link.trelloCardId }),
     };
