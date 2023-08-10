@@ -53,7 +53,7 @@ const {
   getCountAcquiredVideoByUserEmail,
   getAllVideos,
   findVideoByValue,
-  getCountAcquiredVideosBy,
+  getCountVideosBy,
   updateVideosBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,
 } = require('../controllers/video.controller');
@@ -715,50 +715,105 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
 
         const linksCount = await getCountLinksByUserEmail(user.email, null);
 
-        const acquiredVideosCountLast30DaysMainRole =
-          await getCountAcquiredVideosBy({
-            searchBy: 'trelloData.researchers',
+        const acquiredVideosCountLast30DaysMainRole = await getCountVideosBy({
+          forLastDays: 30,
+          isApproved: true,
+          user: {
             value: user.email,
-            forLastDays: 30,
             purchased: true,
-          });
-
-        const acquiredVideosCountLast30DaysNoMainRole =
-          await getCountAcquiredVideosBy({
-            searchBy: 'trelloData.researchers',
-            value: user.email,
-            forLastDays: 30,
-            purchased: false,
-          });
-
-        const acquiredVideosCountLast7DaysMainRole =
-          await getCountAcquiredVideosBy({
-            searchBy: 'trelloData.researchers',
-            value: user.email,
-            forLastDays: 7,
-            purchased: true,
-          });
-
-        const acquiredVideosCountLast7DaysNoMainRole =
-          await getCountAcquiredVideosBy({
-            searchBy: 'trelloData.researchers',
-            value: user.email,
-            forLastDays: 7,
-            purchased: false,
-          });
-
-        const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
-          searchBy: 'trelloData.researchers',
-          value: user.email,
-          forLastDays: null,
-          purchased: true,
+            searchBy: 'email',
+          },
         });
 
-        const acquiredVideosCountNoMainRole = await getCountAcquiredVideosBy({
-          searchBy: 'trelloData.researchers',
-          value: user.email,
-          forLastDays: null,
-          purchased: false,
+        const acquiredVideosCountLast30DaysNoMainRole = await getCountVideosBy({
+          forLastDays: 30,
+          isApproved: true,
+          user: {
+            value: user.email,
+            purchased: false,
+            searchBy: 'email',
+          },
+        });
+
+        const acquiredVideosCountLast7DaysMainRole = await getCountVideosBy({
+          forLastDays: 7,
+          isApproved: true,
+          user: {
+            value: user.email,
+            purchased: true,
+            searchBy: 'email',
+          },
+        });
+
+        const acquiredVideosCountLast7DaysNoMainRole = await getCountVideosBy({
+          forLastDays: 7,
+          isApproved: true,
+          user: {
+            value: user.email,
+            purchased: false,
+            searchBy: 'email',
+          },
+        });
+
+        const acquiredVideosCountMainRole = await getCountVideosBy({
+          isApproved: true,
+          user: {
+            value: user.email,
+            purchased: true,
+            searchBy: 'email',
+          },
+        });
+
+        const acquiredVideosCountNoMainRole = await getCountVideosBy({
+          isApproved: true,
+          user: {
+            value: user.email,
+            purchased: false,
+            searchBy: 'email',
+          },
+        });
+
+        const acquiredExclusivityVideosCountLast30Days = await getCountVideosBy(
+          {
+            forLastDays: 30,
+            isApproved: true,
+            exclusivity: true,
+            user: {
+              value: user.email,
+              searchBy: 'email',
+              purchased: true,
+            },
+          }
+        );
+        const acquiredNoExclusivityVideosCountLast30Days =
+          await getCountVideosBy({
+            forLastDays: 30,
+            isApproved: true,
+            exclusivity: false,
+            user: {
+              value: user.email,
+              searchBy: 'email',
+              purchased: true,
+            },
+          });
+        const acquiredExclusivityVideosCount = await getCountVideosBy({
+          isApproved: true,
+          exclusivity: true,
+          user: {
+            value: user.email,
+            searchBy: 'email',
+            purchased: true,
+          },
+        });
+
+        const acquiredNoExclusivityVideosCount = await getCountVideosBy({
+          isApproved: true,
+          exclusivity: false,
+          user: {
+            value: user.email,
+            searchBy: 'email',
+            purchased: true,
+          },
         });
 
         const approvedVideosCountLast30Days =
@@ -875,6 +930,22 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
               last30Days: acquiredVideosCountLast30DaysMainRole,
               last7Days: acquiredVideosCountLast7DaysMainRole,
             },
+          },
+          percentageOfExclusivityToNonExclusivityVideos: {
+            total: acquiredNoExclusivityVideosCount
+              ? +(
+                  (acquiredExclusivityVideosCount /
+                    acquiredNoExclusivityVideosCount) *
+                  100
+                ).toFixed(2)
+              : 0,
+            last30Days: acquiredNoExclusivityVideosCountLast30Days
+              ? +(
+                  (acquiredExclusivityVideosCountLast30Days /
+                    acquiredNoExclusivityVideosCountLast30Days) *
+                  100
+                ).toFixed(2)
+              : 0,
           },
           approvedVideosCount: {
             total: approvedVideosCount,
@@ -1037,6 +1108,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           last30Days: 0,
           last7Days: 0,
         },
+
         approvedVideosCount: {
           total: 0,
           last30Days: 0,
@@ -1102,35 +1174,92 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
 
     const linksCount = await getCountLinksByUserEmail(user.email, null);
 
-    const acquiredVideosCountLast30DaysMainRole =
-      await getCountAcquiredVideosBy({
-        searchBy: 'trelloData.researchers',
+    const acquiredVideosCountLast30DaysMainRole = await getCountVideosBy({
+      forLastDays: 30,
+      isApproved: true,
+      user: {
         value: user.email,
-        forLastDays: 30,
         purchased: true,
-      });
+        searchBy: 'email',
+      },
+    });
 
-    const acquiredVideosCountLast30DaysNoMainRole =
-      await getCountAcquiredVideosBy({
-        searchBy: 'trelloData.researchers',
+    const acquiredVideosCountLast30DaysNoMainRole = await getCountVideosBy({
+      forLastDays: 30,
+      isApproved: true,
+      user: {
         value: user.email,
-        forLastDays: 30,
         purchased: false,
-      });
-
-    const acquiredVideosCountMainRole = await getCountAcquiredVideosBy({
-      searchBy: 'trelloData.researchers',
-      value: user.email,
-      forLastDays: null,
-      purchased: true,
+        searchBy: 'email',
+      },
     });
 
-    const acquiredVideosCountNoMainRole = await getCountAcquiredVideosBy({
-      searchBy: 'trelloData.researchers',
-      value: user.email,
-      forLastDays: null,
-      purchased: false,
+    const acquiredVideosCountMainRole = await getCountVideosBy({
+      isApproved: true,
+      user: {
+        value: user.email,
+        purchased: true,
+        searchBy: 'email',
+      },
     });
+
+    const acquiredVideosCountNoMainRole = await getCountVideosBy({
+      isApproved: true,
+      user: {
+        value: user.email,
+        purchased: false,
+        searchBy: 'email',
+      },
+    });
+
+    const acquiredExclusivityVideosCountLast30Days = await getCountVideosBy({
+      forLastDays: 30,
+      isApproved: true,
+      exclusivity: true,
+      user: {
+        value: user.email,
+        searchBy: 'email',
+        purchased: true,
+      },
+    });
+
+    const acquiredNoExclusivityVideosCountLast30Days = await getCountVideosBy({
+      forLastDays: 30,
+      isApproved: true,
+      exclusivity: false,
+      user: {
+        value: user.email,
+        searchBy: 'email',
+        purchased: true,
+      },
+    });
+    const acquiredExclusivityVideosCount = await getCountVideosBy({
+      isApproved: true,
+      exclusivity: true,
+      user: {
+        value: user.email,
+        searchBy: 'email',
+        purchased: true,
+      },
+    });
+
+    const acquiredNoExclusivityVideosCount = await getCountVideosBy({
+      isApproved: true,
+      exclusivity: false,
+      user: {
+        value: user.email,
+        searchBy: 'email',
+        purchased: true,
+      },
+    });
+
+    console.log(
+      acquiredExclusivityVideosCountLast30Days,
+      acquiredNoExclusivityVideosCountLast30Days,
+      acquiredExclusivityVideosCount,
+      acquiredNoExclusivityVideosCount,
+      333
+    );
 
     const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
       searchBy: 'researcherId',
@@ -1190,6 +1319,22 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
           allTime: acquiredVideosCountMainRole,
           last30Days: acquiredVideosCountLast30DaysMainRole,
         },
+      },
+      percentageOfExclusivityToNonExclusivityVideos: {
+        allTime: acquiredNoExclusivityVideosCount
+          ? +(
+              (acquiredExclusivityVideosCount /
+                acquiredNoExclusivityVideosCount) *
+              100
+            ).toFixed(2)
+          : 0,
+        last30Days: acquiredNoExclusivityVideosCountLast30Days
+          ? +(
+              (acquiredExclusivityVideosCountLast30Days /
+                acquiredNoExclusivityVideosCountLast30Days) *
+              100
+            ).toFixed(2)
+          : 0,
       },
       approvedVideosCount: {
         allTime: approvedVideosCount,

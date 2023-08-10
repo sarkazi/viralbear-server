@@ -716,19 +716,27 @@ const deleteVideoById = async (id) => {
   await Video.deleteOne({ 'videoData.videoId': id });
 };
 
-const getCountAcquiredVideosBy = async ({
-  searchBy,
-  value,
+const getCountVideosBy = async ({
   forLastDays,
-  purchased,
+  exclusivity,
+  isApproved,
+  user,
 }) => {
   const pipeline = [
     {
       $match: {
-        [searchBy]: {
-          $elemMatch: { email: value, main: purchased },
-        },
-        isApproved: true,
+        ...(user && {
+          'trelloData.researchers': {
+            $elemMatch: {
+              [user.searchBy]: user.value,
+              ...(typeof user?.purchased === 'boolean' && {
+                main: user.purchased,
+              }),
+            },
+          },
+        }),
+        ...(typeof isApproved === 'boolean' && { isApproved }),
+        ...(typeof exclusivity === 'boolean' && { exclusivity }),
         ...(forLastDays && {
           pubDate: {
             $exists: true,
@@ -740,22 +748,19 @@ const getCountAcquiredVideosBy = async ({
       },
     },
     {
-      $group: {
-        _id: '$videoData.videoId',
-        countVideo: { $sum: 1 },
-      },
+      $count: 'acquiredVideosCount',
     },
   ];
 
-  const videos = [];
+  let acquiredVideosCount = 0;
 
-  const aggregationResult = Video.aggregate(pipeline);
+  const aggregationResult = await Video.aggregate(pipeline);
 
   for await (const doc of aggregationResult) {
-    videos.push(doc);
+    acquiredVideosCount = doc.acquiredVideosCount;
   }
 
-  return videos.length;
+  return acquiredVideosCount;
 };
 
 const findReadyForPublication = async () => {
@@ -949,7 +954,7 @@ module.exports = {
   findByNotApproved,
   getAllVideos,
   findVideoByValue,
-  getCountAcquiredVideosBy,
+  getCountVideosBy,
   updateVideosBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,
   updateVideoBy,
