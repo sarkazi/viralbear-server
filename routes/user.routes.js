@@ -24,6 +24,8 @@ const {
   getUserBy,
 } = require('../controllers/user.controller.js');
 
+const { createNewPayment } = require('../controllers/payment.controller');
+
 const { generateTokens } = require('../controllers/auth.controllers');
 
 const {
@@ -1233,13 +1235,18 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
 
 router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   try {
-    const { amount, userId } = req.body;
+    const { userId, paymentFor, mainPayment, extraPayment, amount } = req.body;
 
-    const { paymentFor } = req.query;
-
-    if (!amount || !userId || !paymentFor) {
+    if (!amount || !userId || (!mainPayment && !extraPayment)) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
+        status: 'warning',
+      });
+    }
+
+    if (!!paymentFor && !mainPayment) {
+      return res.status(200).json({
+        message: 'The amount of the main payment is not specified',
         status: 'warning',
       });
     }
@@ -1253,6 +1260,9 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       });
     }
 
+    let balance = 0;
+    let gettingPaid = 0;
+
     if (paymentFor === 'advance') {
       const videoCountWithUnpaidAdvance = await getAllVideos({
         isApproved: true,
@@ -1261,7 +1271,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         advanceHasBeenPaid: false,
       });
 
-      if (videoCountWithUnpaidAdvance.length * 10 !== amount) {
+      if (videoCountWithUnpaidAdvance.length * 10 !== mainPayment) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
           status: 'warning',
@@ -1272,26 +1282,8 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherEmail: user.email,
       });
 
-      objDBForSet = {
-        lastPaymentDate: moment().toDate(),
-      };
-
-      objDBForIncrement = {
-        balance: -amount,
-        gettingPaid: amount,
-      };
-
-      await updateUser({
-        userId,
-        objDBForUnset: {},
-        objDBForSet,
-        objDBForIncrement,
-      });
-
-      return res.status(200).json({
-        message: `An advance of $${amount} was paid to the employee`,
-        status: 'success',
-      });
+      balance = -mainPayment;
+      gettingPaid = mainPayment;
     }
 
     if (paymentFor === 'percent') {
@@ -1310,7 +1302,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         );
       }
 
-      if (percentage !== amount) {
+      if (percentage !== mainPayment) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
           status: 'warning',
@@ -1321,36 +1313,54 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherId: user._id,
       });
 
-      objDBForSet = {
-        lastPaymentDate: moment().toDate(),
-      };
-
-      objDBForIncrement = {
-        balance: amount,
-        gettingPaid: amount,
-      };
-
-      await updateUser({
-        userId,
-        objDBForUnset: {},
-        objDBForSet,
-        objDBForIncrement,
-      });
-
-      return res.status(200).json({
-        message: `The interest of $${amount} was paid to the employee`,
-        status: 'success',
-      });
+      balance = mainPayment;
+      gettingPaid = mainPayment;
     }
 
-    //const fromEmail = 'Vladislav Starostenko';
-    //const toEmail = user.email;
-    //const subjectEmail = 'Replenishment of the balance from ViralBear';
-    //const htmlEmail = `
-    //<b>A payment of $${balance} has been sent to you</b>
-    //`;
+    if (!!extraPayment) {
+      balance -= extraPayment;
+      gettingPaid += extraPayment;
+    }
 
-    //await sendEmail(fromEmail, toEmail, subjectEmail, htmlEmail);
+    objDBForSet = {
+      lastPaymentDate: moment().toDate(),
+    };
+
+    objDBForIncrement = {
+      balance,
+      gettingPaid,
+    };
+
+    await updateUser({
+      userId,
+      objDBForUnset: {},
+      objDBForSet,
+      objDBForIncrement,
+    });
+
+    await createNewPayment({
+      user: userId,
+      purpose: [
+        ...(!!paymentFor ? [paymentFor] : []),
+        ...(!!extraPayment ? ['extra'] : []),
+      ],
+      amount: {
+        ...(paymentFor === 'advance' && {
+          advance: mainPayment,
+        }),
+        ...(paymentFor === 'percentage' && {
+          percentage: mainPayment,
+        }),
+        ...(!!extraPayment && {
+          extra: extraPayment,
+        }),
+      },
+    });
+
+    return res.status(200).json({
+      message: `The employee's balance has been replenished by $${amount}`,
+      status: 'success',
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json({

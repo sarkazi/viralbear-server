@@ -87,7 +87,7 @@ const refreshMrssFiles = async () => {
         ...(obj.name !== 'Converted Videos' &&
           obj.name !== 'Main' &&
           obj.name !== 'Social Media' && {
-            'videoData.category': obj.name,
+            'videoData.category': { $in: [obj.name] },
           }),
       })
         .limit(50)
@@ -504,7 +504,7 @@ const findRelated = async (req, res) => {
 
   try {
     const videos = await Video.find({
-      'videoData.category': category,
+      'videoData.category': { $in: [category] },
       'videoData.tags': { $in: [tag] },
       'videoData.videoId': { $ne: +videoId },
       isApproved: true,
@@ -636,7 +636,7 @@ const getAllVideos = async ({
           $lt: durationPoints?.finish,
         },
       }),
-      ...(category && { 'videoData.category': category }),
+      ...(category && { 'videoData.category': { $in: [category] } }),
       ...(tag && { 'videoData.tags': { $in: [tag] } }),
       ...(location && {
         $or: [

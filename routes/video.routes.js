@@ -330,7 +330,7 @@ router.post(
           tags: JSON.parse(tags).map((el) => {
             return el.trim();
           }),
-          category,
+          category: JSON.parse(category),
           categoryReuters,
           city,
           hasAudioTrack: responseAfterConversion.data.hasAudioTrack,
@@ -1101,7 +1101,7 @@ router.patch(
             }),
           }),
 
-          ...(category && { 'videoData.category': category }),
+          ...(category && { 'videoData.category': JSON.parse(category) }),
           ...(categoryReuters && {
             'videoData.categoryReuters': categoryReuters,
           }),
@@ -1235,8 +1235,6 @@ router.patch(
       reuters,
       commentToAdmin,
     } = req.body;
-
-  
 
     const { video: reqVideo, screen: reqScreen } = req.files;
 
@@ -1527,7 +1525,7 @@ router.patch(
             }),
           }),
 
-          ...(category && { 'videoData.category': category }),
+          ...(category && { 'videoData.category': JSON.parse(category) }),
           ...(categoryReuters && {
             'videoData.categoryReuters': categoryReuters,
           }),
@@ -1963,7 +1961,7 @@ router.patch(
             }),
           }),
 
-          ...(category && { 'videoData.category': category }),
+          ...(category && { 'videoData.category': JSON.parse(category) }),
           ...(categoryReuters && {
             'videoData.categoryReuters': categoryReuters,
           }),
