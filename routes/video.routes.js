@@ -128,6 +128,8 @@ router.post(
         videoId: reqVideoId,
       } = req.body;
 
+      console.log(req.body, 119922);
+
       const { video, screen } = req.files;
 
       if (
@@ -740,8 +742,6 @@ router.get('/findOneById/:videoId', async (req, res) => {
       value: +videoId,
     });
 
-    console.log(video, 76856875676854);
-
     if (!video) {
       return res.status(200).json({
         message: `Video with id "${videoId}" was not found`,
@@ -811,6 +811,24 @@ router.patch(
       reuters,
       commentToAdmin,
     } = req.body;
+
+    if (
+      !originalLink ||
+      !researchers ||
+      !title ||
+      !desc ||
+      !tags ||
+      !category ||
+      !categoryReuters ||
+      !city ||
+      !country ||
+      !date
+    ) {
+      return res.status(200).json({
+        message: 'Missing values for adding a new video',
+        status: 'warning',
+      });
+    }
 
     const { video: reqVideo, screen: reqScreen } = req.files;
 
@@ -1236,6 +1254,24 @@ router.patch(
       commentToAdmin,
     } = req.body;
 
+    if (
+      !originalLink ||
+      !researchers ||
+      !title ||
+      !desc ||
+      !tags ||
+      !category ||
+      !categoryReuters ||
+      !city ||
+      !country ||
+      !date
+    ) {
+      return res.status(200).json({
+        message: 'Missing values for adding a new video',
+        status: 'warning',
+      });
+    }
+
     const { video: reqVideo, screen: reqScreen } = req.files;
 
     try {
@@ -1654,6 +1690,24 @@ router.patch(
       reuters,
       socialMedia,
     } = req.body;
+
+    if (
+      !originalLink ||
+      !researchers ||
+      !title ||
+      !desc ||
+      !tags ||
+      !category ||
+      !categoryReuters ||
+      !city ||
+      !country ||
+      !date
+    ) {
+      return res.status(200).json({
+        message: 'Missing values for adding a new video',
+        status: 'warning',
+      });
+    }
 
     const { video: reqVideo, screen: reqScreen } = req.files;
 

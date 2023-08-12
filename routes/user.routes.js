@@ -914,6 +914,8 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
 
         return {
           ...user._doc,
+          balance: Math.round(user.balance),
+          gettingPaid: Math.round(user.gettingPaid),
           sentVideosCount: {
             total: linksCount,
             last30Days: linksCountLast30Days,
@@ -933,18 +935,18 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           },
           percentageOfExclusivityToNonExclusivityVideos: {
             total: acquiredNoExclusivityVideosCount
-              ? +(
+              ? Math.round(
                   (acquiredExclusivityVideosCount /
                     acquiredNoExclusivityVideosCount) *
-                  100
-                ).toFixed(2)
+                    100
+                )
               : 0,
             last30Days: acquiredNoExclusivityVideosCountLast30Days
-              ? +(
+              ? Math.round(
                   (acquiredExclusivityVideosCountLast30Days /
                     acquiredNoExclusivityVideosCountLast30Days) *
-                  100
-                ).toFixed(2)
+                    100
+                )
               : 0,
           },
           approvedVideosCount: {
@@ -953,12 +955,12 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
             last7Days: approvedVideosCountLast7Days,
           },
           earnedYourself: {
-            total: +earnedYourselfTotal.toFixed(2),
-            last30Days: +earnedYourselfLast30Days.toFixed(2),
+            total: Math.round(earnedYourselfTotal),
+            last30Days: Math.round(earnedYourselfLast30Days),
           },
-          earnedCompanies: +earnedCompanies.toFixed(2),
-          earnedTotal: +earnedTotal.toFixed(2),
-          amountOfAdvancesToAuthors,
+          earnedCompanies: Math.round(earnedCompanies),
+          earnedTotal: Math.round(earnedTotal),
+          amountOfAdvancesToAuthors: Math.round(amountOfAdvancesToAuthors),
           amountToBePaid: advance > percentage ? advance : percentage,
           paymentSubject: paymentSubject(),
         };
@@ -968,122 +970,74 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
     const totalSumOfStatFields = employeeStat.reduce(
       (acc = {}, user = {}) => {
         //суммарный баланс работников
-        acc.balance = parseFloat((acc.balance + user.balance).toFixed(2));
-        acc.gettingPaid = parseFloat(
-          (acc.gettingPaid + user.gettingPaid).toFixed(2)
-        );
-        acc.amountOfAdvancesToAuthors = parseFloat(
+        acc.balance = Math.round(acc.balance + user.balance);
+        acc.gettingPaid = Math.round(acc.gettingPaid + user.gettingPaid);
+        acc.amountOfAdvancesToAuthors = Math.round(
           acc.amountOfAdvancesToAuthors + user.amountOfAdvancesToAuthors
         );
-
-        //суммарный earnedTillNextPayment работников
-        acc.earnedTillNextPayment =
-          roles[0] === 'researcher'
-            ? parseFloat(
-                (
-                  acc.earnedTillNextPayment +
-                  (user.earnedYourself.total - user.balance)
-                ).toFixed(2)
-              )
-            : parseFloat(
-                (
-                  acc.earnedTillNextPayment + user.earnedTillNextPayment
-                ).toFixed(2)
-              );
 
         //суммарный личный заработок работников
         acc.earnedYourself = {
           //за 30 дней
-          last30Days: parseFloat(
-            (
-              acc.earnedYourself.last30Days + user.earnedYourself.last30Days
-            ).toFixed(2)
+          last30Days: Math.round(
+            acc.earnedYourself.last30Days + user.earnedYourself.last30Days
           ),
           //всего
-          total: parseFloat(
-            (acc.earnedYourself.total + user.earnedYourself.total).toFixed(2)
+          total: Math.round(
+            acc.earnedYourself.total + user.earnedYourself.total
           ),
         };
 
         //суммарный общий заработок работников
-        acc.earnedTotal = parseFloat(
-          (acc.earnedTotal + user.earnedTotal).toFixed(2)
-        );
+        acc.earnedTotal = Math.round(acc.earnedTotal + user.earnedTotal);
         //суммарный заработок компании
-        acc.earnedCompanies = parseFloat(
-          (acc.earnedCompanies + user.earnedCompanies).toFixed(2)
+        acc.earnedCompanies = Math.round(
+          acc.earnedCompanies + user.earnedCompanies
         );
 
         //суммарное количество отправленных работниками в трелло видео
         acc.sentVideosCount = {
           //общий
-          total: parseFloat(
-            (acc.sentVideosCount.total + user.sentVideosCount.total).toFixed(2)
-          ),
+          total: acc.sentVideosCount.total + user.sentVideosCount.total,
           //за 30 дней
-          last30Days: parseFloat(
-            (
-              acc.sentVideosCount.last30Days + user.sentVideosCount.last30Days
-            ).toFixed(2)
-          ),
+          last30Days:
+            acc.sentVideosCount.last30Days + user.sentVideosCount.last30Days,
           // за 7 дней
-          last7Days: parseFloat(
-            (
-              acc.sentVideosCount.last7Days + user.sentVideosCount.last7Days
-            ).toFixed(2)
-          ),
+          last7Days:
+            acc.sentVideosCount.last7Days + user.sentVideosCount.last7Days,
         };
 
         //суммарное количество опубликованных на сайте видео, где присутствуют работники
         acc.acquiredVideosCount = {
           //общий
-          total: parseFloat(
-            (
-              acc.acquiredVideosCount.total +
-              user.acquiredVideosCount.noMainRole.total +
-              user.acquiredVideosCount.mainRole.total
-            ).toFixed(2)
-          ),
+          total:
+            acc.acquiredVideosCount.total +
+            user.acquiredVideosCount.noMainRole.total +
+            user.acquiredVideosCount.mainRole.total,
           //за 30 дней
-          last30Days: parseFloat(
-            (
-              acc.acquiredVideosCount.last30Days +
-              user.acquiredVideosCount.noMainRole.last30Days +
-              user.acquiredVideosCount.mainRole.last30Days
-            ).toFixed(2)
-          ),
+          last30Days:
+            acc.acquiredVideosCount.last30Days +
+            user.acquiredVideosCount.noMainRole.last30Days +
+            user.acquiredVideosCount.mainRole.last30Days,
           // за 7 дней
-          last7Days: parseFloat(
-            (
-              acc.acquiredVideosCount.last7Days +
-              user.acquiredVideosCount.noMainRole.last7Days +
-              user.acquiredVideosCount.mainRole.last7Days
-            ).toFixed(2)
-          ),
+          last7Days:
+            acc.acquiredVideosCount.last7Days +
+            user.acquiredVideosCount.noMainRole.last7Days +
+            user.acquiredVideosCount.mainRole.last7Days,
         };
 
         //суммарное количество одобренных видео (перемещенные из review листа в trello), где присутствуют работники
         acc.approvedVideosCount = {
           //общий
-          total: parseFloat(
-            (
-              acc.approvedVideosCount.total + user.approvedVideosCount.total
-            ).toFixed(2)
-          ),
+          total: acc.approvedVideosCount.total + user.approvedVideosCount.total,
           //за 30 дней
-          last30Days: parseFloat(
-            (
-              acc.approvedVideosCount.last30Days +
-              user.approvedVideosCount.last30Days
-            ).toFixed(2)
-          ),
+          last30Days:
+            acc.approvedVideosCount.last30Days +
+            user.approvedVideosCount.last30Days,
           //за 7 дней
-          last7Days: parseFloat(
-            (
-              acc.approvedVideosCount.last7Days +
-              user.approvedVideosCount.last7Days
-            ).toFixed(2)
-          ),
+          last7Days:
+            acc.approvedVideosCount.last7Days +
+            user.approvedVideosCount.last7Days,
         };
 
         return acc;
@@ -1162,11 +1116,11 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     });
 
     const earnedYourselfLast30Days = salesDateLimit.reduce((acc, sale) => {
-      return +(acc + sale.amountToResearcher).toFixed(2);
+      return acc + +sale.amountToResearcher;
     }, 0);
 
     const earnedForYourself = sales.reduce(
-      (a, sale) => a + +sale.amountToResearcher,
+      (acc, sale) => acc + +sale.amountToResearcher,
       0
     );
 
@@ -1300,11 +1254,11 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     }
 
     const apiData = {
-      balance: user.balance,
-      gettingPaid: user.gettingPaid,
+      balance: Math.round(user.balance),
+      gettingPaid: Math.round(user.gettingPaid),
       earnedForYourself: {
-        allTime: earnedForYourself,
-        last30Days: earnedYourselfLast30Days,
+        allTime: Math.round(earnedForYourself),
+        last30Days: Math.round(earnedYourselfLast30Days),
       },
       sentVideosCount: {
         allTime: linksCount,
@@ -1322,18 +1276,18 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       },
       percentageOfExclusivityToNonExclusivityVideos: {
         allTime: acquiredNoExclusivityVideosCount
-          ? +(
+          ? Math.round(
               (acquiredExclusivityVideosCount /
                 acquiredNoExclusivityVideosCount) *
-              100
-            ).toFixed(2)
+                100
+            )
           : 0,
         last30Days: acquiredNoExclusivityVideosCountLast30Days
-          ? +(
+          ? Math.round(
               (acquiredExclusivityVideosCountLast30Days /
                 acquiredNoExclusivityVideosCountLast30Days) *
-              100
-            ).toFixed(2)
+                100
+            )
           : 0,
       },
       approvedVideosCount: {
@@ -1342,7 +1296,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       },
       percentage: user.percentage ? user.percentage : 0,
       advancePayment: user.advancePayment ? user.advancePayment : 0,
-      amountOfAdvancesToAuthors,
+      amountOfAdvancesToAuthors: Math.round(amountOfAdvancesToAuthors),
       name: user.name,
     };
 

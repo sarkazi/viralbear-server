@@ -174,6 +174,14 @@ router.post('/trello/reviewList', async (req, res) => {
   }
 });
 
+router.post('/trello/doneLabel', async (req, res) => {
+  try {
+    return res.status(200).json({ status: 'success' });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 //router.post('/trello/allBoard', async (req, res) => {
 //  try {
 //    const changedData = req.body;
