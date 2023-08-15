@@ -22,6 +22,10 @@ const schema = new Schema(
       type: String,
       required: true,
     },
+    listInTrello: {
+      type: String,
+      required: true,
+    },
     trelloCardUrl: {
       type: String,
       required: true,

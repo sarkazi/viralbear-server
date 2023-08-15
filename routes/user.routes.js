@@ -34,7 +34,10 @@ const {
   updateVbFormBy,
 } = require('../controllers/uploadInfo.controller');
 
-const { getCountLinksByUserEmail } = require('../controllers/links.controller');
+const {
+  getCountLinksByUserEmail,
+  getCountLinks,
+} = require('../controllers/links.controller');
 
 const {
   getSalesByUserId,
@@ -816,25 +819,28 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           },
         });
 
-        const approvedVideosCountLast30Days =
+        const videosCountSentFromReviewLast30Days =
           await getCountApprovedTrelloCardBy({
             searchBy: 'researcherId',
             value: user._id,
             forLastDays: 30,
           });
 
-        const approvedVideosCountLast7Days = await getCountApprovedTrelloCardBy(
-          {
-            searchBy: 'researcherId',
-            value: user._id,
-            forLastDays: 7,
-          }
-        );
-
-        const approvedVideosCount = await getCountApprovedTrelloCardBy({
+        const videosCountSentFromReview = await getCountApprovedTrelloCardBy({
           searchBy: 'researcherId',
           value: user._id,
           forLastDays: null,
+        });
+
+        const videosCountSentToReview = await getCountLinks({
+          researcherId: user._id,
+          list: 'Review',
+        });
+
+        const videosCountSentToReviewLast30Days = await getCountLinks({
+          researcherId: user._id,
+          list: 'Review',
+          forLastDays: 30,
         });
 
         let amountOfAdvancesToAuthors = 0;
@@ -868,14 +874,20 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
         let advance = 0;
         let percentage = 0;
 
-        const videosWithUnpaidAdvance = await getAllVideos({
+        const videosCountWithUnpaidAdvance = await getCountVideosBy({
           isApproved: true,
-          searchForResearcherBy: 'email',
-          valueResearcherBySearch: user.email,
-          advanceHasBeenPaid: false,
+          user: {
+            value: user.email,
+            purchased: true,
+            searchBy: 'email',
+            advanceHasBeenPaid: false,
+          },
         });
 
-        advance = videosWithUnpaidAdvance.length * 10;
+        advance =
+          typeof user?.advancePayment === 'number'
+            ? videosCountWithUnpaidAdvance * user.advancePayment
+            : videosCountWithUnpaidAdvance * 10;
 
         const unpaidSales = await getSalesByUserId({
           userId: user._id,
@@ -893,7 +905,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
         const paymentSubject = () => {
           if (advance > percentage) {
             return {
-              tooltip: `advance payment for ${videosWithUnpaidAdvance.length} videos`,
+              tooltip: `advance payment for ${videosCountWithUnpaidAdvance} videos`,
               paymentFor: 'advance',
             };
           } else if (
@@ -949,10 +961,14 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
                 )
               : 0,
           },
-          approvedVideosCount: {
-            total: approvedVideosCount,
-            last30Days: approvedVideosCountLast30Days,
-            last7Days: approvedVideosCountLast7Days,
+          approvedRateAfterReview: {
+            total: videosCountSentToReview
+              ? (videosCountSentFromReview * 100) / videosCountSentToReview
+              : 0,
+            last30Days: videosCountSentToReviewLast30Days
+              ? (videosCountSentFromReviewLast30Days * 100) /
+                videosCountSentToReviewLast30Days
+              : 0,
           },
           earnedYourself: {
             total: Math.round(earnedYourselfTotal),
@@ -1026,20 +1042,6 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
             user.acquiredVideosCount.mainRole.last7Days,
         };
 
-        //суммарное количество одобренных видео (перемещенные из review листа в trello), где присутствуют работники
-        acc.approvedVideosCount = {
-          //общий
-          total: acc.approvedVideosCount.total + user.approvedVideosCount.total,
-          //за 30 дней
-          last30Days:
-            acc.approvedVideosCount.last30Days +
-            user.approvedVideosCount.last30Days,
-          //за 7 дней
-          last7Days:
-            acc.approvedVideosCount.last7Days +
-            user.approvedVideosCount.last7Days,
-        };
-
         return acc;
       },
       {
@@ -1058,12 +1060,6 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           last7Days: 0,
         },
         acquiredVideosCount: {
-          total: 0,
-          last30Days: 0,
-          last7Days: 0,
-        },
-
-        approvedVideosCount: {
           total: 0,
           last30Days: 0,
           last7Days: 0,
@@ -1363,14 +1359,22 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     let gettingPaid = 0;
 
     if (paymentFor === 'advance') {
-      const videoCountWithUnpaidAdvance = await getAllVideos({
+      const videosCountWithUnpaidAdvance = await getCountVideosBy({
         isApproved: true,
-        searchForResearcherBy: 'email',
-        valueResearcherBySearch: user.email,
-        advanceHasBeenPaid: false,
+        user: {
+          value: user.email,
+          purchased: true,
+          searchBy: 'email',
+          advanceHasBeenPaid: false,
+        },
       });
 
-      if (videoCountWithUnpaidAdvance.length * 10 !== mainPayment) {
+      if (
+        (typeof user?.advancePayment === 'number' &&
+          videosCountWithUnpaidAdvance * user.advancePayment !== mainPayment) ||
+        (typeof user?.advancePayment !== 'number' &&
+          videosCountWithUnpaidAdvance * 10 !== mainPayment)
+      ) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
           status: 'warning',

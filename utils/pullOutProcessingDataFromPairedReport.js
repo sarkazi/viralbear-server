@@ -101,11 +101,12 @@ const pullOutProcessingDataFromPairedReport = async ({
         company: companyName,
         searchBy: 'videoId',
         data: await Promise.all(
-          parseReport.map(async (obj) => {
+          parseReport.map(async (obj, index) => {
             return {
               videoId: obj['ViralBear ID'],
               usage: null,
-              amount: obj['Net sales'],
+              amount:
+                obj[Object.keys(obj).find((key) => key.includes('Net sales'))],
             };
           })
         ),

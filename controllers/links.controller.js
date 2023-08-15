@@ -5,14 +5,16 @@ const moment = require('moment');
 
 const urlParser = require('js-video-url-parser');
 
-const getAllLinks = async (req, res) => {
-  try {
-    const links = await Links.find({});
-    res.status(200).json(links);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: 'Server side error!' });
-  }
+const getCountLinks = async ({ researcherId, listInTrello, forLastDays }) => {
+  return await Links.find({
+    ...(researcherId && { researcher: researcherId }),
+    ...(listInTrello && { listInTrello }),
+    ...(forLastDays && {
+      createdAt: {
+        $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
+      },
+    }),
+  }).countDocuments();
 };
 
 const findBaseUrl = async (link) => {
@@ -134,24 +136,8 @@ const findLinkByVideoId = async (videoId) => {
   return linkInfo;
 };
 
-const createNewLink = async ({
-  researcherId,
-  authorNickname,
-  title,
-  videoLink,
-  videoId,
-  trelloCardUrl,
-  trelloCardId,
-}) => {
-  const linkInfo = await Links.create({
-    researcher: researcherId,
-    authorsNick: authorNickname,
-    title,
-    link: videoLink,
-    unixid: videoId,
-    trelloCardUrl,
-    trelloCardId,
-  });
+const createNewLink = async ({ bodyForCreateLink }) => {
+  const linkInfo = await Links.create(bodyForCreateLink);
 
   return linkInfo;
 };
@@ -199,7 +185,6 @@ const findLinkBy = async ({ searchBy, value }) => {
 };
 
 module.exports = {
-  getAllLinks,
   findBaseUrl,
   pullIdFromUrl,
   findLinkByVideoId,
@@ -207,4 +192,5 @@ module.exports = {
   conversionIncorrectLinks,
   getCountLinksByUserEmail,
   findLinkBy,
+  getCountLinks,
 };

@@ -732,6 +732,9 @@ const getCountVideosBy = async ({
               ...(typeof user?.purchased === 'boolean' && {
                 main: user.purchased,
               }),
+              ...(typeof user?.advanceHasBeenPaid === 'boolean' && {
+                advanceHasBeenPaid: user.advanceHasBeenPaid,
+              }),
             },
           },
         }),
