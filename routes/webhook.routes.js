@@ -185,7 +185,7 @@ router.post('/trello/allBoard', async (req, res) => {
 
     if (
       changedData.action.display.translationKey === 'action_archived_card' &&
-      changedData.webhook.description === 'all board DEV'
+      changedData.webhook.idModel === process.env.TRELLO_BOARD_ID
     ) {
       console.log(`The webhook for archiving the card in trello worked`);
 
@@ -199,12 +199,10 @@ router.post('/trello/allBoard', async (req, res) => {
       if (video) {
         await deleteVideoById(video.videoData.videoId);
 
-        socketInstance
-          .io()
-          .emit('triggerForAnUpdateInPublishing', {
-            priority: null,
-            event: null,
-          });
+        socketInstance.io().emit('triggerForAnUpdateInPublishing', {
+          priority: null,
+          event: null,
+        });
       }
     }
 

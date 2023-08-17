@@ -963,11 +963,15 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           },
           approvedRateAfterReview: {
             total: videosCountSentToReview
-              ? (videosCountSentFromReview * 100) / videosCountSentToReview
+              ? Math.round(
+                  (videosCountSentFromReview * 100) / videosCountSentToReview
+                )
               : 0,
             last30Days: videosCountSentToReviewLast30Days
-              ? (videosCountSentFromReviewLast30Days * 100) /
-                videosCountSentToReviewLast30Days
+              ? Math.round(
+                  (videosCountSentFromReviewLast30Days * 100) /
+                    videosCountSentToReviewLast30Days
+                )
               : 0,
           },
           earnedYourself: {
