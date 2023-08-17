@@ -357,14 +357,14 @@ router.get('/findOne', async (req, res) => {
 
     if (!form) {
       return res.status(200).json({
-        message: `Form found in the database`,
+        message: `The form was not found in the database`,
         status: 'warning',
       });
     }
 
     const apiData = {
       ...form._doc,
-      exclusivity: !form.refFormId
+      exclusivity: !form?.refFormId
         ? true
         : form.refFormId.exclusivity
         ? true

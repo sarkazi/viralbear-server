@@ -1,15 +1,15 @@
 const { sign, verify } = require('jsonwebtoken');
 
-const generateTokens = (user) => {
+const generateTokens = ({ userId, userRole }) => {
   const accessToken = sign(
-    { id: user.id, role: user.role },
+    { id: userId, role: userRole },
     'admin video application',
     {
       expiresIn: '30m',
     }
   );
   const refreshToken = sign(
-    { id: user.id, role: user.role },
+    { id: userId, role: userRole },
     'admin video application',
     {
       expiresIn: '30d',

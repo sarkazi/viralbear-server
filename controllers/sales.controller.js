@@ -1,6 +1,8 @@
 const Sales = require('../entities/Sales');
 const moment = require('moment');
 
+var mongoose = require('mongoose');
+
 const createNewSale = async (body) => {
   const newSales = await Sales.create(body);
   return newSales;
@@ -14,9 +16,14 @@ const getAllSales = async ({
   userId,
   relatedToTheVbForm,
   paidFor,
+  forLastDays,
 }) => {
   return await Sales.find({
-    ...(userId && { researchers: { $elemMatch: { id: userId } } }),
+    ...(userId && {
+      researchers: {
+        $elemMatch: { id: userId },
+      },
+    }),
     ...(company && { company }),
     ...(videoId && { videoId }),
     ...(paidFor && paidFor),
@@ -24,6 +31,11 @@ const getAllSales = async ({
       createdAt: {
         $gte: date[0],
         $lt: date[1],
+      },
+    }),
+    ...(forLastDays && {
+      createdAt: {
+        $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
       },
     }),
     ...(relatedToTheVbForm && {

@@ -5,6 +5,7 @@ const moment = require('moment');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const mongoose = require('mongoose');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -616,7 +617,7 @@ router.patch(
         ...(body?.advancePayment && { advancePayment: body.advancePayment }),
         ...(body?.country && { country: body.country }),
         ...(paymentInfo && paymentInfo),
-        ...(body?.avatarUrl && { avatarUrl: body.avatarUrl }),
+        ...(avatarUrl && { avatarUrl }),
         ...(typeof body?.canBeAssigned === 'boolean' && {
           canBeAssigned: body.canBeAssigned,
         }),
@@ -884,10 +885,9 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           },
         });
 
-        advance =
-          typeof user?.advancePayment === 'number'
-            ? videosCountWithUnpaidAdvance * user.advancePayment
-            : videosCountWithUnpaidAdvance * 10;
+        advance = !user?.advancePayment
+          ? 0
+          : videosCountWithUnpaidAdvance * user.advancePayment;
 
         const unpaidSales = await getSalesByUserId({
           userId: user._id,
@@ -1203,14 +1203,6 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       },
     });
 
-    console.log(
-      acquiredExclusivityVideosCountLast30Days,
-      acquiredNoExclusivityVideosCountLast30Days,
-      acquiredExclusivityVideosCount,
-      acquiredNoExclusivityVideosCount,
-      333
-    );
-
     const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
       searchBy: 'researcherId',
       value: user._id,
@@ -1501,7 +1493,7 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
     const { group } = req.query;
 
     const videosWithVbCode = await getAllVideos({
-      vbCode: true,
+      vbFormExists: true,
       isApproved: true,
     });
 
@@ -2129,10 +2121,12 @@ router.get(
       let acquiredVideosStat = [];
 
       const videosWithVbCode = await getAllVideos({
-        vbCode: true,
+        vbFormExists: true,
         isApproved: true,
-        searchForResearcherBy: 'id',
-        valueResearcherBySearch: userId,
+        researcher: {
+          searchBy: 'id',
+          value: userId,
+        },
         ...(forLastDays && { forLastDays }),
       });
 
@@ -2245,6 +2239,8 @@ router.get(
         apiData: acquiredVideosStat,
       });
     } catch (err) {
+      console.log(err);
+
       return res.status(500).json({
         message: 'Server side error',
         status: 'error',

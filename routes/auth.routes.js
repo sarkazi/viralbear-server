@@ -55,7 +55,10 @@ router.post(
         });
       }
 
-      const { accessToken, refreshToken } = generateTokens(user);
+      const { accessToken, refreshToken } = generateTokens({
+        userId: user._id,
+        userRole: user.role,
+      });
 
       return res.status(200).json({
         apiData: {

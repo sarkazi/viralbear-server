@@ -20,6 +20,11 @@ const {
   updateTrelloCard,
 } = require('../controllers/trello.controller');
 
+const {
+  findVideoByValue,
+  deleteVideoById,
+} = require('../controllers/video.controller');
+
 const { findLinkBy } = require('../controllers/links.controller');
 
 router.post('/trello/doneList', async (req, res) => {
@@ -174,57 +179,39 @@ router.post('/trello/reviewList', async (req, res) => {
   }
 });
 
-router.post('/trello/doneLabel', async (req, res) => {
+router.post('/trello/allBoard', async (req, res) => {
   try {
+    const changedData = req.body;
+
+    if (
+      changedData.action.display.translationKey === 'action_archived_card' &&
+      changedData.webhook.description === 'all board DEV'
+    ) {
+      console.log(`The webhook for archiving the card in trello worked`);
+
+      const trelloCardId = changedData.action.data.card.id;
+
+      const video = await findVideoByValue({
+        searchBy: 'trelloData.trelloCardId',
+        value: trelloCardId,
+      });
+
+      if (video) {
+        await deleteVideoById(video.videoData.videoId);
+
+        socketInstance
+          .io()
+          .emit('triggerForAnUpdateInPublishing', {
+            priority: null,
+            event: null,
+          });
+      }
+    }
+
     return res.status(200).json({ status: 'success' });
   } catch (err) {
     console.log(err);
   }
 });
-
-//router.post('/trello/allBoard', async (req, res) => {
-//  try {
-//    const changedData = req.body;
-
-//    if (
-//      changedData.action.type === 'addLabelToCard' &&
-//      changedData.action.data.label.name === 'Done' &&
-//      !changedData.action.appCreator &&
-//      changedData.webhook.idModel === process.env.TRELLO_BOARD_ID &&
-//      !!changedData.action.data.listBefore
-//    ) {
-//      console.log('the webhook to determine the initiator "done" worked');
-
-//      //проверяем, существует ли уже запись в базе с этой карточкой
-
-//      const recordInTheDatabaseAboutTheMovedCard =
-//        await findTheRecordOfTheCardMovedToDone(
-//          changedData.action.data.card.id
-//        );
-
-//      //если не существует - записываем
-//      if (!recordInTheDatabaseAboutTheMovedCard) {
-//        const researcherUsernameInTrello =
-//          changedData.action.memberCreator.username;
-
-//        const researcherInDatabase = await getUserBy({
-//          param: 'nickname',
-//          value: `@${researcherUsernameInTrello}`,
-//        });
-
-//        //записываем событие о перемещенной карточке в базу
-//        await writeNewMoveToDone({
-//          researcherId: researcherInDatabase._id,
-//          listBefore: changedData.action.data.listBefore.name,
-//          trelloCardId: changedData.action.data.card.id,
-//        });
-//      }
-//    }
-
-//    return res.status(200).json({ status: 'success' });
-//  } catch (err) {
-//    console.log(err);
-//  }
-//});
 
 module.exports = router;

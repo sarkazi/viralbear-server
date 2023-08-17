@@ -128,8 +128,6 @@ router.post(
         videoId: reqVideoId,
       } = req.body;
 
-      console.log(req.body, 119922);
-
       const { video, screen } = req.files;
 
       if (
@@ -651,7 +649,7 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     const videosWithVbCode = await getAllVideos({
-      vbCode: true,
+      vbFormExists: true,
       isApproved: true,
       fieldsInTheResponse: [
         'videoData.title',
@@ -888,7 +886,11 @@ router.patch(
           videoId: +videoId,
           dataToUpdate: {
             vbForm: vbForm._id,
-            exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
+            exclusivity: !vbForm?.refFormId
+              ? true
+              : vbForm.refFormId.exclusivity
+              ? true
+              : false,
           },
         });
       }
@@ -1133,6 +1135,7 @@ router.patch(
           ...(researchers && {
             'trelloData.researchers': researchersListForCreatingVideo,
           }),
+          ...(video.isApproved && { lastChange: new Date().toGMTString() }),
         },
       });
 
@@ -1330,7 +1333,11 @@ router.patch(
           videoId: +videoId,
           dataToUpdate: {
             vbForm: vbForm._id,
-            exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
+            exclusivity: !vbForm?.refFormId
+              ? true
+              : vbForm.refFormId.exclusivity
+              ? true
+              : false,
           },
         });
       }
@@ -1575,6 +1582,7 @@ router.patch(
           ...(researchers && {
             'trelloData.researchers': researchersListForCreatingVideo,
           }),
+          ...(video.isApproved && { lastChange: new Date().toGMTString() }),
         },
       });
 
@@ -1781,7 +1789,11 @@ router.patch(
           videoId: +videoId,
           dataToUpdate: {
             vbForm: vbForm._id,
-            exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
+            exclusivity: !vbForm?.refFormId
+              ? true
+              : vbForm.refFormId.exclusivity
+              ? true
+              : false,
           },
         });
       }

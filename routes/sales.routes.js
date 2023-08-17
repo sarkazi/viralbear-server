@@ -4,6 +4,8 @@ const router = express.Router();
 const multer = require('multer');
 const xlsx = require('xlsx');
 
+const mongoose = require('mongoose');
+
 const {
   createNewSale,
   deleteSaleById,
@@ -499,6 +501,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       researcher,
       personal,
       relatedToTheVbForm,
+      forLastDays,
     } = req.query;
 
     if (
@@ -521,7 +524,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     }
 
     if (personal && JSON.parse(personal) === true) {
-      userId = req.user.id;
+      userId = mongoose.Types.ObjectId(req.user.id);
     }
 
     let sales = await getAllSales({
@@ -533,6 +536,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       ...(date && {
         date: date[0] === 'null' || date[1] === 'null' ? null : date,
       }),
+      ...(forLastDays && { forLastDays }),
       ...(relatedToTheVbForm &&
         typeof JSON.parse(relatedToTheVbForm) === 'boolean' && {
           relatedToTheVbForm: JSON.parse(relatedToTheVbForm),

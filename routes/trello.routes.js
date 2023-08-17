@@ -275,7 +275,13 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       researchers: researchers.map((researcher) => {
         return researcher.name;
       }),
-      exclusivity: vbForm?.refFormId?.exclusivity ? true : false,
+      exclusivity: !vbForm
+        ? false
+        : !vbForm?.refFormId
+        ? true
+        : vbForm.refFormId.exclusivity
+        ? true
+        : false,
     };
 
     return res.status(200).json({

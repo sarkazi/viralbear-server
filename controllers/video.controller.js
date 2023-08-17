@@ -90,7 +90,7 @@ const refreshMrssFiles = async () => {
             'videoData.category': { $in: [obj.name] },
           }),
       })
-        .limit(50)
+        .limit(200)
         .sort({ $natural: -1 });
 
       fs.writeFile(
@@ -108,48 +108,60 @@ const refreshMrssFiles = async () => {
               ${videos
                 .map((video) => {
                   return `
-                  <item>
-                  <media:title>${video.videoData.title.replace(
-                    /&/g,
-                    '&amp;'
-                  )}</media:title>
-                  <media:description>${video.videoData.description.replace(
-                    /&/g,
-                    '&amp;'
-                  )}${video.videoData?.creditTo ? ' ' : ''}${
+                    <item>
+                      <media:title>${video.videoData.title.replace(
+                        /&/g,
+                        '&amp;'
+                      )}</media:title>
+                      <media:description>${video.videoData.description.replace(
+                        /&/g,
+                        '&amp;'
+                      )}${video.videoData?.creditTo ? ' ' : ''}${
                     !video.videoData?.creditTo
                       ? ''
                       : `Credit to: ${video.videoData.creditTo}`
                   }</media:description>
-                  <media:keywords>${video.videoData.tags}</media:keywords>
-                  <media:city>${video.videoData.city}</media:city>
-                  <media:country>${video.videoData.country}</media:country>
-                  <media:regionCode>${
-                    video.videoData.countryCode
-                  }</media:regionCode>
-                  <media:categoryCode>${
-                    video.videoData.categoryReuters
-                  }</media:categoryCode>
-                  <media:category>${video.videoData.category}</media:category>
-                  <media:exclusivity>${
-                    video.exclusivity ? 'exclusive' : 'non-exсlusive'
-                  }</media:exclusivity>
-                  <media:filmingDate>${moment(video.videoData.date).format(
-                    `ddd, D MMM YYYY`
-                  )}</media:filmingDate>
-                  <guid>${video.videoData.videoId}</guid>
-                  <pubDate>${new Date(
-                    video.pubDate
-                      ? video.pubDate
-                      : video?.updatedAt
-                      ? video.updatedAt
-                      : ''
-                  ).toGMTString()}</pubDate>
-                  <media:thumbnail url="${video.bucket.cloudScreenLink}" />
-                  <media:content url="${video.bucket.cloudVideoLink}" />
-                  <dfpvideo:lastModifiedDate/>
-                  </item>
-                           `;
+                      <media:keywords>${video.videoData.tags}</media:keywords>
+                      <media:city>${video.videoData.city}</media:city>
+                      <media:country>${video.videoData.country}</media:country>
+                      <media:regionCode>${
+                        video.videoData.countryCode
+                      }</media:regionCode>
+                      <media:categoryCode>${
+                        video.videoData.categoryReuters
+                      }</media:categoryCode>
+                      <media:category>${
+                        video.videoData.category
+                      }</media:category>
+                      <media:exclusivity>${
+                        video.exclusivity ? 'exclusive' : 'non-exсlusive'
+                      }</media:exclusivity>
+                      <media:filmingDate>${moment(video.videoData.date).format(
+                        `ddd, D MMM YYYY`
+                      )}</media:filmingDate>
+                      <guid>${video.videoData.videoId}</guid>
+                      <pubDate>${new Date(
+                        video.pubDate
+                          ? video.pubDate
+                          : video?.updatedAt
+                          ? video.updatedAt
+                          : ''
+                      ).toGMTString()}</pubDate>
+                      <media:thumbnail url="${video.bucket.cloudScreenLink}" />
+                      <media:content url="${
+                        obj.name === 'Converted Videos'
+                          ? video.bucket.cloudConversionVideoLink
+                          : video.bucket.cloudVideoLink
+                      }" />
+                      ${
+                        !!video?.lastChange
+                          ? `<dfpvideo:lastModifiedDate>${new Date(
+                              video.lastChange
+                            ).toGMTString()}</dfpvideo:lastModifiedDate>`
+                          : '<dfpvideo:lastModifiedDate/>'
+                      }
+                      </item>
+                    `;
                 })
                 .join('')}
                      </channel>
@@ -256,7 +268,7 @@ const generateExcelFile = async (req, res) => {
 };
 
 const updateVideoById = async ({ videoId, dataToDelete, dataToUpdate }) => {
-  const updatedVideo = await Video.updateOne(
+  await Video.updateOne(
     {
       'videoData.videoId': videoId,
     },
@@ -590,13 +602,12 @@ const findById = async (id) => {
 };
 
 const getAllVideos = async ({
-  vbCode,
+  vbFormExists,
   isApproved,
   fieldsInTheResponse,
-  searchForResearcherBy,
-  valueResearcherBySearch,
   advanceHasBeenPaid,
   forLastDays,
+  researcher,
   wasRemovedFromPublication,
   durationPoints,
   category,
@@ -605,7 +616,9 @@ const getAllVideos = async ({
 }) => {
   return Video.find(
     {
-      ...(vbCode && { vbForm: { $exists: true } }),
+      ...(typeof vbFormExists === 'boolean' && {
+        vbForm: { $exists: vbFormExists },
+      }),
       ...(typeof isApproved === 'boolean' && { isApproved }),
       ...(typeof wasRemovedFromPublication === 'boolean' && {
         wasRemovedFromPublication,
@@ -619,17 +632,16 @@ const getAllVideos = async ({
             .valueOf(),
         },
       }),
-      ...(searchForResearcherBy &&
-        valueResearcherBySearch && {
-          'trelloData.researchers': {
-            $elemMatch: {
-              [searchForResearcherBy]: valueResearcherBySearch,
-              ...(typeof advanceHasBeenPaid === 'boolean' && {
-                advanceHasBeenPaid,
-              }),
-            },
+      ...(researcher && {
+        'trelloData.researchers': {
+          $elemMatch: {
+            [researcher.searchBy]: researcher.value,
+            ...(typeof researcher.advanceHasBeenPaid === 'boolean' && {
+              advanceHasBeenPaid,
+            }),
           },
-        }),
+        },
+      }),
       ...(durationPoints && {
         'videoData.duration': {
           $gte: durationPoints?.start,
@@ -662,6 +674,7 @@ const getAllVideos = async ({
         select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
       },
     })
+
     .collation({ locale: 'en', strength: 2 });
 };
 

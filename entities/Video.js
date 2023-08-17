@@ -179,6 +179,10 @@ const schema = new Schema(
       type: Boolean,
       required: false,
     },
+    lastChange: {
+      type: Date,
+      required: false,
+    },
     pubDate: {
       type: Date,
       required: false,
