@@ -2,13 +2,13 @@ const definitionThePartnerCompanyByFileHeader = ({ fileHeaderValues }) => {
   if (
     fileHeaderValues.find((headerValue) => headerValue === 'Partner Video Id')
   ) {
-    return 'newsFlare';
+    return 'newsflare';
   } else if (
     fileHeaderValues.find(
       (headerValue) => headerValue === 'Content Provider Revenue'
     )
   ) {
-    return 'videoElephant';
+    return 'videoelephant';
   } else if (
     fileHeaderValues.find((headerValue) => headerValue === 'Aflo Ref:')
   ) {
@@ -18,11 +18,11 @@ const definitionThePartnerCompanyByFileHeader = ({ fileHeaderValues }) => {
   } else if (
     fileHeaderValues.find((headerValue) => headerValue === 'Video_ref_ID')
   ) {
-    return 'kameraOne';
+    return 'kameraone';
   } else if (
     fileHeaderValues.find((headerValue) => headerValue === 'ViralBear ID')
   ) {
-    return 'stringersHub';
+    return 'stringershub';
   } else {
     return null;
   }

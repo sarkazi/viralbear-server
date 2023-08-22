@@ -36,7 +36,7 @@ const {
 } = require('../controllers/uploadInfo.controller');
 
 const {
-  getCountLinksByUserEmail,
+  getCountLinksBy,
   getCountLinks,
 } = require('../controllers/links.controller');
 
@@ -294,14 +294,26 @@ router.get('/getById/:userId', async (req, res) => {
   }
 });
 
-router.get('/getBy/:value', authMiddleware, async (req, res) => {
+router.get('/getBy', authMiddleware, async (req, res) => {
   try {
-    const { param, fieldsInTheResponse } = req.query;
-    const { value } = req.params;
+    const { searchBy, fieldsInTheResponse, value } = req.query;
+
+    let userId = null;
+
+    if (!value) {
+      userId = req.user.id;
+    }
+
+    if (!searchBy || (!userId && !value)) {
+      return res.status(200).json({
+        message: 'Missing parameter for user search',
+        status: 'warning',
+      });
+    }
 
     const user = await getUserBy({
-      param,
-      value,
+      searchBy,
+      value: value ? value : userId,
       ...(fieldsInTheResponse && {
         fieldsInTheResponse,
       }),
@@ -327,17 +339,17 @@ router.post('/createOne', authMiddleware, async (req, res) => {
   try {
     const body = req.body;
 
-    const isValidate = validationForRequiredInputDataInUserModel(
-      body.role,
-      body,
-      null
-    );
+    //const isValidate = validationForRequiredInputDataInUserModel(
+    //  body.role,
+    //  body,
+    //  null
+    //);
 
-    if (!isValidate) {
-      return res
-        .status(200)
-        .json({ message: 'Missing data to create a user', status: 'warning' });
-    }
+    //if (!isValidate) {
+    //  return res
+    //    .status(200)
+    //    .json({ message: 'Missing data to create a user', status: 'warning' });
+    //}
 
     const candidate = await getUserByEmail(body.email);
 
@@ -707,17 +719,19 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           0
         );
 
-        const linksCountLast30Days = await getCountLinksByUserEmail(
-          user.email,
-          30
-        );
+        const linksCountLast30Days = await getCountLinksBy({
+          userId: user._id,
+          dateLimit: 30,
+        });
 
-        const linksCountLast7Days = await getCountLinksByUserEmail(
-          user.email,
-          7
-        );
+        const linksCountLast7Days = await getCountLinksBy({
+          userId: user._id,
+          dateLimit: 7,
+        });
 
-        const linksCount = await getCountLinksByUserEmail(user.email, null);
+        const linksCount = await getCountLinksBy({
+          userId: user._id,
+        });
 
         const acquiredVideosCountLast30DaysMainRole = await getCountVideosBy({
           forLastDays: 30,
@@ -820,14 +834,14 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           },
         });
 
-        const videosCountSentFromReviewLast30Days =
+        const videosCountReviewedLast30Days =
           await getCountApprovedTrelloCardBy({
             searchBy: 'researcherId',
             value: user._id,
             forLastDays: 30,
           });
 
-        const videosCountSentFromReview = await getCountApprovedTrelloCardBy({
+        const videosCountReviewed = await getCountApprovedTrelloCardBy({
           searchBy: 'researcherId',
           value: user._id,
           forLastDays: null,
@@ -964,12 +978,12 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           approvedRateAfterReview: {
             total: videosCountSentToReview
               ? Math.round(
-                  (videosCountSentFromReview * 100) / videosCountSentToReview
+                  (videosCountReviewed * 100) / videosCountSentToReview
                 )
               : 0,
             last30Days: videosCountSentToReviewLast30Days
               ? Math.round(
-                  (videosCountSentFromReviewLast30Days * 100) /
+                  (videosCountReviewedLast30Days * 100) /
                     videosCountSentToReviewLast30Days
                 )
               : 0,
@@ -1124,9 +1138,12 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       0
     );
 
-    const linksCountLast30Days = await getCountLinksByUserEmail(user.email, 30);
+    const linksCountLast30Days = await getCountLinksBy({
+      userId: user._id,
+      dateLimit: 30,
+    });
 
-    const linksCount = await getCountLinksByUserEmail(user.email, null);
+    const linksCount = await getCountLinksBy({ userId: user._id });
 
     const acquiredVideosCountLast30DaysMainRole = await getCountVideosBy({
       forLastDays: 30,
@@ -1207,47 +1224,83 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       },
     });
 
-    const approvedVideosCountLast30Days = await getCountApprovedTrelloCardBy({
+    const videosCountSentFromReviewLast30Days =
+      await getCountApprovedTrelloCardBy({
+        searchBy: 'researcherId',
+        value: user._id,
+        forLastDays: 30,
+      });
+
+    const videosCountSentFromReview = await getCountApprovedTrelloCardBy({
       searchBy: 'researcherId',
       value: user._id,
+    });
+
+    const videosCountSentToReview = await getCountLinks({
+      researcherId: user._id,
+      list: 'Review',
+    });
+
+    const videosCountSentToReviewLast30Days = await getCountLinks({
+      researcherId: user._id,
+      list: 'Review',
       forLastDays: 30,
     });
 
-    const approvedVideosCount = await getCountApprovedTrelloCardBy({
-      searchBy: 'researcherId',
-      value: user._id,
-      forLastDays: null,
-    });
+    let advance = 0;
+    let percentage = 0;
 
-    let amountOfAdvancesToAuthors = 0;
+    if (user?.advancePayment) {
+      const videosCountWithUnpaidAdvance = await getCountVideosBy({
+        isApproved: true,
+        user: {
+          value: user.email,
+          purchased: true,
+          searchBy: 'email',
+          advanceHasBeenPaid: false,
+        },
+      });
 
-    const referralFormsUsed = await findAllAuthorLinks({
+      advance = videosCountWithUnpaidAdvance * user.advancePayment;
+    }
+
+    const unpaidSales = await getSalesByUserId({
       userId: user._id,
-      used: true,
+      paidFor: false,
     });
 
-    if (referralFormsUsed.length) {
-      await Promise.all(
-        referralFormsUsed.map(async (refForm) => {
-          const vbForm = await findOne({
-            searchBy: 'refFormId',
-            param: refForm._id,
-          });
-
-          if (
-            vbForm &&
-            vbForm?.advancePaymentReceived === true &&
-            vbForm?.refFormId?.advancePayment
-          ) {
-            amountOfAdvancesToAuthors += vbForm.refFormId.advancePayment;
-          }
-        })
+    if (unpaidSales.length) {
+      percentage = unpaidSales.reduce(
+        (acc, sale) => acc + sale.amountToResearcher,
+        0
       );
     }
 
+    const paymentSubject = () => {
+      if (advance > percentage) {
+        return {
+          tooltip: `advance payment for ${videosCountWithUnpaidAdvance} videos`,
+          paymentFor: 'advance',
+        };
+      } else if (
+        advance < percentage ||
+        (advance === percentage && advance > 0 && percentage > 0)
+      ) {
+        return {
+          tooltip: `percentage for ${unpaidSales.length} sales`,
+          paymentFor: 'percent',
+        };
+      } else {
+        return {
+          tooltip: null,
+          paymentFor: null,
+        };
+      }
+    };
+
     const apiData = {
       balance: Math.round(user.balance),
-      gettingPaid: Math.round(user.gettingPaid),
+
       earnedForYourself: {
         allTime: Math.round(earnedForYourself),
         last30Days: Math.round(earnedYourselfLast30Days),
@@ -1282,13 +1335,23 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
             )
           : 0,
       },
-      approvedVideosCount: {
-        allTime: approvedVideosCount,
-        last30Days: approvedVideosCountLast30Days,
+      approvedRateAfterReview: {
+        allTime: videosCountSentToReview
+          ? Math.round(
+              (videosCountSentFromReview * 100) / videosCountSentToReview
+            )
+          : 0,
+        last30Days: videosCountSentToReviewLast30Days
+          ? Math.round(
+              (videosCountSentFromReviewLast30Days * 100) /
+                videosCountSentToReviewLast30Days
+            )
+          : 0,
       },
       percentage: user.percentage ? user.percentage : 0,
       advancePayment: user.advancePayment ? user.advancePayment : 0,
-      amountOfAdvancesToAuthors: Math.round(amountOfAdvancesToAuthors),
+      amountToBePaid: advance > percentage ? advance : percentage,
+      paymentSubject: paymentSubject(),
       name: user.name,
     };
 

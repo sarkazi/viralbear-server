@@ -139,7 +139,13 @@ const refreshMrssFiles = async () => {
                       <media:filmingDate>${moment(video.videoData.date).format(
                         `ddd, D MMM YYYY`
                       )}</media:filmingDate>
-                      <guid>${video.videoData.videoId}</guid>
+                      <guid>${
+                        obj.name === 'Converted Videos' &&
+                        +video.videoData.videoId >= 2615 &&
+                        +video.videoData.videoId <= 2773
+                          ? `${video.videoData.videoId}0000`
+                          : video.videoData.videoId
+                      }</guid>
                       <pubDate>${new Date(
                         video.pubDate
                           ? video.pubDate

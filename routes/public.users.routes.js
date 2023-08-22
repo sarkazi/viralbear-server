@@ -1,53 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { genSalt, hash: hashBcrypt } = require('bcryptjs');
-const moment = require('moment');
-const jwt = require('jsonwebtoken');
-
-const authMiddleware = require('../middleware/auth.middleware');
-
-const validationForRequiredInputDataInUserModel = require('../utils/validationForRequiredInputDataInUserModel');
 
 const {
   getAllUsers,
-  deleteUser,
-  sendPassword,
-  createUser,
-  recoveryPassword,
-  getUserById,
-  updateUser,
-  getUserByEmail,
 
-  getUserBySearchValue,
-  findUsersByValueList,
   getUserBy,
 } = require('../controllers/user.controller.js');
-
-const { generateTokens } = require('../controllers/auth.controllers');
-
-const {
-  findOne,
-  updateVbFormByFormId,
-  updateVbFormBy,
-} = require('../controllers/uploadInfo.controller');
-
-const { getCountLinksByUserEmail } = require('../controllers/links.controller');
-
-const {
-  getSalesByUserId,
-  getAllSales,
-  updateSalesBy,
-  updateSaleBy,
-  findSaleById,
-} = require('../controllers/sales.controller');
-
-const { sendEmail } = require('../controllers/sendEmail.controller');
-
-const {
-  getCountAcquiredVideoByUserEmail,
-  getAllVideos,
-  findVideoByValue,
-} = require('../controllers/video.controller');
 
 router.get('/getAll', async (req, res) => {
   try {
@@ -70,6 +28,31 @@ router.get('/getAll', async (req, res) => {
     return res
       .status(500)
       .json({ status: 'error', message: 'Server side error' });
+  }
+});
+
+router.get('/getBy', async (req, res) => {
+  try {
+    const { searchBy, value } = req.query;
+
+    if (!searchBy || !value) {
+      return res.status(200).json({
+        message: 'Missing parameters for user search',
+        status: 'warning',
+      });
+    }
+
+    const user = await getUserBy({ searchBy, value });
+
+    if (!user) {
+      return res
+        .status(200)
+        .json({ message: 'User is not found', status: 'warning' });
+    }
+
+    return res.status(200).json({ apiData: user, status: 'success' });
+  } catch (err) {
+    console.log(err);
   }
 });
 

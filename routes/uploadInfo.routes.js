@@ -44,7 +44,6 @@ const {
   getCardDataByCardId,
   updateCustomFieldByTrelloCard,
 } = require('../controllers/trello.controller');
-const UploadInfo = require('../entities/UploadInfo');
 
 const storage = multer.memoryStorage();
 
@@ -522,6 +521,15 @@ router.post(
         ...(vbForm?.refFormId?.researcher && {
           researcherEmail: vbForm?.refFormId?.researcher?.email,
         }),
+        ...(!!vbForm?.refFormId?.researcher?.email &&
+          !vbForm.sender?.activatedTheAccount &&
+          (!!vbForm?.refFormId?.advancePayment ||
+            !!vbForm?.refFormId?.percentage) && {
+            authorData: {
+              name: vbForm?.sender?.name,
+              accountActivationLink,
+            },
+          }),
       };
 
       const dataForSendingAgreement = {
@@ -551,24 +559,6 @@ router.post(
 
       await sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
       await sendAgreementToClientMail(dataForSendingAgreement);
-
-      if (
-        !!vbForm?.refFormId?.researcher?.email &&
-        !vbForm.sender?.activatedTheAccount &&
-        (!!vbForm?.refFormId?.advancePayment || !!vbForm?.refFormId?.percentage)
-      ) {
-        await sendEmail({
-          emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
-          emailTo: vbForm.refFormId.researcher.email,
-          subject: `Link to the personal account of the author`,
-          html: `
-          Hello ${vbForm.refFormId.researcher.name}.<br/>
-          This is a link to the personal account of the author ${vbForm?.sender?.name} with email ${vbForm?.sender?.email}:<br/>
-          ${accountActivationLink}<br/>
-          Have a nice day!
-          `,
-        });
-      }
 
       return res.status(200).json({
         message: `The agreement was uploaded to the storage and sent to "${vbForm?.sender?.email}"`,

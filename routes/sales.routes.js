@@ -11,6 +11,7 @@ const {
   deleteSaleById,
   getAllSales,
   findSaleById,
+  getSaleBy,
 } = require('../controllers/sales.controller');
 
 const {
@@ -70,7 +71,7 @@ router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
       });
 
       if (vbForm && vbForm.sender) {
-        author = await getUserBy({ param: '_id', value: vbForm.sender });
+        author = await getUserBy({ searchBy: '_id', value: vbForm.sender });
       }
     }
 
@@ -133,6 +134,7 @@ router.post(
   ]),
   async (req, res) => {
     const { csv } = req.files;
+    const { confirmDownload } = req.query;
 
     if (!csv) {
       return res.status(200).json({
@@ -142,10 +144,25 @@ router.post(
     }
 
     try {
+      const sellingThisReport = await getSaleBy({
+        searchBy: 'report',
+        value: csv[0].originalname,
+      });
+
+      if (sellingThisReport && !JSON.parse(confirmDownload)) {
+        return res.status(200).json({
+          message:
+            'You already ingested this report before. Are you sure you want to proceed?',
+          status: 'await',
+        });
+      }
+
       const workbook = xlsx.read(csv[0].buffer, {
         type: 'buffer',
         sheetStubs: true,
       });
+
+      console.log(csv);
 
       const fileHeaderValues = xlsx.utils
         .sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 })
@@ -215,7 +232,7 @@ router.post(
                   ).toFixed(2);
                 } else {
                   const researcher = await getUserBy({
-                    param: 'email',
+                    searchBy: 'email',
                     value: videoResearchers[0].email,
                   });
 
@@ -267,6 +284,7 @@ router.post(
                     ? 0
                     : videoDb.vbForm.refFormId.percentage,
                   saleIdForClient: index + 1,
+                  report: csv[0].originalname,
                 };
               }
             }
@@ -302,7 +320,7 @@ router.post(
                   ).toFixed(2);
                 } else {
                   const researcher = await getUserBy({
-                    param: 'email',
+                    searchBy: 'email',
                     value: videoResearchers[0].email,
                   });
 
@@ -335,6 +353,7 @@ router.post(
                   }),
                   usage: obj.usage ? obj.usage : null,
                   amount,
+                  report: csv[0].originalname,
                   videoTitle: obj.title,
                   company: processingData.company,
                   amountToResearcher: amountToResearcher,
@@ -435,6 +454,7 @@ router.post('/create', authMiddleware, async (req, res) => {
             },
           }),
           amount,
+          report: obj.report,
           amountToResearcher,
           date: moment().format('ll'),
           ...(obj.usage && { usage: obj.usage }),
@@ -518,7 +538,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     let userId = null;
 
     if (researcher) {
-      const user = await getUserBy({ param: 'name', value: researcher });
+      const user = await getUserBy({ searchBy: 'name', value: researcher });
 
       userId = user._id;
     }
@@ -590,7 +610,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
           });
 
           const authorRelatedWithVbForm = await getUserBy({
-            param: '_id',
+            searchBy: '_id',
             value: vbForm.sender,
           });
 

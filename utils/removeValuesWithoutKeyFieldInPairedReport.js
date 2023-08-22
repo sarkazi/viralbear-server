@@ -2,11 +2,11 @@ const removeValuesWithoutKeyFieldInPairedReport = ({
   parseReport,
   companyName,
 }) => {
-  if (companyName === 'newsFlare') {
+  if (companyName === 'newsflare') {
     return parseReport.filter((obj) => {
       return obj.hasOwnProperty('Partner Video Id');
     });
-  } else if (companyName === 'videoElephant') {
+  } else if (companyName === 'videoelephant') {
     return parseReport.filter((obj) => {
       return obj.hasOwnProperty('Content Provider Revenue');
     });
@@ -18,11 +18,11 @@ const removeValuesWithoutKeyFieldInPairedReport = ({
     return parseReport.filter((obj) => {
       return obj.hasOwnProperty('Amount');
     });
-  } else if (companyName === 'kameraOne') {
+  } else if (companyName === 'kameraone') {
     return parseReport.filter((obj) => {
       return obj.hasOwnProperty('Video_ref_ID');
     });
-  } else if (companyName === 'stringersHub') {
+  } else if (companyName === 'stringershub') {
     return parseReport.filter((obj) => {
       return obj.hasOwnProperty('ViralBear ID');
     });

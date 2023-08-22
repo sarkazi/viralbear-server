@@ -87,6 +87,12 @@ const updateSalesBy = async ({ updateBy, value, dataForUpdate }) => {
   );
 };
 
+const getSaleBy = async ({ searchBy, value }) => {
+  return Sales.findOne({
+    [searchBy]: value,
+  });
+};
+
 const updateSaleBy = async ({ updateBy, value, dataForUpdate }) => {
   return Sales.updateOne(
     {
@@ -113,4 +119,5 @@ module.exports = {
   updateSalesBy,
   updateSaleBy,
   markEmployeeOnSalesHavingReceivePercentage,
+  getSaleBy,
 };

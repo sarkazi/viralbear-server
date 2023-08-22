@@ -21,6 +21,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     formId,
     refForm,
     trelloCardUrl,
+    authorData,
   } = dataForSendingMessage;
 
   const linkMarkup = videoLinks
@@ -91,7 +92,12 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
    <b>IP: ${ip}</b><br>
    <b>Submitted date: ${createdAt}</b><br>
    <b>Contract: ${agreementLink}</b><br>
-   <b>Form VB ID: ${formId.replace('VB', '')}</b><br>
+   <b>Form VB code: ${formId.replace('VB', '')}</b><br>
+   ${
+     authorData
+       ? `<b>Link to the personal account of the author ${authorData.name}: ${authorData.accountActivationLink}</b>`
+       : ''
+   }
    `,
   });
 };
@@ -146,7 +152,7 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
          <b>What is happening on the video: ${
            whatHappen ? whatHappen : '-'
          }</b><br>
-         <b>Form VB ID: ${formId.replace('VB', '')}</b><br>
+         <b>Form VB code: ${formId.replace('VB', '')}</b><br>
          `,
   });
 };

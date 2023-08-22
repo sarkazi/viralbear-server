@@ -164,17 +164,15 @@ const conversionIncorrectLinks = (link) => {
   }
 };
 
-const getCountLinksByUserEmail = async (userValue, dateLimit) => {
+const getCountLinksBy = async ({ userId, dateLimit }) => {
   return Links.find({
-    email: userValue,
+    ...(userId && { researcher: userId }),
     ...(dateLimit && {
       createdAt: {
         $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),
       },
     }),
-  })
-    .countDocuments()
-    .sort({ createdAt: -1 });
+  }).count();
 };
 
 const findLinkBy = async ({ searchBy, value }) => {
@@ -190,7 +188,7 @@ module.exports = {
   findLinkByVideoId,
   createNewLink,
   conversionIncorrectLinks,
-  getCountLinksByUserEmail,
+  getCountLinksBy,
   findLinkBy,
   getCountLinks,
 };

@@ -1,4 +1,15 @@
 const { Schema, model } = require('mongoose');
+
+const partners = [
+  'kameraone',
+  'tmb',
+  'aflo',
+  'videoelephant',
+  'newsflare',
+  'reuters',
+  'stringershub',
+];
+
 const schema = new Schema(
   {
     videoId: {
@@ -19,7 +30,9 @@ const schema = new Schema(
     company: {
       type: String,
       required: true,
+      enum: partners,
     },
+
     researchers: [
       {
         id: {
@@ -42,6 +55,10 @@ const schema = new Schema(
     },
     amount: {
       type: Number,
+      required: true,
+    },
+    report: {
+      type: String,
       required: true,
     },
     date: {

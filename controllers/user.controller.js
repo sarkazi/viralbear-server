@@ -76,9 +76,9 @@ const deleteUser = async (userId) => {
   await User.deleteOne({ _id: userId });
 };
 
-const getUserBy = async ({ param, value, fieldsInTheResponse }) => {
+const getUserBy = async ({ searchBy, value, fieldsInTheResponse }) => {
   return await User.findOne(
-    { [param]: value },
+    { [searchBy]: value },
     {
       ...(fieldsInTheResponse &&
         fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),

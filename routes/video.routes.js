@@ -143,11 +143,11 @@ router.post(
 
       if (
         !originalLink ||
-        !researchers.length ||
+        !JSON.parse(researchers).length ||
         !title ||
         !desc ||
-        !tags ||
-        !category ||
+        !JSON.parse(tags).length ||
+        !JSON.parse(category).length ||
         !categoryReuters ||
         !city ||
         !country ||
@@ -302,7 +302,7 @@ router.post(
 
         if (recordInTheDatabaseAboutTheMovedCard) {
           const userWhoDraggedTheCard = await getUserBy({
-            param: '_id',
+            searchBy: '_id',
             value: recordInTheDatabaseAboutTheMovedCard.researcherId,
           });
 
@@ -812,458 +812,11 @@ router.patch(
 
     if (
       !originalLink ||
-      !researchers ||
+      !JSON.parse(researchers).length ||
       !title ||
       !desc ||
-      !tags ||
-      !category ||
-      !categoryReuters ||
-      !city ||
-      !country ||
-      !date
-    ) {
-      return res.status(200).json({
-        message: 'Missing values for adding a new video',
-        status: 'warning',
-      });
-    }
-
-    const { video: reqVideo, screen: reqScreen } = req.files;
-
-    try {
-      const video = await findVideoById(+videoId);
-
-      if (!video) {
-        return res.status(200).json({
-          message: `video with id "${videoId}" not found`,
-          status: 'warning',
-        });
-      }
-
-      if (!vbCode && !!video.vbForm) {
-        await updateVideoById({
-          videoId: +videoId,
-          dataToDelete: {
-            needToBeFixed: 1,
-            vbForm: 1,
-            ...(!creditTo && { 'videoData.creditTo': 1 }),
-          },
-          dataToUpdate: {
-            exclusivity: false,
-          },
-        });
-      }
-
-      if (vbCode) {
-        const vbForm = await findOne({
-          searchBy: 'formId',
-          param: `VB${vbCode}`,
-        });
-
-        if (!vbForm) {
-          return res.status(200).json({
-            message: `The form with the vb code ${vbCode} was not found in the database`,
-            status: 'warning',
-          });
-        }
-
-        const videoWithVBForm = await findVideoByValue({
-          searchBy: 'vbForm',
-          value: vbForm._id,
-        });
-
-        if (
-          videoWithVBForm &&
-          videoWithVBForm._id.toString() !== video._id.toString()
-        ) {
-          return res.status(200).json({
-            message: 'a video with such a "VB code" is already in the database',
-            status: 'warning',
-          });
-        }
-
-        await updateVideoById({
-          videoId: +videoId,
-          dataToUpdate: {
-            vbForm: vbForm._id,
-            exclusivity: !vbForm?.refFormId
-              ? true
-              : vbForm.refFormId.exclusivity
-              ? true
-              : false,
-          },
-        });
-      }
-
-      if (reqVideo) {
-        if (path.extname(reqVideo[0].originalname) !== '.mp4') {
-          return res.status(200).json({
-            message: `Incorrect video extension`,
-            status: 'warning',
-          });
-        }
-
-        const responseAfterConversion = await convertingVideoToHorizontal(
-          reqVideo[0],
-          req.user.id
-        );
-
-        const bucketResponseByConvertedVideoUpload = await new Promise(
-          (resolve, reject) => {
-            fs.readFile(
-              path.resolve(`./videos/${req.user.id}/output-for-conversion.mp4`),
-              {},
-              async (err, buffer) => {
-                if (err) {
-                  console.log(err);
-                  reject({
-                    status: 'error',
-                    message: 'Error when reading a file from disk',
-                  });
-                } else {
-                  await uploadFileToStorage(
-                    reqVideo[0].originalname,
-                    'reuters-videos',
-                    videoId,
-                    buffer,
-                    reqVideo[0].mimetype,
-                    path.extname(reqVideo[0].originalname),
-                    resolve,
-                    reject,
-                    'progressOfRequestInPublishing',
-                    'Uploading the converted video to the bucket',
-                    req.user.id
-                  );
-                }
-              }
-            );
-          }
-        );
-
-        const bucketResponseByVideoUpload = await new Promise(
-          async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqVideo[0].originalname,
-              'videos',
-              videoId,
-              reqVideo[0].buffer,
-              reqVideo[0].mimetype,
-              path.extname(reqVideo[0].originalname),
-              resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading video to the bucket',
-              req.user.id
-            );
-          }
-        );
-
-        const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
-
-        await updateVideoById({
-          videoId: +videoId,
-          dataToUpdate: {
-            'bucket.cloudVideoLink':
-              bucketResponseByVideoUpload.response.Location,
-            'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
-            'bucket.cloudConversionVideoLink':
-              bucketResponseByConvertedVideoUpload.response.Location,
-            'bucket.cloudConversionVideoPath':
-              bucketResponseByConvertedVideoUpload.response.Key,
-            'videoData.duration': duration,
-            'videoData.hasAudioTrack':
-              responseAfterConversion.data.hasAudioTrack,
-          },
-        });
-      }
-
-      if (reqScreen) {
-        if (path.extname(reqScreen[0].originalname) !== '.jpg') {
-          return res.status(400).json({
-            message: `Incorrect screen extension`,
-            status: 'warning',
-          });
-        }
-
-        const bucketResponseByScreenUpload = await new Promise(
-          async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqScreen[0].originalname,
-              'screens',
-              videoId,
-              reqScreen[0].buffer,
-              reqScreen[0].mimetype,
-              path.extname(reqScreen[0].originalname),
-              resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading screen to the bucket',
-              req.user.id
-            );
-          }
-        );
-
-        await updateVideoById({
-          videoId: +videoId,
-          dataToUpdate: {
-            'bucket.cloudScreenLink':
-              bucketResponseByScreenUpload.response.Location,
-            'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
-          },
-        });
-      }
-
-      socketInstance
-        .io()
-        .sockets.in(req.user.id)
-        .emit('progressOfRequestInPublishing', {
-          event: 'Just a little bit left',
-          file: null,
-        });
-
-      if (!country && video.country && !video.countryCode) {
-        const countryCode = await findTheCountryCodeByName(
-          video.videoData.country
-        );
-
-        if (!countryCode) {
-          return res.status(400).json({
-            message: 'Error when searching for the country code',
-            status: 'error',
-          });
-        }
-
-        await updateVideoById({
-          videoId: +videoId,
-          dataToUpdate: {
-            'videoData.countryCode': countryCode,
-          },
-        });
-      }
-
-      if (country) {
-        const countryCode = await findTheCountryCodeByName(country);
-
-        if (!countryCode) {
-          return res.status(400).json({
-            message: 'Error when searching for the country code',
-            status: 'error',
-          });
-        }
-
-        await updateVideoById({
-          videoId: +videoId,
-          dataToUpdate: {
-            'videoData.country': country,
-            'videoData.countryCode': countryCode,
-          },
-        });
-      }
-
-      if (brandSafe && JSON.parse(brandSafe) === false) {
-        await updateVideoById({
-          videoId: +videoId,
-          dataToUpdate: {
-            brandSafe: JSON.parse(brandSafe),
-            publishedInSocialMedia: false,
-          },
-        });
-      } else {
-        await updateVideoById({
-          videoId: +videoId,
-          dataToUpdate: {
-            brandSafe: JSON.parse(brandSafe),
-          },
-        });
-      }
-
-      const trelloCardId = video.trelloData.trelloCardId;
-
-      const researchersList = await findUsersByValueList({
-        param: 'name',
-        valueList: JSON.parse(researchers),
-      });
-
-      const recordInTheDatabaseAboutTheMovedCard =
-        await findTheRecordOfTheCardMovedToDone(trelloCardId);
-
-      let researchersListForCreatingVideo;
-
-      if (recordInTheDatabaseAboutTheMovedCard) {
-        const userWhoDraggedTheCard = await getUserBy({
-          param: '_id',
-          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
-        });
-
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: userWhoDraggedTheCard,
-            allResearchersList: researchersList,
-          });
-      } else {
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: null,
-            allResearchersList: researchersList,
-          });
-      }
-
-      await updateVideoById({
-        videoId: +videoId,
-        dataToUpdate: {
-          ...(originalLink && { 'videoData.originalVideoLink': originalLink }),
-          ...(title && { 'videoData.title': title }),
-          ...(desc && { 'videoData.description': desc }),
-          ...(creditTo && { 'videoData.creditTo': creditTo }),
-          ...(tags && {
-            'videoData.tags': JSON.parse(tags).map((el) => {
-              return el.trim();
-            }),
-          }),
-
-          ...(category && { 'videoData.category': JSON.parse(category) }),
-          ...(categoryReuters && {
-            'videoData.categoryReuters': categoryReuters,
-          }),
-          ...(socialMedia && {
-            socialMedia,
-          }),
-          ...(city && { 'videoData.city': city }),
-          ...(reuters && { reuters }),
-          ...(commentToAdmin && { commentToAdmin }),
-          ...(date && { 'videoData.date': JSON.parse(date) }),
-          ...(researchers && {
-            'trelloData.researchers': researchersListForCreatingVideo,
-          }),
-          ...(video.isApproved && { lastChange: new Date().toGMTString() }),
-        },
-      });
-
-      if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
-        console.log('change');
-
-        //меняем кастомное поле "brand safe" в карточке trello
-        await updateCustomFieldByTrelloCard(
-          video.trelloData.trelloCardId,
-          process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
-          {
-            idValue: JSON.parse(brandSafe)
-              ? '6363888c65a44802954d88e5'
-              : '6363888c65a44802954d88e4',
-          }
-        );
-      }
-
-      const updatedVideo = await findVideoByValue({
-        searchBy: 'videoData.videoId',
-        value: +videoId,
-      });
-
-      if (updatedVideo.isApproved === true) {
-        await refreshMrssFiles();
-      }
-
-      const { _id, __v, updatedAt, ...data } = updatedVideo._doc;
-
-      return res.status(200).json({
-        message: `Video with id "${videoId}" has been successfully updated`,
-        status: 'success',
-        apiData: data,
-      });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({
-        message: err?.message ? err?.message : 'Server side error',
-        status: 'error',
-      });
-    }
-  }
-);
-
-router.patch('/updateByValue', authMiddleware, async (req, res) => {
-  try {
-    const { searchBy, searchValue, refreshFeeds } = req.query;
-    const { isApproved, wasRemovedFromPublication } = req.body;
-
-    await updateVideoBy({
-      searchBy,
-      searchValue,
-      dataToUpdate: {
-        ...(typeof isApproved === 'boolean' && { isApproved }),
-        ...(typeof wasRemovedFromPublication === 'boolean' && {
-          wasRemovedFromPublication,
-        }),
-      },
-    });
-
-    if (refreshFeeds && JSON.parse(refreshFeeds)) {
-      await refreshMrssFiles();
-    }
-
-    return res.status(200).json({
-      message: `Video has been successfully updated`,
-      status: 'success',
-    });
-  } catch (err) {
-    console.log(err);
-
-    return res.status(500).json({
-      message: err?.message ? err?.message : 'Server side error',
-      status: 'error',
-    });
-  }
-});
-
-router.patch(
-  '/fixedVideo/:id',
-  authMiddleware,
-
-  multer({ storage: storage }).fields([
-    {
-      name: 'video',
-      maxCount: 1,
-    },
-    {
-      name: 'screen',
-      maxCount: 1,
-    },
-  ]),
-
-  async (req, res) => {
-    const { id: videoId } = req.params;
-
-    if (!videoId) {
-      return res
-        .status(200)
-        .json({ message: 'missing "video id" parameter', status: 'warning' });
-    }
-
-    const {
-      originalLink,
-      vbCode,
-      researchers,
-      title,
-      desc,
-      creditTo,
-      tags,
-      category,
-      categoryReuters,
-      city,
-      country,
-      date,
-      brandSafe,
-      socialMedia,
-      reuters,
-      commentToAdmin,
-    } = req.body;
-
-    if (
-      !originalLink ||
-      !researchers ||
-      !title ||
-      !desc ||
-      !tags ||
-      !category ||
+      !JSON.parse(tags).length ||
+      !JSON.parse(category).length ||
       !categoryReuters ||
       !city ||
       !country ||
@@ -1538,7 +1091,7 @@ router.patch(
 
       if (recordInTheDatabaseAboutTheMovedCard) {
         const userWhoDraggedTheCard = await getUserBy({
-          param: '_id',
+          searchBy: '_id',
           value: recordInTheDatabaseAboutTheMovedCard.researcherId,
         });
 
@@ -1558,31 +1111,460 @@ router.patch(
       await updateVideoById({
         videoId: +videoId,
         dataToUpdate: {
-          ...(originalLink && { 'videoData.originalVideoLink': originalLink }),
-          ...(title && { 'videoData.title': title }),
-          ...(desc && { 'videoData.description': desc }),
+          'videoData.originalVideoLink': originalLink,
+          'videoData.title': title,
+          'videoData.description': desc,
           ...(creditTo && { 'videoData.creditTo': creditTo }),
-          ...(tags && {
-            'videoData.tags': JSON.parse(tags).map((el) => {
-              return el.trim();
-            }),
+          'videoData.tags': JSON.parse(tags).map((el) => {
+            return el.trim();
           }),
-
-          ...(category && { 'videoData.category': JSON.parse(category) }),
-          ...(categoryReuters && {
-            'videoData.categoryReuters': categoryReuters,
-          }),
-          ...(socialMedia && {
-            socialMedia,
-          }),
-          ...(city && { 'videoData.city': city }),
-          ...(reuters && { reuters }),
+          'videoData.category': JSON.parse(category),
+          'videoData.categoryReuters': categoryReuters,
+          'videoData.city': city,
           ...(commentToAdmin && { commentToAdmin }),
-          ...(date && { 'videoData.date': JSON.parse(date) }),
-          ...(researchers && {
-            'trelloData.researchers': researchersListForCreatingVideo,
-          }),
+          'videoData.date': JSON.parse(date),
+          'trelloData.researchers': researchersListForCreatingVideo,
           ...(video.isApproved && { lastChange: new Date().toGMTString() }),
+          reuters: JSON.parse(reuters),
+          socialMedia: JSON.parse(socialMedia),
+        },
+      });
+
+      if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
+        console.log('change');
+
+        //меняем кастомное поле "brand safe" в карточке trello
+        await updateCustomFieldByTrelloCard(
+          video.trelloData.trelloCardId,
+          process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
+          {
+            idValue: JSON.parse(brandSafe)
+              ? '6363888c65a44802954d88e5'
+              : '6363888c65a44802954d88e4',
+          }
+        );
+      }
+
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
+
+      if (updatedVideo.isApproved === true) {
+        await refreshMrssFiles();
+      }
+
+      const { _id, __v, updatedAt, ...data } = updatedVideo._doc;
+
+      return res.status(200).json({
+        message: `Video with id "${videoId}" has been successfully updated`,
+        status: 'success',
+        apiData: data,
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        message: err?.message ? err?.message : 'Server side error',
+        status: 'error',
+      });
+    }
+  }
+);
+
+router.patch('/updateByValue', authMiddleware, async (req, res) => {
+  try {
+    const { searchBy, searchValue, refreshFeeds } = req.query;
+    const { isApproved, wasRemovedFromPublication } = req.body;
+
+    await updateVideoBy({
+      searchBy,
+      searchValue,
+      dataToUpdate: {
+        ...(typeof isApproved === 'boolean' && { isApproved }),
+        ...(typeof wasRemovedFromPublication === 'boolean' && {
+          wasRemovedFromPublication,
+        }),
+      },
+    });
+
+    if (refreshFeeds && JSON.parse(refreshFeeds)) {
+      await refreshMrssFiles();
+    }
+
+    return res.status(200).json({
+      message: `Video has been successfully updated`,
+      status: 'success',
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      message: err?.message ? err?.message : 'Server side error',
+      status: 'error',
+    });
+  }
+});
+
+router.patch(
+  '/fixedVideo/:id',
+  authMiddleware,
+
+  multer({ storage: storage }).fields([
+    {
+      name: 'video',
+      maxCount: 1,
+    },
+    {
+      name: 'screen',
+      maxCount: 1,
+    },
+  ]),
+
+  async (req, res) => {
+    const { id: videoId } = req.params;
+
+    if (!videoId) {
+      return res
+        .status(200)
+        .json({ message: 'missing "video id" parameter', status: 'warning' });
+    }
+
+    const {
+      originalLink,
+      vbCode,
+      researchers,
+      title,
+      desc,
+      creditTo,
+      tags,
+      category,
+      categoryReuters,
+      city,
+      country,
+      date,
+      brandSafe,
+      socialMedia,
+      reuters,
+      commentToAdmin,
+    } = req.body;
+
+    if (
+      !originalLink ||
+      !JSON.parse(researchers).length ||
+      !title ||
+      !desc ||
+      !JSON.parse(tags).length ||
+      !JSON.parse(category).length ||
+      !categoryReuters ||
+      !city ||
+      !country ||
+      !date
+    ) {
+      return res.status(200).json({
+        message: 'Missing values for adding a new video',
+        status: 'warning',
+      });
+    }
+
+    const { video: reqVideo, screen: reqScreen } = req.files;
+
+    try {
+      const video = await findVideoById(+videoId);
+
+      if (!video) {
+        return res.status(200).json({
+          message: `video with id "${videoId}" not found`,
+          status: 'warning',
+        });
+      }
+
+      if (!vbCode && !!video.vbForm) {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToDelete: {
+            needToBeFixed: 1,
+            vbForm: 1,
+            ...(!creditTo && { 'videoData.creditTo': 1 }),
+          },
+          dataToUpdate: {
+            exclusivity: false,
+          },
+        });
+      }
+
+      if (vbCode) {
+        const vbForm = await findOne({
+          searchBy: 'formId',
+          param: `VB${vbCode}`,
+        });
+
+        if (!vbForm) {
+          return res.status(200).json({
+            message: `The form with the vb code ${vbCode} was not found in the database`,
+            status: 'warning',
+          });
+        }
+
+        const videoWithVBForm = await findVideoByValue({
+          searchBy: 'vbForm',
+          value: vbForm._id,
+        });
+
+        if (
+          videoWithVBForm &&
+          videoWithVBForm._id.toString() !== video._id.toString()
+        ) {
+          return res.status(200).json({
+            message: 'a video with such a "VB code" is already in the database',
+            status: 'warning',
+          });
+        }
+
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            vbForm: vbForm._id,
+            exclusivity: !vbForm?.refFormId
+              ? true
+              : vbForm.refFormId.exclusivity
+              ? true
+              : false,
+          },
+        });
+      }
+
+      if (reqVideo) {
+        if (path.extname(reqVideo[0].originalname) !== '.mp4') {
+          return res.status(200).json({
+            message: `Incorrect video extension`,
+            status: 'warning',
+          });
+        }
+
+        const responseAfterConversion = await convertingVideoToHorizontal(
+          reqVideo[0],
+          req.user.id
+        );
+
+        const bucketResponseByConvertedVideoUpload = await new Promise(
+          (resolve, reject) => {
+            fs.readFile(
+              path.resolve(`./videos/${req.user.id}/output-for-conversion.mp4`),
+              {},
+              async (err, buffer) => {
+                if (err) {
+                  console.log(err);
+                  reject({
+                    status: 'error',
+                    message: 'Error when reading a file from disk',
+                  });
+                } else {
+                  await uploadFileToStorage(
+                    reqVideo[0].originalname,
+                    'reuters-videos',
+                    videoId,
+                    buffer,
+                    reqVideo[0].mimetype,
+                    path.extname(reqVideo[0].originalname),
+                    resolve,
+                    reject,
+                    'progressOfRequestInPublishing',
+                    'Uploading the converted video to the bucket',
+                    req.user.id
+                  );
+                }
+              }
+            );
+          }
+        );
+
+        const bucketResponseByVideoUpload = await new Promise(
+          async (resolve, reject) => {
+            await uploadFileToStorage(
+              reqVideo[0].originalname,
+              'videos',
+              videoId,
+              reqVideo[0].buffer,
+              reqVideo[0].mimetype,
+              path.extname(reqVideo[0].originalname),
+              resolve,
+              reject,
+              'progressOfRequestInPublishing',
+              'Uploading video to the bucket',
+              req.user.id
+            );
+          }
+        );
+
+        const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
+
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            'bucket.cloudVideoLink':
+              bucketResponseByVideoUpload.response.Location,
+            'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
+            'bucket.cloudConversionVideoLink':
+              bucketResponseByConvertedVideoUpload.response.Location,
+            'bucket.cloudConversionVideoPath':
+              bucketResponseByConvertedVideoUpload.response.Key,
+            'videoData.duration': duration,
+            'videoData.hasAudioTrack':
+              responseAfterConversion.data.hasAudioTrack,
+          },
+        });
+      }
+
+      if (reqScreen) {
+        if (path.extname(reqScreen[0].originalname) !== '.jpg') {
+          return res.status(400).json({
+            message: `Incorrect screen extension`,
+            status: 'warning',
+          });
+        }
+
+        const bucketResponseByScreenUpload = await new Promise(
+          async (resolve, reject) => {
+            await uploadFileToStorage(
+              reqScreen[0].originalname,
+              'screens',
+              videoId,
+              reqScreen[0].buffer,
+              reqScreen[0].mimetype,
+              path.extname(reqScreen[0].originalname),
+              resolve,
+              reject,
+              'progressOfRequestInPublishing',
+              'Uploading screen to the bucket',
+              req.user.id
+            );
+          }
+        );
+
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            'bucket.cloudScreenLink':
+              bucketResponseByScreenUpload.response.Location,
+            'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
+          },
+        });
+      }
+
+      socketInstance
+        .io()
+        .sockets.in(req.user.id)
+        .emit('progressOfRequestInPublishing', {
+          event: 'Just a little bit left',
+          file: null,
+        });
+
+      if (!country && video.country && !video.countryCode) {
+        const countryCode = await findTheCountryCodeByName(
+          video.videoData.country
+        );
+
+        if (!countryCode) {
+          return res.status(400).json({
+            message: 'Error when searching for the country code',
+            status: 'error',
+          });
+        }
+
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            'videoData.countryCode': countryCode,
+          },
+        });
+      }
+
+      if (country) {
+        const countryCode = await findTheCountryCodeByName(country);
+
+        if (!countryCode) {
+          return res.status(400).json({
+            message: 'Error when searching for the country code',
+            status: 'error',
+          });
+        }
+
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            'videoData.country': country,
+            'videoData.countryCode': countryCode,
+          },
+        });
+      }
+
+      if (JSON.parse(brandSafe) === false) {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            brandSafe: JSON.parse(brandSafe),
+            publishedInSocialMedia: false,
+          },
+        });
+      } else {
+        await updateVideoById({
+          videoId: +videoId,
+          dataToUpdate: {
+            brandSafe: JSON.parse(brandSafe),
+          },
+        });
+      }
+
+      const trelloCardId = video.trelloData.trelloCardId;
+
+      const researchersList = await findUsersByValueList({
+        param: 'name',
+        valueList: JSON.parse(researchers),
+      });
+
+      const recordInTheDatabaseAboutTheMovedCard =
+        await findTheRecordOfTheCardMovedToDone(trelloCardId);
+
+      let researchersListForCreatingVideo;
+
+      if (recordInTheDatabaseAboutTheMovedCard) {
+        const userWhoDraggedTheCard = await getUserBy({
+          searchBy: '_id',
+          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+        });
+
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: userWhoDraggedTheCard,
+            allResearchersList: researchersList,
+          });
+      } else {
+        researchersListForCreatingVideo =
+          await defineResearchersListForCreatingVideo({
+            mainResearcher: null,
+            allResearchersList: researchersList,
+          });
+      }
+
+      await updateVideoById({
+        videoId: +videoId,
+        dataToUpdate: {
+          'videoData.originalVideoLink': originalLink,
+          'videoData.title': title,
+          'videoData.description': desc,
+          ...(creditTo && { 'videoData.creditTo': creditTo }),
+          'videoData.tags': JSON.parse(tags).map((el) => {
+            return el.trim();
+          }),
+          'videoData.category': JSON.parse(category),
+          'videoData.categoryReuters': categoryReuters,
+          'videoData.city': city,
+          ...(commentToAdmin && { commentToAdmin }),
+          'videoData.date': JSON.parse(date),
+          'trelloData.researchers': researchersListForCreatingVideo,
+          ...(video.isApproved && { lastChange: new Date().toGMTString() }),
+          reuters: JSON.parse(reuters),
+          socialMedia: JSON.parse(socialMedia),
         },
       });
 
@@ -1701,11 +1683,11 @@ router.patch(
 
     if (
       !originalLink ||
-      !researchers ||
+      !JSON.parse(researchers).length ||
       !title ||
       !desc ||
-      !tags ||
-      !category ||
+      !JSON.parse(tags).length ||
+      !JSON.parse(category).length ||
       !categoryReuters ||
       !city ||
       !country ||
@@ -1997,7 +1979,7 @@ router.patch(
 
       if (recordInTheDatabaseAboutTheMovedCard) {
         const userWhoDraggedTheCard = await getUserBy({
-          param: '_id',
+          searchBy: '_id',
           value: recordInTheDatabaseAboutTheMovedCard.researcherId,
         });
 
@@ -2017,29 +1999,20 @@ router.patch(
       await updateVideoById({
         videoId: +videoId,
         dataToUpdate: {
-          ...(originalLink && { 'videoData.originalVideoLink': originalLink }),
-          ...(title && { 'videoData.title': title }),
-          ...(desc && { 'videoData.description': desc }),
+          'videoData.originalVideoLink': originalLink,
+          'videoData.title': title,
+          'videoData.description': desc,
           ...(creditTo && { 'videoData.creditTo': creditTo }),
-          ...(tags && {
-            'videoData.tags': JSON.parse(tags).map((el) => {
-              return el.trim();
-            }),
+          'videoData.tags': JSON.parse(tags).map((el) => {
+            return el.trim();
           }),
-
-          ...(category && { 'videoData.category': JSON.parse(category) }),
-          ...(categoryReuters && {
-            'videoData.categoryReuters': categoryReuters,
-          }),
-          ...(socialMedia && {
-            socialMedia,
-          }),
-          ...(city && { 'videoData.city': city }),
-          ...(reuters && { reuters }),
-          ...(date && { 'videoData.date': JSON.parse(date) }),
-          ...(researchers && {
-            'trelloData.researchers': researchersListForCreatingVideo,
-          }),
+          'videoData.category': JSON.parse(category),
+          'videoData.categoryReuters': categoryReuters,
+          'videoData.city': city,
+          'videoData.date': JSON.parse(date),
+          'trelloData.researchers': researchersListForCreatingVideo,
+          reuters: JSON.parse(reuters),
+          socialMedia: JSON.parse(socialMedia),
           isApproved: true,
           pubDate: moment().valueOf(),
         },
@@ -2079,11 +2052,6 @@ router.patch(
       );
 
       return res.status(200).json({
-        apiData: {
-          trelloCardId: updatedVideo.trelloData.trelloCardId,
-          videoId: updatedVideo.videoData.videoId,
-          brandSafe: updatedVideo.brandSafe,
-        },
         status: 'success',
         message: 'The video was successfully published',
       });

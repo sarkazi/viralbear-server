@@ -1,6 +1,13 @@
 const { Schema, model } = require('mongoose');
 
-const roles = ['admin', 'researcher', 'author', 'editor', 'stringer'];
+const roles = [
+  'admin',
+  'researcher',
+  'author',
+  'editor',
+  'stringer',
+  'observer',
+];
 const paymentMethods = ['other', 'payPal', 'bankTransfer'];
 
 const schema = new Schema({

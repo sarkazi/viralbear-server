@@ -5,7 +5,7 @@ const pullOutProcessingDataFromPairedReport = async ({
   companyName,
 }) => {
   return await new Promise(async (resolve, reject) => {
-    if (companyName === 'newsFlare') {
+    if (companyName === 'newsflare') {
       resolve({
         company: companyName,
         searchBy: 'videoId',
@@ -26,7 +26,7 @@ const pullOutProcessingDataFromPairedReport = async ({
           })
         ),
       });
-    } else if (companyName === 'videoElephant') {
+    } else if (companyName === 'videoelephant') {
       resolve({
         company: companyName,
         searchBy: 'title',
@@ -75,7 +75,7 @@ const pullOutProcessingDataFromPairedReport = async ({
           };
         }),
       });
-    } else if (companyName === 'kameraOne') {
+    } else if (companyName === 'kameraone') {
       resolve({
         company: companyName,
         searchBy: 'videoId',
@@ -96,7 +96,7 @@ const pullOutProcessingDataFromPairedReport = async ({
           })
         ),
       });
-    } else if (companyName === 'stringersHub') {
+    } else if (companyName === 'stringershub') {
       resolve({
         company: companyName,
         searchBy: 'videoId',
