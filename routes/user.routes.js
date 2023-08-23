@@ -59,6 +59,7 @@ const {
   findVideoByValue,
   getCountVideosBy,
   updateVideosBy,
+  updateVideoBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,
 } = require('../controllers/video.controller');
 
@@ -709,6 +710,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           (a, sale) => a + +sale.amountToResearcher,
           0
         );
+
         const earnedTotal = salesTotal.reduce(
           (a, sale) => a + +(sale.amount / sale.researchers.length),
           0
@@ -814,6 +816,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
               purchased: true,
             },
           });
+
         const acquiredExclusivityVideosCount = await getCountVideosBy({
           isApproved: true,
           exclusivity: true,
@@ -849,12 +852,12 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
 
         const videosCountSentToReview = await getCountLinks({
           researcherId: user._id,
-          list: 'Review',
+          listInTrello: 'Review',
         });
 
         const videosCountSentToReviewLast30Days = await getCountLinks({
           researcherId: user._id,
-          list: 'Review',
+          listInTrello: 'Review',
           forLastDays: 30,
         });
 
@@ -938,9 +941,21 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           }
         };
 
+        const balance = Math.round(earnedYourselfTotal - user.gettingPaid);
+
+        console.log(
+          `прошедшие ревью - ${videosCountReviewed}`,
+          `отправленные на ревью - ${videosCountSentToReview}`,
+          `отношение прошедших к отправленным - ${
+            (videosCountReviewed / videosCountSentToReview) * 100
+          }`,
+          user.name,
+          8888999
+        );
+
         return {
           ...user._doc,
-          balance: Math.round(user.balance),
+          balance,
           gettingPaid: Math.round(user.gettingPaid),
           sentVideosCount: {
             total: linksCount,
@@ -976,23 +991,38 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
               : 0,
           },
           approvedRateAfterReview: {
-            total: videosCountSentToReview
-              ? Math.round(
-                  (videosCountReviewed * 100) / videosCountSentToReview
-                )
-              : 0,
-            last30Days: videosCountSentToReviewLast30Days
-              ? Math.round(
-                  (videosCountReviewedLast30Days * 100) /
+            total: !videosCountSentToReview
+              ? 0
+              : Math.round(videosCountReviewed / videosCountSentToReview) *
+                  100 >
+                100
+              ? 100
+              : Math.round(
+                  (videosCountReviewed / videosCountSentToReview) * 100
+                ),
+            last30Days: !videosCountSentToReviewLast30Days
+              ? 0
+              : Math.round(
+                  videosCountReviewedLast30Days /
                     videosCountSentToReviewLast30Days
-                )
-              : 0,
+                ) *
+                  100 >
+                100
+              ? 100
+              : Math.round(
+                  (videosCountReviewedLast30Days /
+                    videosCountSentToReviewLast30Days) *
+                    100
+                ),
           },
           earnedYourself: {
             total: Math.round(earnedYourselfTotal),
             last30Days: Math.round(earnedYourselfLast30Days),
           },
-          earnedCompanies: Math.round(earnedCompanies),
+          earnedCompanies:
+            balance < 0
+              ? Math.round(earnedCompanies + balance)
+              : Math.round(earnedCompanies),
           earnedTotal: Math.round(earnedTotal),
           amountOfAdvancesToAuthors: Math.round(amountOfAdvancesToAuthors),
           amountToBePaid: advance > percentage ? advance : percentage,
@@ -1020,6 +1050,29 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           total: Math.round(
             acc.earnedYourself.total + user.earnedYourself.total
           ),
+        };
+
+        //соотношение отправленных на ревью к прошедшим ревью
+        acc.approvedRateAfterReview = {
+          //за 30 дней
+          last30Days:
+            acc.approvedRateAfterReview.last30Days +
+            user.approvedRateAfterReview.last30Days,
+          //всего
+          total:
+            acc.approvedRateAfterReview.total +
+            user.approvedRateAfterReview.total,
+        };
+
+        acc.percentageOfExclusivityToNonExclusivityVideos = {
+          //за 30 дней
+          last30Days:
+            acc.percentageOfExclusivityToNonExclusivityVideos.last30Days +
+            user.percentageOfExclusivityToNonExclusivityVideos.last30Days,
+          //всего
+          total:
+            acc.percentageOfExclusivityToNonExclusivityVideos.total +
+            user.percentageOfExclusivityToNonExclusivityVideos.total,
         };
 
         //суммарный общий заработок работников
@@ -1066,6 +1119,14 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
         balance: 0,
         gettingPaid: 0,
         amountOfAdvancesToAuthors: 0,
+        approvedRateAfterReview: {
+          last30Days: 0,
+          total: 0,
+        },
+        percentageOfExclusivityToNonExclusivityVideos: {
+          last30Days: 0,
+          total: 0,
+        },
         earnedYourself: {
           last30Days: 0,
           total: 0,
@@ -1095,7 +1156,29 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
             prev.acquiredVideosCount.mainRole.last30Days
           );
         }),
-        sumValues: totalSumOfStatFields,
+        sumValues: {
+          ...totalSumOfStatFields,
+          approvedRateAfterReview: {
+            last30Days: +(
+              totalSumOfStatFields.approvedRateAfterReview.last30Days /
+              employeeStat.length
+            ).toFixed(2),
+            total: +(
+              totalSumOfStatFields.approvedRateAfterReview.total /
+              employeeStat.length
+            ).toFixed(2),
+          },
+          percentageOfExclusivityToNonExclusivityVideos: {
+            last30Days: +(
+              totalSumOfStatFields.percentageOfExclusivityToNonExclusivityVideos
+                .last30Days / employeeStat.length
+            ).toFixed(2),
+            total: +(
+              totalSumOfStatFields.percentageOfExclusivityToNonExclusivityVideos
+                .total / employeeStat.length
+            ).toFixed(2),
+          },
+        },
       },
     });
   } catch (err) {
@@ -1121,7 +1204,6 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
 
     const sales = await getSalesByUserId({
       userId: user._id,
-      dateLimit: null,
     });
 
     const salesDateLimit = await getSalesByUserId({
@@ -1224,26 +1306,25 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       },
     });
 
-    const videosCountSentFromReviewLast30Days =
-      await getCountApprovedTrelloCardBy({
-        searchBy: 'researcherId',
-        value: user._id,
-        forLastDays: 30,
-      });
-
-    const videosCountSentFromReview = await getCountApprovedTrelloCardBy({
+    const videosCountReviewed = await getCountApprovedTrelloCardBy({
       searchBy: 'researcherId',
       value: user._id,
     });
 
     const videosCountSentToReview = await getCountLinks({
       researcherId: user._id,
-      list: 'Review',
+      listInTrello: 'Review',
+    });
+
+    const videosCountReviewedLast30Days = await getCountApprovedTrelloCardBy({
+      searchBy: 'researcherId',
+      value: user._id,
+      forLastDays: 30,
     });
 
     const videosCountSentToReviewLast30Days = await getCountLinks({
       researcherId: user._id,
-      list: 'Review',
+      listInTrello: 'Review',
       forLastDays: 30,
     });
 
@@ -1299,8 +1380,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     };
 
     const apiData = {
-      balance: Math.round(user.balance),
-
+      balance: Math.round(earnedForYourself - user.gettingPaid),
       earnedForYourself: {
         allTime: Math.round(earnedForYourself),
         last30Days: Math.round(earnedYourselfLast30Days),
@@ -1336,23 +1416,32 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
           : 0,
       },
       approvedRateAfterReview: {
-        allTime: videosCountSentToReview
-          ? Math.round(
-              (videosCountSentFromReview * 100) / videosCountSentToReview
-            )
-          : 0,
-        last30Days: videosCountSentToReviewLast30Days
-          ? Math.round(
-              (videosCountSentFromReviewLast30Days * 100) /
-                videosCountSentToReviewLast30Days
-            )
-          : 0,
+        allTime: !videosCountSentToReview
+          ? 0
+          : Math.round(videosCountReviewed / videosCountSentToReview) * 100 >
+            100
+          ? 100
+          : Math.round((videosCountReviewed / videosCountSentToReview) * 100),
+        last30Days: !videosCountSentToReviewLast30Days
+          ? 0
+          : Math.round(
+              videosCountReviewedLast30Days / videosCountSentToReviewLast30Days
+            ) *
+              100 >
+            100
+          ? 100
+          : Math.round(
+              (videosCountReviewedLast30Days /
+                videosCountSentToReviewLast30Days) *
+                100
+            ),
       },
       percentage: user.percentage ? user.percentage : 0,
       advancePayment: user.advancePayment ? user.advancePayment : 0,
       amountToBePaid: advance > percentage ? advance : percentage,
       paymentSubject: paymentSubject(),
       name: user.name,
+      salesCount: sales.length,
     };
 
     return res.status(200).json({
@@ -1808,7 +1897,7 @@ router.get('/authors/getPaymentDetails', authMiddleware, async (req, res) => {
   try {
     const { searchBy, value } = req.query;
 
-    const author = await getUserBy({ param: searchBy, value });
+    const author = await getUserBy({ searchBy, value });
 
     if (!author) {
       return res.status(200).json({
@@ -1923,6 +2012,12 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         updateBy: '_id',
         value: vbForm._id,
         dataForUpdate: { advancePaymentReceived: true },
+      });
+
+      await updateVideoBy({
+        searchBy: '_id',
+        searchValue: video._id,
+        dataToInc: { balance: -amountToTopUp },
       });
 
       const objDBForSet = {

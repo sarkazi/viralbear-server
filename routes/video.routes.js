@@ -126,6 +126,7 @@ router.post(
         priority,
         exclusivity,
         videoId: reqVideoId,
+        commentToAdmin,
       } = req.body;
 
       const { video, screen } = req.files;
@@ -327,6 +328,9 @@ router.post(
           ...(creditTo && {
             creditTo,
           }),
+          ...(commentToAdmin && {
+            commentToAdmin,
+          }),
           tags: JSON.parse(tags).map((el) => {
             return el.trim();
           }),
@@ -419,34 +423,41 @@ router.get('/findOneBy', async (req, res) => {
   }
 });
 
-router.get('/findAll', async (req, res) => {
+router.get('/findAll', authMiddleware, async (req, res) => {
   const {
     category,
     tag,
-    duration,
     location,
-    postedDate,
-    occured,
     page,
     isApproved,
     limit,
     wasRemovedFromPublication,
+    personal,
+    forLastDays,
   } = req.query;
 
-  let durationPoints = null;
-
-  if (duration) {
-    durationPoints = findStartEndPointOfDuration(duration);
+  if ((limit && !page) || (!limit && page)) {
+    return res
+      .status(200)
+      .json({ message: 'Missing parameter for pagination', status: 'warning' });
   }
+
   try {
     let videos = await getAllVideos({
-      durationPoints,
-      category,
-      tag,
-      location,
+      ...(category && { category }),
+      ...(tag && { tag }),
+      ...(location && { location }),
+      ...(forLastDays && { forLastDays }),
       ...(isApproved &&
         typeof JSON.parse(isApproved) === 'boolean' && {
           isApproved: JSON.parse(isApproved),
+        }),
+      ...(personal &&
+        typeof JSON.parse(personal) === 'boolean' && {
+          researcher: {
+            searchBy: 'id',
+            value: req.user.id,
+          },
         }),
       ...(wasRemovedFromPublication &&
         typeof JSON.parse(wasRemovedFromPublication) === 'boolean' && {
@@ -457,89 +468,36 @@ router.get('/findAll', async (req, res) => {
     let count = 0;
     let pageCount = 0;
 
-    if (postedDate) {
-      if (typeof postedDate !== 'string') {
-        const dateFrom = moment(postedDate[0])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-        const dateTo = moment(postedDate[1])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-        videos = videos.filter((video) => {
-          const date = moment(video.createdAt).utc().startOf('d').toDate();
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      } else {
-        const { dateFrom, dateTo } = findTimestampsBySearch(postedDate);
-        videos = videos.filter((video) => {
-          const date = moment(video.createdAt).utc().startOf('d').toDate();
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      }
-    }
-    if (occured) {
-      if (typeof occured !== 'string') {
-        const dateFrom = moment(occured[0])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-        const dateTo = moment(occured[1])
-          .utc()
-          .add(1, 'd')
-          .startOf('d')
-          .toDate();
-        videos = videos.filter((video) => {
-          const date = moment(video.videoData.date).utc().startOf('d').toDate();
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      } else {
-        const { dateFrom, dateTo } = findTimestampsBySearch(occured);
-        videos = videos.filter((video) => {
-          const date = moment(video.videoData.date).utc().startOf('d').toDate();
-          return (
-            date.getTime() >= dateFrom.getTime() &&
-            date.getTime() <= dateTo.getTime()
-          );
-        });
-      }
-    }
     if (limit && page) {
       count = videos.length;
       pageCount = Math.ceil(count / limit);
-      const videosId = await Promise.all(
-        videos.map(async (el) => {
-          return await el.videoData.videoId;
-        })
-      );
-
       const skip = (page - 1) * limit;
 
-      videos = await Video.find(
-        {
-          'videoData.videoId': { $in: videosId },
-          isApproved: true,
-        },
-        { __v: 0, updatedAt: 0, _id: 0 }
-      )
-        .sort({ 'videoData.videoId': -1 })
-        .collation({ locale: 'en_US', numericOrdering: true })
-        .limit(limit)
-        .skip(skip);
+      videos = await getAllVideos({
+        category,
+        tag,
+        location,
+        ...(isApproved &&
+          typeof JSON.parse(isApproved) === 'boolean' && {
+            isApproved: JSON.parse(isApproved),
+          }),
+        ...(personal &&
+          typeof JSON.parse(personal) === 'boolean' && {
+            researcher: {
+              searchBy: 'id',
+              value: req.user.id,
+            },
+          }),
+        ...(wasRemovedFromPublication &&
+          typeof JSON.parse(wasRemovedFromPublication) === 'boolean' && {
+            wasRemovedFromPublication: JSON.parse(wasRemovedFromPublication),
+          }),
+        limit,
+        skip,
+        sort: { 'videoData.videoId': -1 },
+      });
     }
+
     const apiData = {
       ...(limit &&
         page && {

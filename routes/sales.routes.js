@@ -162,8 +162,6 @@ router.post(
         sheetStubs: true,
       });
 
-      console.log(csv);
-
       const fileHeaderValues = xlsx.utils
         .sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 })
         .shift();
@@ -858,7 +856,7 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
 });
 
 router.get('/getTop', authMiddleware, async (req, res) => {
-  const { forLastDays } = req.query;
+  const { forLastDays, limit } = req.query;
 
   try {
     const pipeline = [
@@ -889,7 +887,9 @@ router.get('/getTop', authMiddleware, async (req, res) => {
       {
         $sort: { amount: -1 },
       },
-      { $limit: 10 },
+      {
+        $limit: typeof JSON.parse(limit) === 'number' ? JSON.parse(limit) : 10,
+      },
     ];
 
     let salesGroup = [];
@@ -911,18 +911,18 @@ router.get('/getTop', authMiddleware, async (req, res) => {
           return {
             ...obj,
             ...(vbForm?.sender?.email && { authorEmail: vbForm.sender.email }),
-            ...(typeof vbForm?.vbFormId?.percentage === 'number' && {
-              percentage: vbForm.vbFormId.percentage,
+            ...(typeof vbForm?.refFormId?.percentage === 'number' && {
+              percentage: vbForm.refFormId.percentage,
             }),
-            ...(typeof vbForm?.vbFormId?.advancePayment === 'number' && {
-              advancePayment: vbForm.vbFormId.advancePayment,
+            ...(typeof vbForm?.refFormId?.advancePayment === 'number' && {
+              advancePayment: vbForm.refFormId.advancePayment,
             }),
-            amount: +obj.amount.toFixed(2),
+            amount: Math.round(obj.amount),
           };
         } else {
           return {
             ...obj,
-            amount: +obj.amount.toFixed(2),
+            amount: Math.round(obj.amount),
           };
         }
       })

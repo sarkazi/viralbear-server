@@ -290,6 +290,7 @@ const updateVideoBy = async ({
   searchValue,
   dataToDelete,
   dataToUpdate,
+  dataToInc,
 }) => {
   await Video.updateOne(
     {
@@ -298,6 +299,7 @@ const updateVideoBy = async ({
     {
       ...(dataToDelete && { $unset: dataToDelete }),
       ...(dataToUpdate && { $set: dataToUpdate }),
+      ...(dataToInc && { $inc: dataToInc }),
     }
   );
 };
@@ -438,6 +440,9 @@ const createNewVideo = async (body) => {
     },
     ...(body.vbForm && {
       vbForm: body.vbForm,
+    }),
+    ...(body.commentToAdmin && {
+      commentToAdmin: body.commentToAdmin,
     }),
     bucket: {
       cloudVideoLink: body.bucketResponseByVideoUpload.Location,
@@ -619,6 +624,9 @@ const getAllVideos = async ({
   category,
   tag,
   location,
+  limit,
+  skip,
+  sort,
 }) => {
   return Video.find(
     {
@@ -681,7 +689,10 @@ const getAllVideos = async ({
       },
     })
 
-    .collation({ locale: 'en', strength: 2 });
+    .collation({ locale: 'en', strength: 2 })
+    .sort(sort ? sort : null)
+    .limit(limit ? limit : null)
+    .skip(skip ? skip : null);
 };
 
 const publishingVideoInSocialMedia = async (req, res) => {

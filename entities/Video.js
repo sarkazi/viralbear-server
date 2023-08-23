@@ -187,6 +187,10 @@ const schema = new Schema(
       type: Date,
       required: false,
     },
+    balance: {
+      type: Number,
+      required: false,
+    },
   },
   { timestamps: true }
 );

@@ -31,6 +31,7 @@ const salesRouter = require('./routes/sales.routes');
 const locationRouter = require('./routes/location.routes');
 const webhookRouter = require('./routes/webhook.routes');
 const publicUsersRouter = require('./routes/public.users.routes');
+const publicVideosRouter = require('./routes/public.videos.routes');
 
 const socketServer = require('http').createServer(app);
 
@@ -62,6 +63,7 @@ app.use('/sales', salesRouter);
 app.use('/location', locationRouter);
 app.use('/webhook', webhookRouter);
 app.use('/public/users', publicUsersRouter);
+app.use('/public/videos', publicVideosRouter);
 
 let PORT = process.env.PORT || 8888;
 
