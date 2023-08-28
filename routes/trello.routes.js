@@ -9,7 +9,11 @@ const {
   getAllMembers,
   getCardDataByCardId,
 } = require('../controllers/trello.controller');
-const { getUserById, getAllUsers } = require('../controllers/user.controller');
+const {
+  getUserById,
+  getAllUsers,
+  getUserBy,
+} = require('../controllers/user.controller');
 const {
   getAllViewedMentionsByUser,
 } = require('../controllers/viewedMention.controller');
@@ -59,6 +63,7 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
           textOfComment: comment.data.text.replace(user.nickname, ''),
           cardId: comment.data.card.id,
           cardUrl: `https://trello.com/c/${comment.data.card.shortLink}/`,
+          ...(!!user.avatarUrl && { avatarUrl: user.avatarUrl }),
         };
       })
       .filter((comment) => {
@@ -102,6 +107,7 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
     let summaryData = await Promise.all(
       requiredCards.map(async (card) => {
         let vbForm = null;
+        let researcher = null;
 
         if (
           card.customFieldItems.find(
@@ -115,6 +121,17 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
           vbForm = await findOne({
             searchBy: 'formId',
             param: `VB${vbFormId}`,
+          });
+        }
+
+        const videoMovedToDone = await findTheRecordOfTheCardMovedToDone(
+          card.id
+        );
+
+        if (card.members.length === 1) {
+          researcher = await getUserBy({
+            searchBy: 'nickname',
+            value: `@${card.members[0].username}`,
           });
         }
 
@@ -138,6 +155,12 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
             ? 'approve'
             : 'done',
           url: card.url,
+          ...((!!videoMovedToDone?.researcherId?.avatarUrl ||
+            researcher?.avatarUrl) && {
+            acquirerAvatarUrl: !!videoMovedToDone?.researcherId?.avatarUrl
+              ? videoMovedToDone.researcherId.avatarUrl
+              : researcher.avatarUrl,
+          }),
         };
       })
     );
@@ -320,7 +343,7 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
         : false,
     };
 
-    console.log(apiData, 999);
+   
 
     return res.status(200).json({
       message: 'Trello card data received',

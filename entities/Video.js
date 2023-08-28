@@ -75,30 +75,32 @@ const schema = new Schema(
         type: String,
         required: true,
       },
-      researchers: [
-        {
-          id: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-            required: true,
-          },
-          name: {
-            type: String,
-            required: true,
-          },
-          advanceHasBeenPaid: {
-            type: Boolean,
-            required: true,
-            default: false,
-          },
-          main: {
-            type: Boolean,
-            required: true,
-          },
-          type: Object,
+      researchers: {
+        id: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
           required: true,
         },
-      ],
+        name: {
+          type: String,
+          required: true,
+        },
+        advanceHasBeenPaid: {
+          type: Boolean,
+          required: true,
+          default: false,
+        },
+        main: {
+          type: Boolean,
+          required: true,
+        },
+        avatarUrl: {
+          type: String,
+          required: false,
+        },
+        type: Object,
+        required: true,
+      },
 
       priority: {
         type: Boolean,

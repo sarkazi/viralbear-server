@@ -561,6 +561,13 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         }),
     });
 
+    console.log(
+      sales.map((el) => {
+        return el.vbFormInfo;
+      }),
+      47856578657
+    );
+
     const sumAmount = sales.reduce((acc, item) => {
       return acc + item.amount;
     }, 0);

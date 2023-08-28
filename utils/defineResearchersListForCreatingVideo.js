@@ -11,6 +11,7 @@ const defineResearchersListForCreatingVideo = ({
         ? true
         : false,
       name: researcher.name,
+      ...(!!researcher.avatarUrl && {avatarUrl: researcher.avatarUrl}),
       email: researcher.email,
       advanceHasBeenPaid: false,
     };

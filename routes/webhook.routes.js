@@ -185,10 +185,10 @@ router.post('/trello/allBoard', async (req, res) => {
     const changedData = req.body;
 
     if (
-      changedData.action.display.translationKey ===
+      changedData?.action?.display?.translationKey ===
         'action_add_label_to_card' &&
-      !changedData.action.appCreator &&
-      changedData.action.data.text === 'Done'
+      !changedData?.action?.appCreator &&
+      changedData?.action?.data?.text === 'Done'
     ) {
       console.log(`webhook "${changedData.webhook.description}" сработал`);
 

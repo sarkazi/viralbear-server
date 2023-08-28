@@ -507,7 +507,7 @@ const readingAndUploadingConvertedVideoToBucket = async (name, userId) => {
 };
 
 const findByNotApproved = async () => {
-  const videos = Video.find({
+  const videos = await Video.find({
     isApproved: false,
     needToBeFixed: { $exists: false },
   }).populate({

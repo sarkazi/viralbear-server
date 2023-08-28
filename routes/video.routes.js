@@ -537,8 +537,6 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
   try {
     const videosReadyForPublication = await findReadyForPublication();
 
-   
-
     const apiData = videosReadyForPublication.map((video) => {
       return {
         _id: video._id,
@@ -549,6 +547,13 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
             : video.trelloData.trelloCardName,
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
+        ...(video.trelloData.researchers.find(
+          (researcher) => researcher.main && !!researcher.avatarUrl
+        ) && {
+          acquirerAvatarUrl: video.trelloData.researchers.find(
+            (researcher) => researcher.main && !!researcher.avatarUrl
+          ).avatarUrl,
+        }),
       };
     });
 
@@ -595,8 +600,17 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
             : video.trelloData.trelloCardName,
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
+        ...(video.trelloData.researchers.find(
+          (researcher) => researcher.main && !!researcher.avatarUrl
+        ) && {
+          acquirerAvatarUrl: video.trelloData.researchers.find(
+            (researcher) => researcher.main && !!researcher.avatarUrl
+          ).avatarUrl,
+        }),
       };
     });
+
+    console.log(apiData);
 
     return res.status(200).json({
       status: 'success',

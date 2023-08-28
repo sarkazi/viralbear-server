@@ -32,7 +32,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     exclusivity,
   } = req.body;
 
-  console.log(req.body);
+  
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(200).json({

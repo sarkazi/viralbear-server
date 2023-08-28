@@ -155,8 +155,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
           }
         }),
       };
-
-      console.log(users, 8989);
     }
 
     if (limit && page) {
@@ -887,6 +885,10 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           );
         }
 
+        const average = acquiredVideosCountMainRole
+          ? Math.round(earnedTotal / acquiredVideosCountMainRole)
+          : 0;
+
         //-----------------------------------------------------------------------------------------------------
 
         let advance = 0;
@@ -1019,6 +1021,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
             total: Math.round(earnedYourselfTotal),
             last30Days: Math.round(earnedYourselfLast30Days),
           },
+          average,
           earnedCompanies:
             balance < 0
               ? Math.round(earnedCompanies + balance)
@@ -1035,6 +1038,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
       (acc = {}, user = {}) => {
         //суммарный баланс работников
         acc.balance = Math.round(acc.balance + user.balance);
+        acc.average = acc.average + user.average;
         acc.gettingPaid = Math.round(acc.gettingPaid + user.gettingPaid);
         acc.amountOfAdvancesToAuthors = Math.round(
           acc.amountOfAdvancesToAuthors + user.amountOfAdvancesToAuthors
@@ -1123,6 +1127,7 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           last30Days: 0,
           total: 0,
         },
+        average: 0,
         percentageOfExclusivityToNonExclusivityVideos: {
           last30Days: 0,
           total: 0,
@@ -1158,6 +1163,9 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
         }),
         sumValues: {
           ...totalSumOfStatFields,
+          average: +(
+            totalSumOfStatFields.average / employeeStat.length
+          ).toFixed(2),
           approvedRateAfterReview: {
             last30Days: +(
               totalSumOfStatFields.approvedRateAfterReview.last30Days /
@@ -1217,6 +1225,11 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
 
     const earnedForYourself = sales.reduce(
       (acc, sale) => acc + +sale.amountToResearcher,
+      0
+    );
+
+    const earnedTotal = sales.reduce(
+      (a, sale) => a + +(sale.amount / sale.researchers.length),
       0
     );
 
@@ -1328,6 +1341,10 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       forLastDays: 30,
     });
 
+    const average = acquiredVideosCountMainRole
+      ? Math.round(earnedTotal / acquiredVideosCountMainRole)
+      : 0;
+
     let advance = 0;
     let percentage = 0;
 
@@ -1436,6 +1453,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
                 100
             ),
       },
+      average,
       percentage: user.percentage ? user.percentage : 0,
       advancePayment: user.advancePayment ? user.advancePayment : 0,
       amountToBePaid: advance > percentage ? advance : percentage,
