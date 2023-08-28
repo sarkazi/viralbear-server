@@ -15,6 +15,9 @@ const writeNewMoveToDone = async ({
 const findTheRecordOfTheCardMovedToDone = async (trelloCardId) => {
   return await MovedToDoneListSchema.findOne({
     trelloCardId,
+  }).populate({
+    path: 'researcherId',
+    select: { nickname: 1, name: 1, email: 1 },
   });
 };
 

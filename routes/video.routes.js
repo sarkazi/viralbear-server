@@ -87,6 +87,7 @@ const socketInstance = require('../socket.instance');
 const {
   defineResearchersListForCreatingVideo,
 } = require('../utils/defineResearchersListForCreatingVideo');
+
 const { getAllSales } = require('../controllers/sales.controller');
 
 const storage = multer.memoryStorage();
@@ -127,6 +128,7 @@ router.post(
         exclusivity,
         videoId: reqVideoId,
         commentToAdmin,
+        acquirerName,
       } = req.body;
 
       const { video, screen } = req.files;
@@ -162,6 +164,13 @@ router.post(
       ) {
         return res.status(200).json({
           message: 'Missing values for adding a new video',
+          status: 'warning',
+        });
+      }
+
+      if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
+        return res.status(200).json({
+          message: 'The acquirer is not added to the list',
           status: 'warning',
         });
       }
@@ -296,29 +305,20 @@ router.post(
           valueList: JSON.parse(researchers),
         });
 
-        const recordInTheDatabaseAboutTheMovedCard =
-          await findTheRecordOfTheCardMovedToDone(trelloCardId);
+        let acquirer = null;
 
-        let researchersListForCreatingVideo;
-
-        if (recordInTheDatabaseAboutTheMovedCard) {
-          const userWhoDraggedTheCard = await getUserBy({
-            searchBy: '_id',
-            value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+        if (acquirerName) {
+          acquirer = await getUserBy({
+            searchBy: 'name',
+            value: acquirerName,
           });
-
-          researchersListForCreatingVideo =
-            await defineResearchersListForCreatingVideo({
-              mainResearcher: userWhoDraggedTheCard,
-              allResearchersList: researchersList,
-            });
-        } else {
-          researchersListForCreatingVideo =
-            await defineResearchersListForCreatingVideo({
-              mainResearcher: null,
-              allResearchersList: researchersList,
-            });
         }
+
+        const researchersListForCreatingVideo =
+          defineResearchersListForCreatingVideo({
+            mainResearcher: acquirer ? acquirer : null,
+            allResearchersList: researchersList,
+          });
 
         const bodyForNewVideo = {
           videoId,
@@ -409,7 +409,16 @@ router.get('/findOneBy', async (req, res) => {
     }
 
     return res.status(200).json({
-      apiData,
+      apiData: {
+        ...apiData._doc,
+        ...(apiData.trelloData.researchers.find(
+          (researcher) => researcher.main
+        ) && {
+          acquirerName: apiData.trelloData.researchers.find(
+            (researcher) => researcher.main
+          ).name,
+        }),
+      },
       status: 'success',
       message: 'Detailed video information received',
     });
@@ -527,6 +536,8 @@ router.get('/findAll', authMiddleware, async (req, res) => {
 router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
   try {
     const videosReadyForPublication = await findReadyForPublication();
+
+   
 
     const apiData = videosReadyForPublication.map((video) => {
       return {
@@ -766,6 +777,7 @@ router.patch(
       socialMedia,
       reuters,
       commentToAdmin,
+      acquirerName,
     } = req.body;
 
     if (
@@ -782,6 +794,16 @@ router.patch(
     ) {
       return res.status(200).json({
         message: 'Missing values for adding a new video',
+        status: 'warning',
+      });
+    }
+
+    if (
+      acquirerName &&
+      !JSON.parse(researchers).find((name) => name === acquirerName)
+    ) {
+      return res.status(200).json({
+        message: 'The acquirer is not added to the list',
         status: 'warning',
       });
     }
@@ -1035,36 +1057,25 @@ router.patch(
         });
       }
 
-      const trelloCardId = video.trelloData.trelloCardId;
-
       const researchersList = await findUsersByValueList({
         param: 'name',
         valueList: JSON.parse(researchers),
       });
 
-      const recordInTheDatabaseAboutTheMovedCard =
-        await findTheRecordOfTheCardMovedToDone(trelloCardId);
+      let acquirer = null;
 
-      let researchersListForCreatingVideo;
-
-      if (recordInTheDatabaseAboutTheMovedCard) {
-        const userWhoDraggedTheCard = await getUserBy({
-          searchBy: '_id',
-          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+      if (acquirerName) {
+        acquirer = await getUserBy({
+          searchBy: 'name',
+          value: acquirerName,
         });
-
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: userWhoDraggedTheCard,
-            allResearchersList: researchersList,
-          });
-      } else {
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: null,
-            allResearchersList: researchersList,
-          });
       }
+
+      const researchersListForCreatingVideo =
+        defineResearchersListForCreatingVideo({
+          mainResearcher: acquirer ? acquirer : null,
+          allResearchersList: researchersList,
+        });
 
       await updateVideoById({
         videoId: +videoId,
@@ -1204,6 +1215,7 @@ router.patch(
       socialMedia,
       reuters,
       commentToAdmin,
+      acquirerName,
     } = req.body;
 
     if (
@@ -1220,6 +1232,16 @@ router.patch(
     ) {
       return res.status(200).json({
         message: 'Missing values for adding a new video',
+        status: 'warning',
+      });
+    }
+
+    if (
+      acquirerName &&
+      !JSON.parse(researchers).find((name) => name === acquirerName)
+    ) {
+      return res.status(200).json({
+        message: 'The acquirer is not added to the list',
         status: 'warning',
       });
     }
@@ -1473,36 +1495,25 @@ router.patch(
         });
       }
 
-      const trelloCardId = video.trelloData.trelloCardId;
-
       const researchersList = await findUsersByValueList({
         param: 'name',
         valueList: JSON.parse(researchers),
       });
 
-      const recordInTheDatabaseAboutTheMovedCard =
-        await findTheRecordOfTheCardMovedToDone(trelloCardId);
+      let acquirer = null;
 
-      let researchersListForCreatingVideo;
-
-      if (recordInTheDatabaseAboutTheMovedCard) {
-        const userWhoDraggedTheCard = await getUserBy({
-          searchBy: '_id',
-          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+      if (acquirerName) {
+        acquirer = await getUserBy({
+          searchBy: 'name',
+          value: acquirerName,
         });
-
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: userWhoDraggedTheCard,
-            allResearchersList: researchersList,
-          });
-      } else {
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: null,
-            allResearchersList: researchersList,
-          });
       }
+
+      const researchersListForCreatingVideo =
+        defineResearchersListForCreatingVideo({
+          mainResearcher: acquirer ? acquirer : null,
+          allResearchersList: researchersList,
+        });
 
       await updateVideoById({
         videoId: +videoId,
@@ -1653,6 +1664,16 @@ router.patch(
     ) {
       return res.status(200).json({
         message: 'Missing values for adding a new video',
+        status: 'warning',
+      });
+    }
+
+    if (
+      acquirerName &&
+      !JSON.parse(researchers).find((name) => name === acquirerName)
+    ) {
+      return res.status(200).json({
+        message: 'The acquirer is not added to the list',
         status: 'warning',
       });
     }
@@ -1923,36 +1944,25 @@ router.patch(
         });
       }
 
-      const trelloCardId = video.trelloData.trelloCardId;
-
       const researchersList = await findUsersByValueList({
         param: 'name',
         valueList: JSON.parse(researchers),
       });
 
-      const recordInTheDatabaseAboutTheMovedCard =
-        await findTheRecordOfTheCardMovedToDone(trelloCardId);
+      let acquirer = null;
 
-      let researchersListForCreatingVideo;
-
-      if (recordInTheDatabaseAboutTheMovedCard) {
-        const userWhoDraggedTheCard = await getUserBy({
-          searchBy: '_id',
-          value: recordInTheDatabaseAboutTheMovedCard.researcherId,
+      if (acquirerName) {
+        acquirer = await getUserBy({
+          searchBy: 'name',
+          value: acquirerName,
         });
-
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: userWhoDraggedTheCard,
-            allResearchersList: researchersList,
-          });
-      } else {
-        researchersListForCreatingVideo =
-          await defineResearchersListForCreatingVideo({
-            mainResearcher: null,
-            allResearchersList: researchersList,
-          });
       }
+
+      const researchersListForCreatingVideo =
+        defineResearchersListForCreatingVideo({
+          mainResearcher: acquirer ? acquirer : null,
+          allResearchersList: researchersList,
+        });
 
       await updateVideoById({
         videoId: +videoId,

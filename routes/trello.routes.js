@@ -21,6 +21,10 @@ const {
   findByFixed,
 } = require('../controllers/video.controller');
 
+const {
+  findTheRecordOfTheCardMovedToDone,
+} = require('../controllers/movedToDoneList.controller');
+
 const authMiddleware = require('../middleware/auth.middleware');
 
 router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
@@ -228,18 +232,46 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
 
     const trelloCard = await getCardDataByCardId(trelloCardId);
 
-    const trelloNicknames = trelloCard.members.map((el) => {
-      return `@${el.username}`;
+    if (!trelloCard) {
+      return res.status(200).json({
+        message: 'Trello card not found',
+        status: 'warning',
+      });
+    }
+
+    const cardMovedToDone = await findTheRecordOfTheCardMovedToDone(
+      trelloCard.id
+    );
+
+    let nicknames = [];
+
+    trelloCard.members.map((el) => {
+      nicknames.push(`@${el.username}`);
     });
 
-    const researchers = await getAllUsers({
+    if (
+      !nicknames.find(
+        (nickname) => nickname === `@${cardMovedToDone?.researcherId?.nickname}`
+      )
+    ) {
+      nicknames.push(cardMovedToDone?.researcherId?.nickname);
+    }
+
+    let researchers = await getAllUsers({
       me: true,
       roles: ['researcher'],
       fieldsInTheResponse: ['nickname', 'name'],
-      nicknames: trelloNicknames,
+      nicknames: nicknames,
     });
 
+    if (researchers.length) {
+      researchers = researchers.map((researcher) => {
+        return researcher.name;
+      });
+    }
+
     let vbForm = null;
+
     const vbCode = trelloCard.customFieldItems.find(
       (customField) => customField.idCustomField === '63e659f754cea8f9978e3b63'
     )?.value?.number;
@@ -272,8 +304,12 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       )
         ? true
         : false,
-      researchers: researchers.map((researcher) => {
-        return researcher.name;
+      researchers,
+      ...((!!cardMovedToDone?.researcherId ||
+        (!cardMovedToDone?.researcherId && researchers.length === 1)) && {
+        acquirerName: !!cardMovedToDone?.researcherId
+          ? cardMovedToDone.researcherId.name
+          : researchers[0],
       }),
       exclusivity: !vbForm
         ? false
@@ -283,6 +319,8 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
         ? true
         : false,
     };
+
+    console.log(apiData, 999);
 
     return res.status(200).json({
       message: 'Trello card data received',

@@ -1,4 +1,5 @@
 const Video = require('../entities/Video');
+const async = require('async');
 
 const storageInstance = require('../storage.instance');
 const moment = require('moment');
@@ -325,7 +326,19 @@ const findLastVideo = async (req, res) => {
     if (!lastAddedVideo) {
       return res.status(200).json({ message: 'No data found!' });
     }
-    res.status(200).json(lastAddedVideo);
+    res.status(200).json({
+      apiData: {
+        ...lastAddedVideo._doc,
+        ...(lastAddedVideo.trelloData.researchers.find(
+          (researcher) => researcher.main
+        ) && {
+          acquirerName: lastAddedVideo.trelloData.researchers.find(
+            (researcher) => researcher.main
+          ).name,
+        }),
+      },
+      status: 'success',
+    });
   } catch (err) {
     console.log(err);
     throw Error('Database error!');
@@ -494,7 +507,7 @@ const readingAndUploadingConvertedVideoToBucket = async (name, userId) => {
 };
 
 const findByNotApproved = async () => {
-  const videos = await Video.find({
+  const videos = Video.find({
     isApproved: false,
     needToBeFixed: { $exists: false },
   }).populate({
