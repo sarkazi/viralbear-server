@@ -666,124 +666,162 @@ router.patch(
   }
 );
 
-router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
-  const { roles } = req.query;
+router.get(
+  '/collectStatForEmployees/enlarged',
+  authMiddleware,
+  async (req, res) => {
+    if (req.user.role !== 'admin') {
+      return res.status(200).json({
+        message: 'Access denied',
+        status: 'warning',
+      });
+    }
 
-  try {
-    const users = await getAllUsers({
-      me: true,
-      userId: null,
-      roles,
-    });
+    const { roles } = req.query;
 
-    const employeeStat = await Promise.all(
-      users.map(async (user) => {
-        //-----------------------------------------------------------------------------------------------------
+    try {
+      const users = await getAllUsers({
+        me: true,
+        userId: null,
+        roles,
+      });
 
-        const salesLast30Days = await getSalesByUserId({
-          userId: user._id,
-          dateLimit: 30,
-        });
+      const employeeStat = await Promise.all(
+        users.map(async (user) => {
+          //-----------------------------------------------------------------------------------------------------
 
-        const salesTotal = await getSalesByUserId({
-          userId: user._id,
-          dateLimit: null,
-        });
+          const salesLast30Days = await getSalesByUserId({
+            userId: user._id,
+            dateLimit: 30,
+          });
 
-        const earnedYourselfLast30Days = salesLast30Days.reduce((acc, sale) => {
-          return acc + sale.amountToResearcher;
-        }, 0);
+          const salesTotal = await getSalesByUserId({
+            userId: user._id,
+            dateLimit: null,
+          });
 
-        const earnedYourselfTotal = salesTotal.reduce(
-          (a, sale) => a + +sale.amountToResearcher,
-          0
-        );
+          const earnedYourselfLast30Days = salesLast30Days.reduce(
+            (acc, sale) => {
+              return acc + sale.amountToResearcher;
+            },
+            0
+          );
 
-        const earnedTotal = salesTotal.reduce(
-          (a, sale) => a + +(sale.amount / sale.researchers.length),
-          0
-        );
+          const earnedYourselfTotal = salesTotal.reduce(
+            (a, sale) => a + +sale.amountToResearcher,
+            0
+          );
 
-        const earnedCompanies = salesTotal.reduce(
-          (a, sale) => a + ((sale.amount / sale.researchers.length) * 60) / 100,
-          0
-        );
+          const earnedTotal = salesTotal.reduce(
+            (a, sale) => a + +(sale.amount / sale.researchers.length),
+            0
+          );
 
-        const linksCountLast30Days = await getCountLinksBy({
-          userId: user._id,
-          dateLimit: 30,
-        });
+          const earnedCompanies = salesTotal.reduce(
+            (a, sale) =>
+              a + ((sale.amount / sale.researchers.length) * 60) / 100,
+            0
+          );
 
-        const linksCountLast7Days = await getCountLinksBy({
-          userId: user._id,
-          dateLimit: 7,
-        });
+          const linksCountLast30Days = await getCountLinksBy({
+            userId: user._id,
+            dateLimit: 30,
+          });
 
-        const linksCount = await getCountLinksBy({
-          userId: user._id,
-        });
+          const linksCountLast7Days = await getCountLinksBy({
+            userId: user._id,
+            dateLimit: 7,
+          });
 
-        const acquiredVideosCountLast30DaysMainRole = await getCountVideosBy({
-          forLastDays: 30,
-          isApproved: true,
-          user: {
-            value: user.email,
-            purchased: true,
-            searchBy: 'email',
-          },
-        });
+          const linksCount = await getCountLinksBy({
+            userId: user._id,
+          });
 
-        const acquiredVideosCountLast30DaysNoMainRole = await getCountVideosBy({
-          forLastDays: 30,
-          isApproved: true,
-          user: {
-            value: user.email,
-            purchased: false,
-            searchBy: 'email',
-          },
-        });
-
-        const acquiredVideosCountLast7DaysMainRole = await getCountVideosBy({
-          forLastDays: 7,
-          isApproved: true,
-          user: {
-            value: user.email,
-            purchased: true,
-            searchBy: 'email',
-          },
-        });
-
-        const acquiredVideosCountLast7DaysNoMainRole = await getCountVideosBy({
-          forLastDays: 7,
-          isApproved: true,
-          user: {
-            value: user.email,
-            purchased: false,
-            searchBy: 'email',
-          },
-        });
-
-        const acquiredVideosCountMainRole = await getCountVideosBy({
-          isApproved: true,
-          user: {
-            value: user.email,
-            purchased: true,
-            searchBy: 'email',
-          },
-        });
-
-        const acquiredVideosCountNoMainRole = await getCountVideosBy({
-          isApproved: true,
-          user: {
-            value: user.email,
-            purchased: false,
-            searchBy: 'email',
-          },
-        });
-
-        const acquiredExclusivityVideosCountLast30Days = await getCountVideosBy(
-          {
+          const acquiredVideosCountLast30DaysMainRole = await getCountVideosBy({
             forLastDays: 30,
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: true,
+              searchBy: 'email',
+            },
+          });
+
+          const acquiredVideosCountLast30DaysNoMainRole =
+            await getCountVideosBy({
+              forLastDays: 30,
+              isApproved: true,
+              user: {
+                value: user.email,
+                purchased: false,
+                searchBy: 'email',
+              },
+            });
+
+          const acquiredVideosCountLast7DaysMainRole = await getCountVideosBy({
+            forLastDays: 7,
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: true,
+              searchBy: 'email',
+            },
+          });
+
+          const acquiredVideosCountLast7DaysNoMainRole = await getCountVideosBy(
+            {
+              forLastDays: 7,
+              isApproved: true,
+              user: {
+                value: user.email,
+                purchased: false,
+                searchBy: 'email',
+              },
+            }
+          );
+
+          const acquiredVideosCountMainRole = await getCountVideosBy({
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: true,
+              searchBy: 'email',
+            },
+          });
+
+          const acquiredVideosCountNoMainRole = await getCountVideosBy({
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: false,
+              searchBy: 'email',
+            },
+          });
+
+          const acquiredExclusivityVideosCountLast30Days =
+            await getCountVideosBy({
+              forLastDays: 30,
+              isApproved: true,
+              exclusivity: true,
+              user: {
+                value: user.email,
+                searchBy: 'email',
+                purchased: true,
+              },
+            });
+          const acquiredNoExclusivityVideosCountLast30Days =
+            await getCountVideosBy({
+              forLastDays: 30,
+              isApproved: true,
+              exclusivity: false,
+              user: {
+                value: user.email,
+                searchBy: 'email',
+                purchased: true,
+              },
+            });
+
+          const acquiredExclusivityVideosCount = await getCountVideosBy({
             isApproved: true,
             exclusivity: true,
             user: {
@@ -791,11 +829,9 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
               searchBy: 'email',
               purchased: true,
             },
-          }
-        );
-        const acquiredNoExclusivityVideosCountLast30Days =
-          await getCountVideosBy({
-            forLastDays: 30,
+          });
+
+          const acquiredNoExclusivityVideosCount = await getCountVideosBy({
             isApproved: true,
             exclusivity: false,
             user: {
@@ -805,417 +841,526 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
             },
           });
 
-        const acquiredExclusivityVideosCount = await getCountVideosBy({
-          isApproved: true,
-          exclusivity: true,
-          user: {
-            value: user.email,
-            searchBy: 'email',
-            purchased: true,
-          },
-        });
+          const videosCountReviewedLast30Days =
+            await getCountApprovedTrelloCardBy({
+              searchBy: 'researcherId',
+              value: user._id,
+              forLastDays: 30,
+            });
 
-        const acquiredNoExclusivityVideosCount = await getCountVideosBy({
-          isApproved: true,
-          exclusivity: false,
-          user: {
-            value: user.email,
-            searchBy: 'email',
-            purchased: true,
-          },
-        });
-
-        const videosCountReviewedLast30Days =
-          await getCountApprovedTrelloCardBy({
+          const videosCountReviewed = await getCountApprovedTrelloCardBy({
             searchBy: 'researcherId',
             value: user._id,
+            forLastDays: null,
+          });
+
+          const videosCountSentToReview = await getCountLinks({
+            researcherId: user._id,
+            listInTrello: 'Review',
+          });
+
+          const videosCountSentToReviewLast30Days = await getCountLinks({
+            researcherId: user._id,
+            listInTrello: 'Review',
             forLastDays: 30,
           });
 
-        const videosCountReviewed = await getCountApprovedTrelloCardBy({
-          searchBy: 'researcherId',
-          value: user._id,
-          forLastDays: null,
-        });
+          let amountOfAdvancesToAuthors = 0;
 
-        const videosCountSentToReview = await getCountLinks({
-          researcherId: user._id,
-          listInTrello: 'Review',
-        });
+          const referralFormsUsed = await findAllAuthorLinks({
+            userId: user._id,
+            used: true,
+          });
 
-        const videosCountSentToReviewLast30Days = await getCountLinks({
-          researcherId: user._id,
-          listInTrello: 'Review',
-          forLastDays: 30,
-        });
+          if (referralFormsUsed.length) {
+            await Promise.all(
+              referralFormsUsed.map(async (refForm) => {
+                const vbForm = await findOne({
+                  searchBy: 'refFormId',
+                  param: refForm._id,
+                });
 
-        let amountOfAdvancesToAuthors = 0;
-
-        const referralFormsUsed = await findAllAuthorLinks({
-          userId: user._id,
-          used: true,
-        });
-
-        if (referralFormsUsed.length) {
-          await Promise.all(
-            referralFormsUsed.map(async (refForm) => {
-              const vbForm = await findOne({
-                searchBy: 'refFormId',
-                param: refForm._id,
-              });
-
-              if (
-                vbForm &&
-                vbForm?.advancePaymentReceived === true &&
-                vbForm?.refFormId?.advancePayment
-              ) {
-                amountOfAdvancesToAuthors += vbForm.refFormId.advancePayment;
-              }
-            })
-          );
-        }
-
-        const average = acquiredVideosCountMainRole
-          ? Math.round(earnedTotal / acquiredVideosCountMainRole)
-          : 0;
-
-        //-----------------------------------------------------------------------------------------------------
-
-        let advance = 0;
-        let percentage = 0;
-
-        const videosCountWithUnpaidAdvance = await getCountVideosBy({
-          isApproved: true,
-          user: {
-            value: user.email,
-            purchased: true,
-            searchBy: 'email',
-            advanceHasBeenPaid: false,
-          },
-        });
-
-        advance = !user?.advancePayment
-          ? 0
-          : videosCountWithUnpaidAdvance * user.advancePayment;
-
-        const unpaidSales = await getSalesByUserId({
-          userId: user._id,
-          dateLimit: null,
-          paidFor: false,
-        });
-
-        if (unpaidSales.length) {
-          percentage = unpaidSales.reduce(
-            (acc, sale) => acc + sale.amountToResearcher,
-            0
-          );
-        }
-
-        const definePaymentSubject = () => {
-          if (advance > percentage) {
-            return {
-              tooltip: `Advance payment for ${videosCountWithUnpaidAdvance}`,
-              //paymentFor: ['advance', !!user?.note && 'note'],
-            };
-          } else if (
-            advance < percentage ||
-            (advance === percentage && advance > 0 && percentage > 0)
-          ) {
-            return {
-              tooltip: `Percentage for ${unpaidSales.length} sales`,
-              //paymentFor: ['percent', !!user?.note && 'note'],
-            };
-          } else {
-            return {
-              tooltip: `Main payment`,
-              //paymentFor: [!!user?.note && 'note'],
-            };
-          }
-        };
-
-        const calcAmountToBePaid = () => {
-          let amount = 0;
-
-          if (advance > percentage) {
-            amount += advance;
-          } else if (
-            advance < percentage ||
-            (advance === percentage && advance > 0 && percentage > 0)
-          ) {
-            amount += percentage;
+                if (
+                  vbForm &&
+                  vbForm?.advancePaymentReceived === true &&
+                  vbForm?.refFormId?.advancePayment
+                ) {
+                  amountOfAdvancesToAuthors += vbForm.refFormId.advancePayment;
+                }
+              })
+            );
           }
 
-          if (!!user?.note) {
-            amount += user.note;
-          }
+          const average = acquiredVideosCountMainRole
+            ? Math.round(earnedTotal / acquiredVideosCountMainRole)
+            : 0;
 
-          return amount;
-        };
+          //-----------------------------------------------------------------------------------------------------
 
-        const balance = Math.round(earnedYourselfTotal - user.gettingPaid);
+          let advance = 0;
+          let percentage = 0;
 
-        //console.log(
-        //  `прошедшие ревью - ${videosCountReviewed}`,
-        //  `отправленные на ревью - ${videosCountSentToReview}`,
-        //  `отношение прошедших к отправленным - ${
-        //    (videosCountReviewed / videosCountSentToReview) * 100
-        //  }`,
-        //  user.name,
-        //  8888999
-        //);
-
-        return {
-          ...user._doc,
-          balance,
-          gettingPaid: Math.round(user.gettingPaid),
-          sentVideosCount: {
-            total: linksCount,
-            last30Days: linksCountLast30Days,
-            last7Days: linksCountLast7Days,
-          },
-          acquiredVideosCount: {
-            noMainRole: {
-              total: acquiredVideosCountNoMainRole,
-              last30Days: acquiredVideosCountLast30DaysNoMainRole,
-              last7Days: acquiredVideosCountLast7DaysNoMainRole,
+          const videosCountWithUnpaidAdvance = await getCountVideosBy({
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: true,
+              searchBy: 'email',
+              advanceHasBeenPaid: false,
             },
-            mainRole: {
-              total: acquiredVideosCountMainRole,
-              last30Days: acquiredVideosCountLast30DaysMainRole,
-              last7Days: acquiredVideosCountLast7DaysMainRole,
+          });
+
+          advance = !user?.advancePayment
+            ? 0
+            : videosCountWithUnpaidAdvance * user.advancePayment;
+
+          const unpaidSales = await getSalesByUserId({
+            userId: user._id,
+            dateLimit: null,
+            paidFor: false,
+          });
+
+          if (unpaidSales.length) {
+            percentage = unpaidSales.reduce(
+              (acc, sale) => acc + sale.amountToResearcher,
+              0
+            );
+          }
+
+          const definePaymentSubject = () => {
+            if (advance > percentage) {
+              return {
+                tooltip: `Advance payment for ${videosCountWithUnpaidAdvance}`,
+                //paymentFor: ['advance', !!user?.note && 'note'],
+              };
+            } else if (
+              advance < percentage ||
+              (advance === percentage && advance > 0 && percentage > 0)
+            ) {
+              return {
+                tooltip: `Percentage for ${unpaidSales.length} sales`,
+                //paymentFor: ['percent', !!user?.note && 'note'],
+              };
+            } else {
+              return {
+                tooltip: `Main payment`,
+                //paymentFor: [!!user?.note && 'note'],
+              };
+            }
+          };
+
+          const calcAmountToBePaid = () => {
+            let amount = 0;
+
+            if (advance > percentage) {
+              amount += advance;
+            } else if (
+              advance < percentage ||
+              (advance === percentage && advance > 0 && percentage > 0)
+            ) {
+              amount += percentage;
+            }
+
+            if (!!user?.note) {
+              amount += user.note;
+            }
+
+            return amount;
+          };
+
+          const balance = Math.round(earnedYourselfTotal - user.gettingPaid);
+
+          //console.log(
+          //  `прошедшие ревью - ${videosCountReviewed}`,
+          //  `отправленные на ревью - ${videosCountSentToReview}`,
+          //  `отношение прошедших к отправленным - ${
+          //    (videosCountReviewed / videosCountSentToReview) * 100
+          //  }`,
+          //  user.name,
+          //  8888999
+          //);
+
+          return {
+            ...user._doc,
+            balance,
+            gettingPaid: Math.round(user.gettingPaid),
+            sentVideosCount: {
+              total: linksCount,
+              last30Days: linksCountLast30Days,
+              last7Days: linksCountLast7Days,
             },
-          },
-          percentageOfExclusivityToNonExclusivityVideos: {
-            total: acquiredNoExclusivityVideosCount
-              ? Math.round(
-                  (acquiredExclusivityVideosCount /
-                    acquiredNoExclusivityVideosCount) *
-                    100
-                )
-              : 0,
-            last30Days: acquiredNoExclusivityVideosCountLast30Days
-              ? Math.round(
-                  (acquiredExclusivityVideosCountLast30Days /
-                    acquiredNoExclusivityVideosCountLast30Days) *
-                    100
-                )
-              : 0,
-          },
+            acquiredVideosCount: {
+              noMainRole: {
+                total: acquiredVideosCountNoMainRole,
+                last30Days: acquiredVideosCountLast30DaysNoMainRole,
+                last7Days: acquiredVideosCountLast7DaysNoMainRole,
+              },
+              mainRole: {
+                total: acquiredVideosCountMainRole,
+                last30Days: acquiredVideosCountLast30DaysMainRole,
+                last7Days: acquiredVideosCountLast7DaysMainRole,
+              },
+            },
+            percentageOfExclusivityToNonExclusivityVideos: {
+              total: acquiredNoExclusivityVideosCount
+                ? Math.round(
+                    (acquiredExclusivityVideosCount /
+                      acquiredNoExclusivityVideosCount) *
+                      100
+                  )
+                : 0,
+              last30Days: acquiredNoExclusivityVideosCountLast30Days
+                ? Math.round(
+                    (acquiredExclusivityVideosCountLast30Days /
+                      acquiredNoExclusivityVideosCountLast30Days) *
+                      100
+                  )
+                : 0,
+            },
+            approvedRateAfterReview: {
+              total: !videosCountSentToReview
+                ? 0
+                : Math.round(videosCountReviewed / videosCountSentToReview) *
+                    100 >
+                  100
+                ? 100
+                : Math.round(
+                    (videosCountReviewed / videosCountSentToReview) * 100
+                  ),
+              last30Days: !videosCountSentToReviewLast30Days
+                ? 0
+                : Math.round(
+                    videosCountReviewedLast30Days /
+                      videosCountSentToReviewLast30Days
+                  ) *
+                    100 >
+                  100
+                ? 100
+                : Math.round(
+                    (videosCountReviewedLast30Days /
+                      videosCountSentToReviewLast30Days) *
+                      100
+                  ),
+            },
+            earnedYourself: {
+              total: Math.round(earnedYourselfTotal),
+              last30Days: Math.round(earnedYourselfLast30Days),
+            },
+            average,
+            earnedCompanies:
+              balance < 0
+                ? Math.round(earnedCompanies + balance)
+                : Math.round(earnedCompanies),
+            earnedTotal: Math.round(earnedTotal),
+            amountOfAdvancesToAuthors: Math.round(amountOfAdvancesToAuthors),
+            amountToBePaid: {
+              ...(advance > percentage && { advance }),
+              ...((advance < percentage ||
+                (advance === percentage && advance > 0 && percentage > 0)) && {
+                percentage,
+              }),
+              ...(!!user?.note && { note: user.note }),
+              total: calcAmountToBePaid(),
+            },
+            paymentSubject: definePaymentSubject(),
+          };
+        })
+      );
+
+      const totalSumOfStatFields = employeeStat.reduce(
+        (acc = {}, user = {}) => {
+          //суммарный баланс работников
+          acc.balance = Math.round(acc.balance + user.balance);
+          acc.average = acc.average + user.average;
+          acc.gettingPaid = Math.round(acc.gettingPaid + user.gettingPaid);
+          acc.amountOfAdvancesToAuthors = Math.round(
+            acc.amountOfAdvancesToAuthors + user.amountOfAdvancesToAuthors
+          );
+
+          //суммарный личный заработок работников
+          acc.earnedYourself = {
+            //за 30 дней
+            last30Days: Math.round(
+              acc.earnedYourself.last30Days + user.earnedYourself.last30Days
+            ),
+            //всего
+            total: Math.round(
+              acc.earnedYourself.total + user.earnedYourself.total
+            ),
+          };
+
+          //соотношение отправленных на ревью к прошедшим ревью
+          acc.approvedRateAfterReview = {
+            //за 30 дней
+            last30Days:
+              acc.approvedRateAfterReview.last30Days +
+              user.approvedRateAfterReview.last30Days,
+            //всего
+            total:
+              acc.approvedRateAfterReview.total +
+              user.approvedRateAfterReview.total,
+          };
+
+          acc.percentageOfExclusivityToNonExclusivityVideos = {
+            //за 30 дней
+            last30Days:
+              acc.percentageOfExclusivityToNonExclusivityVideos.last30Days +
+              user.percentageOfExclusivityToNonExclusivityVideos.last30Days,
+            //всего
+            total:
+              acc.percentageOfExclusivityToNonExclusivityVideos.total +
+              user.percentageOfExclusivityToNonExclusivityVideos.total,
+          };
+
+          //суммарный общий заработок работников
+          acc.earnedTotal = Math.round(acc.earnedTotal + user.earnedTotal);
+          //суммарный заработок компании
+          acc.earnedCompanies = Math.round(
+            acc.earnedCompanies + user.earnedCompanies
+          );
+
+          //суммарное количество отправленных работниками в трелло видео
+          acc.sentVideosCount = {
+            //общий
+            total: acc.sentVideosCount.total + user.sentVideosCount.total,
+            //за 30 дней
+            last30Days:
+              acc.sentVideosCount.last30Days + user.sentVideosCount.last30Days,
+            // за 7 дней
+            last7Days:
+              acc.sentVideosCount.last7Days + user.sentVideosCount.last7Days,
+          };
+
+          //суммарное количество опубликованных на сайте видео, где присутствуют работники
+          acc.acquiredVideosCount = {
+            //общий
+            total:
+              acc.acquiredVideosCount.total +
+              user.acquiredVideosCount.noMainRole.total +
+              user.acquiredVideosCount.mainRole.total,
+            //за 30 дней
+            last30Days:
+              acc.acquiredVideosCount.last30Days +
+              user.acquiredVideosCount.noMainRole.last30Days +
+              user.acquiredVideosCount.mainRole.last30Days,
+            // за 7 дней
+            last7Days:
+              acc.acquiredVideosCount.last7Days +
+              user.acquiredVideosCount.noMainRole.last7Days +
+              user.acquiredVideosCount.mainRole.last7Days,
+          };
+
+          return acc;
+        },
+        {
+          balance: 0,
+          gettingPaid: 0,
+          amountOfAdvancesToAuthors: 0,
           approvedRateAfterReview: {
-            total: !videosCountSentToReview
-              ? 0
-              : Math.round(videosCountReviewed / videosCountSentToReview) *
-                  100 >
-                100
-              ? 100
-              : Math.round(
-                  (videosCountReviewed / videosCountSentToReview) * 100
-                ),
-            last30Days: !videosCountSentToReviewLast30Days
-              ? 0
-              : Math.round(
-                  videosCountReviewedLast30Days /
-                    videosCountSentToReviewLast30Days
-                ) *
-                  100 >
-                100
-              ? 100
-              : Math.round(
-                  (videosCountReviewedLast30Days /
-                    videosCountSentToReviewLast30Days) *
-                    100
-                ),
+            last30Days: 0,
+            total: 0,
+          },
+          average: 0,
+          percentageOfExclusivityToNonExclusivityVideos: {
+            last30Days: 0,
+            total: 0,
           },
           earnedYourself: {
-            total: Math.round(earnedYourselfTotal),
-            last30Days: Math.round(earnedYourselfLast30Days),
+            last30Days: 0,
+            total: 0,
           },
-          average,
-          earnedCompanies:
-            balance < 0
-              ? Math.round(earnedCompanies + balance)
-              : Math.round(earnedCompanies),
-          earnedTotal: Math.round(earnedTotal),
-          amountOfAdvancesToAuthors: Math.round(amountOfAdvancesToAuthors),
-          amountToBePaid: {
-            ...(advance > percentage && { advance }),
-            ...((advance < percentage ||
-              (advance === percentage && advance > 0 && percentage > 0)) && {
-              percentage,
-            }),
-            ...(!!user?.note && { note: user.note }),
-            total: calcAmountToBePaid(),
+          earnedTotal: 0,
+          earnedCompanies: 0,
+          sentVideosCount: {
+            total: 0,
+            last30Days: 0,
+            last7Days: 0,
           },
-          paymentSubject: definePaymentSubject(),
-        };
-      })
-    );
-
-    //advance > percentage ? advance : percentage
-
-    const totalSumOfStatFields = employeeStat.reduce(
-      (acc = {}, user = {}) => {
-        //суммарный баланс работников
-        acc.balance = Math.round(acc.balance + user.balance);
-        acc.average = acc.average + user.average;
-        acc.gettingPaid = Math.round(acc.gettingPaid + user.gettingPaid);
-        acc.amountOfAdvancesToAuthors = Math.round(
-          acc.amountOfAdvancesToAuthors + user.amountOfAdvancesToAuthors
-        );
-
-        //суммарный личный заработок работников
-        acc.earnedYourself = {
-          //за 30 дней
-          last30Days: Math.round(
-            acc.earnedYourself.last30Days + user.earnedYourself.last30Days
-          ),
-          //всего
-          total: Math.round(
-            acc.earnedYourself.total + user.earnedYourself.total
-          ),
-        };
-
-        //соотношение отправленных на ревью к прошедшим ревью
-        acc.approvedRateAfterReview = {
-          //за 30 дней
-          last30Days:
-            acc.approvedRateAfterReview.last30Days +
-            user.approvedRateAfterReview.last30Days,
-          //всего
-          total:
-            acc.approvedRateAfterReview.total +
-            user.approvedRateAfterReview.total,
-        };
-
-        acc.percentageOfExclusivityToNonExclusivityVideos = {
-          //за 30 дней
-          last30Days:
-            acc.percentageOfExclusivityToNonExclusivityVideos.last30Days +
-            user.percentageOfExclusivityToNonExclusivityVideos.last30Days,
-          //всего
-          total:
-            acc.percentageOfExclusivityToNonExclusivityVideos.total +
-            user.percentageOfExclusivityToNonExclusivityVideos.total,
-        };
-
-        //суммарный общий заработок работников
-        acc.earnedTotal = Math.round(acc.earnedTotal + user.earnedTotal);
-        //суммарный заработок компании
-        acc.earnedCompanies = Math.round(
-          acc.earnedCompanies + user.earnedCompanies
-        );
-
-        //суммарное количество отправленных работниками в трелло видео
-        acc.sentVideosCount = {
-          //общий
-          total: acc.sentVideosCount.total + user.sentVideosCount.total,
-          //за 30 дней
-          last30Days:
-            acc.sentVideosCount.last30Days + user.sentVideosCount.last30Days,
-          // за 7 дней
-          last7Days:
-            acc.sentVideosCount.last7Days + user.sentVideosCount.last7Days,
-        };
-
-        //суммарное количество опубликованных на сайте видео, где присутствуют работники
-        acc.acquiredVideosCount = {
-          //общий
-          total:
-            acc.acquiredVideosCount.total +
-            user.acquiredVideosCount.noMainRole.total +
-            user.acquiredVideosCount.mainRole.total,
-          //за 30 дней
-          last30Days:
-            acc.acquiredVideosCount.last30Days +
-            user.acquiredVideosCount.noMainRole.last30Days +
-            user.acquiredVideosCount.mainRole.last30Days,
-          // за 7 дней
-          last7Days:
-            acc.acquiredVideosCount.last7Days +
-            user.acquiredVideosCount.noMainRole.last7Days +
-            user.acquiredVideosCount.mainRole.last7Days,
-        };
-
-        return acc;
-      },
-      {
-        balance: 0,
-        gettingPaid: 0,
-        amountOfAdvancesToAuthors: 0,
-        approvedRateAfterReview: {
-          last30Days: 0,
-          total: 0,
-        },
-        average: 0,
-        percentageOfExclusivityToNonExclusivityVideos: {
-          last30Days: 0,
-          total: 0,
-        },
-        earnedYourself: {
-          last30Days: 0,
-          total: 0,
-        },
-        earnedTotal: 0,
-        earnedCompanies: 0,
-        sentVideosCount: {
-          total: 0,
-          last30Days: 0,
-          last7Days: 0,
-        },
-        acquiredVideosCount: {
-          total: 0,
-          last30Days: 0,
-          last7Days: 0,
-        },
-      }
-    );
-
-    return res.status(200).json({
-      message: 'Users with updated statistics received',
-      status: 'success',
-      apiData: {
-        users: employeeStat.sort((prev, next) => {
-          return (
-            next.acquiredVideosCount.mainRole.last30Days -
-            prev.acquiredVideosCount.mainRole.last30Days
-          );
-        }),
-        sumValues: {
-          ...totalSumOfStatFields,
-          average: +(
-            totalSumOfStatFields.average / employeeStat.length
-          ).toFixed(2),
-          approvedRateAfterReview: {
-            last30Days: +(
-              totalSumOfStatFields.approvedRateAfterReview.last30Days /
-              employeeStat.length
-            ).toFixed(2),
-            total: +(
-              totalSumOfStatFields.approvedRateAfterReview.total /
-              employeeStat.length
-            ).toFixed(2),
+          acquiredVideosCount: {
+            total: 0,
+            last30Days: 0,
+            last7Days: 0,
           },
-          percentageOfExclusivityToNonExclusivityVideos: {
-            last30Days: +(
-              totalSumOfStatFields.percentageOfExclusivityToNonExclusivityVideos
-                .last30Days / employeeStat.length
+        }
+      );
+
+      return res.status(200).json({
+        message: 'Users with updated statistics received',
+        status: 'success',
+        apiData: {
+          users: employeeStat.sort((prev, next) => {
+            return (
+              next.acquiredVideosCount.mainRole.last30Days -
+              prev.acquiredVideosCount.mainRole.last30Days
+            );
+          }),
+          sumValues: {
+            ...totalSumOfStatFields,
+            average: +(
+              totalSumOfStatFields.average / employeeStat.length
             ).toFixed(2),
-            total: +(
-              totalSumOfStatFields.percentageOfExclusivityToNonExclusivityVideos
-                .total / employeeStat.length
-            ).toFixed(2),
+            approvedRateAfterReview: {
+              last30Days: +(
+                totalSumOfStatFields.approvedRateAfterReview.last30Days /
+                employeeStat.length
+              ).toFixed(2),
+              total: +(
+                totalSumOfStatFields.approvedRateAfterReview.total /
+                employeeStat.length
+              ).toFixed(2),
+            },
+            percentageOfExclusivityToNonExclusivityVideos: {
+              last30Days: +(
+                totalSumOfStatFields
+                  .percentageOfExclusivityToNonExclusivityVideos.last30Days /
+                employeeStat.length
+              ).toFixed(2),
+              total: +(
+                totalSumOfStatFields
+                  .percentageOfExclusivityToNonExclusivityVideos.total /
+                employeeStat.length
+              ).toFixed(2),
+            },
           },
         },
-      },
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      message: 'Server side error',
-      status: 'error',
-    });
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        message: 'Server side error',
+        status: 'error',
+      });
+    }
   }
-});
+);
+
+router.get(
+  '/collectStatForEmployees/shorten',
+  authMiddleware,
+  async (req, res) => {
+    const { roles } = req.query;
+
+    console.log(roles, 98578745);
+
+    try {
+      const users = await getAllUsers({
+        me: true,
+        userId: null,
+        roles,
+      });
+
+      const employeeStat = await Promise.all(
+        users.map(async (user) => {
+          const salesTotal = await getSalesByUserId({
+            userId: user._id,
+            dateLimit: null,
+          });
+
+          const earnedTotal = salesTotal.reduce(
+            (a, sale) => a + +(sale.amount / sale.researchers.length),
+            0
+          );
+
+          const acquiredVideosCountLast30Days = await getCountVideosBy({
+            forLastDays: 30,
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: true,
+              searchBy: 'email',
+            },
+          });
+
+          const acquiredVideosCountLast7Days = await getCountVideosBy({
+            forLastDays: 7,
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: true,
+              searchBy: 'email',
+            },
+          });
+
+          const acquiredVideosCount = await getCountVideosBy({
+            isApproved: true,
+            user: {
+              value: user.email,
+              purchased: true,
+              searchBy: 'email',
+            },
+          });
+
+          const average = acquiredVideosCount
+            ? Math.round(earnedTotal / acquiredVideosCount)
+            : 0;
+
+          return {
+            ...user._doc,
+            acquiredVideosCount: {
+              total: acquiredVideosCount,
+              last30Days: acquiredVideosCountLast30Days,
+              last7Days: acquiredVideosCountLast7Days,
+            },
+            average,
+          };
+        })
+      );
+
+      const totalSumOfStatFields = employeeStat.reduce(
+        (acc = {}, user = {}) => {
+          acc.average = acc.average + user.average;
+
+          //суммарное количество опубликованных на сайте видео, где присутствуют работники
+          acc.acquiredVideosCount = {
+            //общий
+            total:
+              acc.acquiredVideosCount.total + user.acquiredVideosCount.total,
+            //за 30 дней
+            last30Days:
+              acc.acquiredVideosCount.last30Days +
+              user.acquiredVideosCount.last30Days,
+            // за 7 дней
+            last7Days:
+              acc.acquiredVideosCount.last7Days +
+              user.acquiredVideosCount.last7Days,
+          };
+
+          return acc;
+        },
+        {
+          average: 0,
+          acquiredVideosCount: {
+            total: 0,
+            last30Days: 0,
+            last7Days: 0,
+          },
+        }
+      );
+
+      return res.status(200).json({
+        message: 'Team statistics received',
+        status: 'success',
+        apiData: {
+          users: employeeStat.sort((prev, next) => {
+            return next?.average - prev?.average;
+          }),
+          sumValues: {
+            ...totalSumOfStatFields,
+            average: +(
+              totalSumOfStatFields.average / employeeStat.length
+            ).toFixed(2),
+          },
+        },
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(400).json({
+        message: 'Server side error',
+        status: 'error',
+      });
+    }
+  }
+);
 
 router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
   try {

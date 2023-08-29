@@ -109,7 +109,12 @@ router.post('/authenticate', authMiddleware, async (req, res) => {
     const user = await getUserById(req?.user?.id);
 
     return res.status(200).json({
-      apiData: { role: req.user.role, userId: req.user.id, name: user?.name },
+      apiData: {
+        role: req.user.role,
+        userId: req.user.id,
+        name: user?.name,
+        email: user.email,
+      },
       status: 'success',
       code: 200,
     });

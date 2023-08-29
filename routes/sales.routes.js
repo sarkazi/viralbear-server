@@ -163,16 +163,13 @@ router.post(
       });
 
       const fileHeaderValues = xlsx.utils
-        .sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 })
+        .sheet_to_json(
+          workbook.Sheets[
+            workbook.SheetNames[workbook.SheetNames.length === 1 ? 0 : 1]
+          ],
+          { header: 1 }
+        )
         .shift();
-
-      const parseReport = await Promise.all(
-        workbook.SheetNames.map(async (sheetName) => {
-          return xlsx.utils.sheet_to_row_object_array(
-            workbook.Sheets[sheetName]
-          );
-        })
-      );
 
       const companyName = definitionThePartnerCompanyByFileHeader({
         fileHeaderValues,
@@ -186,8 +183,37 @@ router.post(
         });
       }
 
+      const parseReport = await Promise.all(
+        workbook.SheetNames.map(async (sheetName, index) => {
+          if (companyName === 'kameraone') {
+            return {
+              ...(index === 0 && {
+                common: xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]),
+              }),
+              ...(index === 1 && {
+                perMonth: xlsx.utils.sheet_to_row_object_array(
+                  workbook.Sheets[sheetName]
+                ),
+              }),
+            };
+          } else {
+            return {
+              ...(index === 0 && {
+                perMonth: xlsx.utils.sheet_to_row_object_array(
+                  workbook.Sheets[sheetName]
+                ),
+              }),
+            };
+          }
+        })
+      ).then((parseLists) => {
+        return parseLists.filter((list) => Object.keys(list).length !== 0);
+      });
+
+      console.log(parseReport.find((list) => list.common).common, 67856865);
+
       const filterParseReport = removeValuesWithoutKeyFieldInPairedReport({
-        parseReport: parseReport[0],
+        parseReport: parseReport.find((list) => list.perMonth).perMonth,
         companyName,
       });
 
@@ -393,7 +419,9 @@ router.post(
       );
 
       const apiData = {
-        emptyKeyField: parseReport[0].length - filterParseReport.length,
+        emptyKeyField:
+          parseReport.find((list) => list.perMonth).perMonth.length -
+          filterParseReport.length,
         idLess1460: newReport.lessThen1460.length,
         suitable: newReport.suitable,
         notFounded: newReport.notFounded.length,
