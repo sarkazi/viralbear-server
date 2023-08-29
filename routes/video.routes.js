@@ -548,7 +548,7 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
         ...(video.trelloData.researchers.find(
-          (researcher) => researcher.main && !!researcher.avatarUrl
+          (researcher) => researcher?.main && !!researcher?.avatarUrl
         ) && {
           acquirerAvatarUrl: video.trelloData.researchers.find(
             (researcher) => researcher.main && !!researcher.avatarUrl
@@ -1662,6 +1662,7 @@ router.patch(
       brandSafe,
       reuters,
       socialMedia,
+      acquirerName,
     } = req.body;
 
     if (

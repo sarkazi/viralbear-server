@@ -63,6 +63,10 @@ const refreshMrssFiles = async () => {
       name: 'Road accidents',
     },
     {
+      path: `${__dirname}/../mrssFiles/mrssAp.xml`,
+      name: 'AP video hub',
+    },
+    {
       path: `${__dirname}/../mrssFiles/mrssSport.xml`,
       name: 'Sport',
     },
@@ -85,6 +89,10 @@ const refreshMrssFiles = async () => {
           'videoData.hasAudioTrack': true,
           reuters: true,
         }),
+        //...(obj.name === 'AP video hub' && {
+        //  'videoData.hasAudioTrack': true,
+        //  reuters: true,
+        //}),
         ...(obj.name !== 'Converted Videos' &&
           obj.name !== 'Main' &&
           obj.name !== 'Social Media' && {
@@ -94,92 +102,140 @@ const refreshMrssFiles = async () => {
         .limit(200)
         .sort({ $natural: -1 });
 
-      fs.writeFile(
-        obj.path,
-        `<?xml version="1.0" encoding="UTF-8"?>
-        <rss xmlns:atom="http://www.w3.org/2005/Atom"
-        xmlns:media="http://search.yahoo.com/mrss/"
-        xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
-        xmlns:dfpvideo="http://api.google.com/dfpvideo"
-        xmlns:tms="http://data.tmsapi.com/v1.1"
-        version="2.0">
-          <channel>
-            <title>ViralBear videos</title>
-            <dfpvideo:version>2</dfpvideo:version>
-              ${videos
-                .map((video) => {
-                  return `
-                    <item>
-                      <media:title>${video.videoData.title.replace(
-                        /&/g,
-                        '&amp;'
-                      )}</media:title>
-                      <media:description>${video.videoData.description.replace(
-                        /&/g,
-                        '&amp;'
-                      )}${video.videoData?.creditTo ? ' ' : ''}${
-                    !video.videoData?.creditTo
-                      ? ''
-                      : `Credit to: ${video.videoData.creditTo}`
-                  }</media:description>
-                      <media:keywords>${video.videoData.tags}</media:keywords>
-                      <media:city>${video.videoData.city}</media:city>
-                      <media:country>${video.videoData.country}</media:country>
-                      <media:regionCode>${
-                        video.videoData.countryCode
-                      }</media:regionCode>
-                      <media:categoryCode>${
-                        video.videoData.categoryReuters
-                      }</media:categoryCode>
-                      <media:category>${
-                        video.videoData.category
-                      }</media:category>
-                      <media:exclusivity>${
-                        video.exclusivity ? 'exclusive' : 'non-exсlusive'
-                      }</media:exclusivity>
-                      <media:filmingDate>${moment(video.videoData.date).format(
-                        `ddd, D MMM YYYY`
-                      )}</media:filmingDate>
-                      <guid>${
-                        obj.name === 'Converted Videos' &&
-                        +video.videoData.videoId >= 2615 &&
-                        +video.videoData.videoId <= 2773
-                          ? `${video.videoData.videoId}0000`
-                          : video.videoData.videoId
-                      }</guid>
-                      <pubDate>${new Date(
-                        video.pubDate
-                          ? video.pubDate
-                          : video?.updatedAt
-                          ? video.updatedAt
-                          : ''
-                      ).toGMTString()}</pubDate>
-                      <media:thumbnail url="${video.bucket.cloudScreenLink}" />
-                      <media:content url="${
-                        obj.name === 'Converted Videos'
-                          ? video.bucket.cloudConversionVideoLink
-                          : video.bucket.cloudVideoLink
-                      }" />
-                      ${
-                        !!video?.lastChange
-                          ? `<dfpvideo:lastModifiedDate>${new Date(
-                              video.lastChange
-                            ).toGMTString()}</dfpvideo:lastModifiedDate>`
-                          : '<dfpvideo:lastModifiedDate/>'
-                      }
+      if (obj.name === 'AP video hub') {
+        fs.writeFile(
+          obj.path,
+          `<?xml version="1.0" encoding="UTF-8"?>
+          <rss xmlns:atom="http://www.w3.org/2005/Atom"
+          xmlns:media="http://search.yahoo.com/mrss/"
+          xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
+          xmlns:dfpvideo="http://api.google.com/dfpvideo"
+          xmlns:tms="http://data.tmsapi.com/v1.1"
+          version="2.0">
+            <channel>
+              <title>ViralBear videos</title>
+              <dfpvideo:version>2</dfpvideo:version>
+                ${videos
+                  .map((video) => {
+                    return `
+                      <item>
+                        <title>Sample Video</title>          
+                        <description>This is the first paragraph of the sample video script.This is the second paragraph of the sample video script. City, Country - March 8, 2013 1. This is a description of the first shot2. SOUNDBITE: "This is a sample soundbite."</description>         
+                        <media:keywords>keyword 1,keyword 2,keyword 3</media:keywords>          
+                        <pubDate>Tue, 06 Jun 2017 09:39:21 GMT</pubDate>          
+                        <guid isPermaLink="false">tag:example.com,2014:dad8b585-fa2e-417e-b043-2a5b148c34e0</guid>          
+                        <slugline>Sample Video Slug</slugline>          
+                        <media:content url="http://examplemedia.com/examples/mrss/example.mp4" lang="en">             
+                          <media:title>Sample Video</media:title>             
+                          <media:description> This is the first paragraph of the sample video script.This is the second paragraph of the sample video script. City, Country - March 8, 2013 1. This is a description of the first shot2. SOUNDBITE: "This is a sample soundbite."</media:description>          
+                        </media:content>         <dc:rights>This is a sample rights information, usage limitations and special restrictions statement.</dc:rights>
                       </item>
-                    `;
-                })
-                .join('')}
-                     </channel>
-                  </rss>
-                `,
-        (err) => {
-          if (!err) {
-            console.log(err);
+                      `;
+                  })
+                  .join('')}
+                       </channel>
+                    </rss>
+                  `,
+          (err) => {
+            if (!err) {
+              console.log(err);
+            }
           }
-        }
-      );
+        );
+      } else {
+        fs.writeFile(
+          obj.path,
+          `<?xml version="1.0" encoding="UTF-8"?>
+            <rss xmlns:atom="http://www.w3.org/2005/Atom"
+            xmlns:media="http://search.yahoo.com/mrss/"
+            xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
+            xmlns:dfpvideo="http://api.google.com/dfpvideo"
+            xmlns:tms="http://data.tmsapi.com/v1.1"
+            version="2.0">
+              <channel>
+                <title>ViralBear videos</title>
+                <dfpvideo:version>2</dfpvideo:version>
+                  ${videos
+                    .map((video) => {
+                      return `
+                        <item>
+                          <media:title>${video.videoData.title.replace(
+                            /&/g,
+                            '&amp;'
+                          )}</media:title>
+                          <media:description>${video.videoData.description.replace(
+                            /&/g,
+                            '&amp;'
+                          )}${video.videoData?.creditTo ? ' ' : ''}${
+                        !video.videoData?.creditTo
+                          ? ''
+                          : `Credit to: ${video.videoData.creditTo}`
+                      }</media:description>
+                          <media:keywords>${
+                            video.videoData.tags
+                          }</media:keywords>
+                          <media:city>${video.videoData.city}</media:city>
+                          <media:country>${
+                            video.videoData.country
+                          }</media:country>
+                          <media:regionCode>${
+                            video.videoData.countryCode
+                          }</media:regionCode>
+                          <media:categoryCode>${
+                            video.videoData.categoryReuters
+                          }</media:categoryCode>
+                          <media:category>${
+                            video.videoData.category
+                          }</media:category>
+                          <media:exclusivity>${
+                            video.exclusivity ? 'exclusive' : 'non-exсlusive'
+                          }</media:exclusivity>
+                          <media:filmingDate>${moment(
+                            video.videoData.date
+                          ).format(`ddd, D MMM YYYY`)}</media:filmingDate>
+                          <guid>${
+                            obj.name === 'Converted Videos' &&
+                            +video.videoData.videoId >= 2615 &&
+                            +video.videoData.videoId <= 2773
+                              ? `${video.videoData.videoId}0000`
+                              : video.videoData.videoId
+                          }</guid>
+                          <pubDate>${new Date(
+                            video.pubDate
+                              ? video.pubDate
+                              : video?.updatedAt
+                              ? video.updatedAt
+                              : ''
+                          ).toGMTString()}</pubDate>
+                          <media:thumbnail url="${
+                            video.bucket.cloudScreenLink
+                          }" />
+                          <media:content url="${
+                            obj.name === 'Converted Videos'
+                              ? video.bucket.cloudConversionVideoLink
+                              : video.bucket.cloudVideoLink
+                          }" />
+                          ${
+                            !!video?.lastChange
+                              ? `<dfpvideo:lastModifiedDate>${new Date(
+                                  video.lastChange
+                                ).toGMTString()}</dfpvideo:lastModifiedDate>`
+                              : '<dfpvideo:lastModifiedDate/>'
+                          }
+                          </item>
+                        `;
+                    })
+                    .join('')}
+                         </channel>
+                      </rss>
+                    `,
+          (err) => {
+            if (!err) {
+              console.log(err);
+            }
+          }
+        );
+      }
     })
   );
 };

@@ -343,8 +343,6 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
         : false,
     };
 
-   
-
     return res.status(200).json({
       message: 'Trello card data received',
       status: 'success',

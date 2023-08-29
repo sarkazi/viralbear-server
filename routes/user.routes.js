@@ -484,7 +484,7 @@ router.patch(
     try {
       const files = req.files;
 
-      const { userId, rolesUsersForResponse } = req.query;
+      const { userId } = req.query;
 
       const userIdToUpdate = userId ? userId : req.user.id;
 
@@ -498,6 +498,8 @@ router.patch(
       const user = await getUserById(userIdToUpdate);
 
       const body = req.body;
+
+      console.log(body, 111);
 
       if (!user) {
         return res.status(200).json({
@@ -640,31 +642,19 @@ router.patch(
 
       objDBForIncrement = {
         ...(body?.balance && { balance: body.balance }),
+        ...(body?.note && { note: body.note }),
       };
 
       await updateUser({
         userId: userIdToUpdate,
         objDBForUnset: {},
         objDBForSet,
-        objDBForIncrement: {},
+        objDBForIncrement,
       });
-
-      let apiData;
-
-      if (rolesUsersForResponse) {
-        apiData = await getAllUsers({
-          me: true,
-          userId: null,
-          role: rolesUsersForResponse,
-        });
-      } else {
-        apiData = await getUserById(userId);
-      }
 
       return res.status(200).json({
         message: 'User data has been successfully updated',
         status: 'success',
-        apiData,
       });
     } catch (err) {
       console.log(err);
@@ -921,39 +911,58 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
           );
         }
 
-        const paymentSubject = () => {
+        const definePaymentSubject = () => {
           if (advance > percentage) {
             return {
-              tooltip: `advance payment for ${videosCountWithUnpaidAdvance} videos`,
-              paymentFor: 'advance',
+              tooltip: `Advance payment for ${videosCountWithUnpaidAdvance}`,
+              //paymentFor: ['advance', !!user?.note && 'note'],
             };
           } else if (
             advance < percentage ||
             (advance === percentage && advance > 0 && percentage > 0)
           ) {
             return {
-              tooltip: `percentage for ${unpaidSales.length} sales`,
-              paymentFor: 'percent',
+              tooltip: `Percentage for ${unpaidSales.length} sales`,
+              //paymentFor: ['percent', !!user?.note && 'note'],
             };
           } else {
             return {
-              tooltip: null,
-              paymentFor: null,
+              tooltip: `Main payment`,
+              //paymentFor: [!!user?.note && 'note'],
             };
           }
         };
 
+        const calcAmountToBePaid = () => {
+          let amount = 0;
+
+          if (advance > percentage) {
+            amount += advance;
+          } else if (
+            advance < percentage ||
+            (advance === percentage && advance > 0 && percentage > 0)
+          ) {
+            amount += percentage;
+          }
+
+          if (!!user?.note) {
+            amount += user.note;
+          }
+
+          return amount;
+        };
+
         const balance = Math.round(earnedYourselfTotal - user.gettingPaid);
 
-        console.log(
-          `прошедшие ревью - ${videosCountReviewed}`,
-          `отправленные на ревью - ${videosCountSentToReview}`,
-          `отношение прошедших к отправленным - ${
-            (videosCountReviewed / videosCountSentToReview) * 100
-          }`,
-          user.name,
-          8888999
-        );
+        //console.log(
+        //  `прошедшие ревью - ${videosCountReviewed}`,
+        //  `отправленные на ревью - ${videosCountSentToReview}`,
+        //  `отношение прошедших к отправленным - ${
+        //    (videosCountReviewed / videosCountSentToReview) * 100
+        //  }`,
+        //  user.name,
+        //  8888999
+        //);
 
         return {
           ...user._doc,
@@ -1028,11 +1037,21 @@ router.get('/collectStatForEmployees', authMiddleware, async (req, res) => {
               : Math.round(earnedCompanies),
           earnedTotal: Math.round(earnedTotal),
           amountOfAdvancesToAuthors: Math.round(amountOfAdvancesToAuthors),
-          amountToBePaid: advance > percentage ? advance : percentage,
-          paymentSubject: paymentSubject(),
+          amountToBePaid: {
+            ...(advance > percentage && { advance }),
+            ...((advance < percentage ||
+              (advance === percentage && advance > 0 && percentage > 0)) && {
+              percentage,
+            }),
+            ...(!!user?.note && { note: user.note }),
+            total: calcAmountToBePaid(),
+          },
+          paymentSubject: definePaymentSubject(),
         };
       })
     );
+
+    //advance > percentage ? advance : percentage
 
     const totalSumOfStatFields = employeeStat.reduce(
       (acc = {}, user = {}) => {
@@ -1496,18 +1515,17 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
 
 router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   try {
-    const { userId, paymentFor, mainPayment, extraPayment, amount } = req.body;
+    const { userId, amountToBePaid, extraPayment } = req.body;
 
-    if (!amount || !userId || (!mainPayment && !extraPayment)) {
+    console.log(req.body, 74554);
+
+    if (
+      !userId ||
+      (!amountToBePaid.advance && !amountToBePaid.note && !extraPayment) ||
+      (!amountToBePaid.percent && !amountToBePaid.note && !extraPayment)
+    ) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
-        status: 'warning',
-      });
-    }
-
-    if (!!paymentFor && !mainPayment) {
-      return res.status(200).json({
-        message: 'The amount of the main payment is not specified',
         status: 'warning',
       });
     }
@@ -1523,8 +1541,9 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
 
     let balance = 0;
     let gettingPaid = 0;
+    let finalSum = 0;
 
-    if (paymentFor === 'advance') {
+    if (!!amountToBePaid.advance) {
       const videosCountWithUnpaidAdvance = await getCountVideosBy({
         isApproved: true,
         user: {
@@ -1537,9 +1556,10 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
 
       if (
         (typeof user?.advancePayment === 'number' &&
-          videosCountWithUnpaidAdvance * user.advancePayment !== mainPayment) ||
+          videosCountWithUnpaidAdvance * user.advancePayment !==
+            amountToBePaid.advance) ||
         (typeof user?.advancePayment !== 'number' &&
-          videosCountWithUnpaidAdvance * 10 !== mainPayment)
+          videosCountWithUnpaidAdvance * 10 !== amountToBePaid.advance)
       ) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
@@ -1551,11 +1571,12 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherEmail: user.email,
       });
 
-      balance = -mainPayment;
-      gettingPaid = mainPayment;
+      balance = -amountToBePaid.advance;
+      gettingPaid = amountToBePaid.advance;
+      finalSum = amountToBePaid.advance;
     }
 
-    if (paymentFor === 'percent') {
+    if (!!amountToBePaid.percentage) {
       let percentage = 0;
 
       const unpaidSales = await getSalesByUserId({
@@ -1571,7 +1592,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         );
       }
 
-      if (percentage !== mainPayment) {
+      if (percentage !== amountToBePaid.percentage) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
           status: 'warning',
@@ -1582,13 +1603,19 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         researcherId: user._id,
       });
 
-      balance = mainPayment;
-      gettingPaid = mainPayment;
+      balance = amountToBePaid.percentage;
+      gettingPaid = amountToBePaid.percentage;
+      finalSum = amountToBePaid.percentage;
     }
 
     if (!!extraPayment) {
       balance -= extraPayment;
       gettingPaid += extraPayment;
+      finalSum += extraPayment;
+    }
+
+    if (!!amountToBePaid?.note) {
+      finalSum += amountToBePaid.note;
     }
 
     objDBForSet = {
@@ -1600,9 +1627,13 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       gettingPaid,
     };
 
+    objDBForUnset = {
+      ...(!!amountToBePaid.note && { note: 1 }),
+    };
+
     await updateUser({
       userId,
-      objDBForUnset: {},
+      objDBForUnset,
       objDBForSet,
       objDBForIncrement,
     });
@@ -1610,15 +1641,20 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     await createNewPayment({
       user: userId,
       purpose: [
-        ...(!!paymentFor ? [paymentFor] : []),
+        ...(!!amountToBePaid?.advance ? ['advance'] : []),
+        ...(!!amountToBePaid?.percent ? ['percent'] : []),
+        ...(!!amountToBePaid?.note ? ['note'] : []),
         ...(!!extraPayment ? ['extra'] : []),
       ],
       amount: {
-        ...(paymentFor === 'advance' && {
-          advance: mainPayment,
+        ...(!!amountToBePaid?.advance && {
+          advance: amountToBePaid.advance,
         }),
-        ...(paymentFor === 'percentage' && {
-          percentage: mainPayment,
+        ...(!!amountToBePaid?.percent && {
+          percentage: amountToBePaid.percent,
+        }),
+        ...(!!amountToBePaid?.note && {
+          note: amountToBePaid.note,
         }),
         ...(!!extraPayment && {
           extra: extraPayment,
@@ -1627,7 +1663,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     });
 
     return res.status(200).json({
-      message: `The employee's balance has been replenished by $${amount}`,
+      message: `The employee was paid $${finalSum}`,
       status: 'success',
     });
   } catch (err) {
