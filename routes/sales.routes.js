@@ -408,7 +408,7 @@ router.post(
 
                     videoBalance: +videoBalanceInArray.toFixed(2),
                     amount: {
-                      notConsideringTheBalance: obj.amount,
+                      notConsideringTheBalance: +(+obj.amount).toFixed(2),
                       consideringTheBalance: amount,
                     },
                     amountToResearcher: amountToResearcher,
@@ -527,8 +527,6 @@ router.post(
                     const percentToAuthor =
                       (amount * videoDb?.vbForm?.refFormId?.percentage) / 100;
 
-                    console.log(percentToAuthor, 88);
-
                     //предусмотрена ли выплата процента автора с данного видео
                     const percentageProvidedToAuthor =
                       !!videoDb?.vbForm?.refFormId?.percentage;
@@ -604,7 +602,7 @@ router.post(
                     company: processingData.company,
                     videoBalance: +videoBalanceInArray.toFixed(2),
                     amount: {
-                      notConsideringTheBalance: obj.amount,
+                      notConsideringTheBalance: +(+obj.amount).toFixed(2),
                       consideringTheBalance: amount,
                     },
                     amountToResearcher: amountToResearcher,
