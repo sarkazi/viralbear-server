@@ -3,6 +3,8 @@ const { convertCurrency } = require('../controllers/common.controller');
 const pullOutProcessingDataFromPairedReport = async ({
   parseReport,
   companyName,
+  revShare,
+  totalSumFromKameraOne,
 }) => {
   return await new Promise(async (resolve, reject) => {
     if (companyName === 'newsflare') {
@@ -47,7 +49,8 @@ const pullOutProcessingDataFromPairedReport = async ({
           parseReport.map(async (obj) => {
             return {
               videoId:
-                obj['Supplier Ref:'] && obj['Supplier Ref:'].includes('_tv')
+                obj['Supplier Ref:'] &&
+                obj['Supplier Ref:'].toString().includes('_tv')
                   ? +obj['Supplier Ref:'].replace('_tv', '')
                   : obj['Supplier Ref:'],
               usage: null,
@@ -89,7 +92,8 @@ const pullOutProcessingDataFromPairedReport = async ({
                   ? await convertCurrency({
                       from: 'EUR',
                       to: 'USD',
-                      amount: obj[' EUR/clip'],
+                      amount:
+                        (revShare / totalSumFromKameraOne) * obj[' EUR/clip'],
                     })
                   : 0,
             };

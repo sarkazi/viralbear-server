@@ -350,6 +350,13 @@ router.post('/createOne', authMiddleware, async (req, res) => {
     //    .json({ message: 'Missing data to create a user', status: 'warning' });
     //}
 
+    if (body?.nickname?.includes('@')) {
+      return res.status(200).json({
+        message: 'Nickname must not contain the "@" character',
+        status: 'warning',
+      });
+    }
+
     const candidate = await getUserByEmail(body.email);
 
     if (candidate) {
@@ -2125,6 +2132,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
     const { videoId, amountToTopUp } = req.body;
     const { paymentFor } = req.query;
 
+    console.log(paymentFor, amountToTopUp);
+
     if (!paymentFor) {
       return res.status(200).json({
         message: 'missing parameter "paymentFor"',
@@ -2150,27 +2159,21 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         status: 'warning',
       });
     }
-
-    const vbForm = await findOne({
-      searchBy: '_id',
-      param: video.vbForm,
-    });
-
-    if (!vbForm) {
+    if (!video.vbForm) {
       return res.status(200).json({
-        message: `VB form with id "${video.vbForm}" not found`,
+        message: `The video has no VB form`,
         status: 'warning',
       });
     }
 
-    if (!vbForm?.sender?.email) {
+    if (!video?.vbForm?.sender?.email) {
       return res.status(200).json({
         message: `Author not found`,
         status: 'warning',
       });
     }
 
-    if (!vbForm?.refFormId) {
+    if (!video?.vbForm?.refFormId) {
       return res.status(200).json({
         message: `Referral form not found`,
         status: 'warning',
@@ -2179,8 +2182,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
     if (paymentFor === 'advance') {
       if (
-        vbForm.refFormId.advancePayment &&
-        vbForm.advancePaymentReceived === true
+        video.vbForm.refFormId.advancePayment &&
+        video.vbForm.advancePaymentReceived === true
       ) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
@@ -2189,8 +2192,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       }
 
       if (
-        !vbForm.refFormId?.advancePayment ||
-        typeof vbForm.advancePaymentReceived !== 'boolean'
+        !video.vbForm.refFormId?.advancePayment ||
+        typeof video.vbForm.advancePaymentReceived !== 'boolean'
       ) {
         return res.status(200).json({
           message: `There is no advance payment for this vb form`,
@@ -2198,7 +2201,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      advanceAmount = vbForm.refFormId.advancePayment;
+      advanceAmount = video.vbForm.refFormId.advancePayment;
 
       if (Math.ceil(advanceAmount) !== Math.ceil(amountToTopUp)) {
         return res.status(200).json({
@@ -2209,7 +2212,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateVbFormBy({
         updateBy: '_id',
-        value: vbForm._id,
+        value: video.vbForm._id,
         dataForUpdate: { advancePaymentReceived: true },
       });
 
@@ -2228,7 +2231,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       };
 
       await updateUser({
-        userId: vbForm.sender._id,
+        userId: video.vbForm.sender._id,
         objDBForUnset: {},
         objDBForSet,
         objDBForIncrement,
@@ -2253,7 +2256,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      if (!vbForm.refFormId.percentage) {
+      if (!video.vbForm.refFormId.percentage) {
         return res.status(200).json({
           message: `There is no percentage provided for this vb form`,
           status: 'warning',
@@ -2261,7 +2264,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       }
 
       const percentAmount = salesWithThisVideoId.reduce(
-        (acc, sale) => acc + (sale.amount * vbForm.refFormId.percentage) / 100,
+        (acc, sale) =>
+          acc + (sale.amount * video.vbForm.refFormId.percentage) / 100,
         0
       );
 
@@ -2291,7 +2295,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       };
 
       await updateUser({
-        userId: vbForm.sender._id,
+        userId: video.vbForm.sender._id,
         objDBForUnset: {},
         objDBForSet,
         objDBForIncrement,
@@ -2316,7 +2320,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      if (!vbForm.refFormId.percentage) {
+      if (!video.vbForm.refFormId.percentage) {
         return res.status(200).json({
           message: `There is no percentage provided for this vb form`,
           status: 'warning',
@@ -2324,8 +2328,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       }
 
       if (
-        vbForm.refFormId.advancePayment &&
-        vbForm.advancePaymentReceived === true
+        video.vbForm.refFormId.advancePayment &&
+        video.vbForm.advancePaymentReceived === true
       ) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
@@ -2334,8 +2338,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       }
 
       if (
-        !vbForm.refFormId.advancePayment ||
-        typeof vbForm.advancePaymentReceived !== 'boolean'
+        !video.vbForm.refFormId.advancePayment ||
+        typeof video.vbForm.advancePaymentReceived !== 'boolean'
       ) {
         return res.status(200).json({
           message: `There is no advance payment for this vb form`,
@@ -2343,10 +2347,11 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      advanceAmount = vbForm.refFormId.advancePayment;
+      advanceAmount = video.vbForm.refFormId.advancePayment;
 
       percentAmount = salesWithThisVideoId.reduce(
-        (acc, sale) => acc + (sale.amount * vbForm.refFormId.percentage) / 100,
+        (acc, sale) =>
+          acc + (sale.amount * video.vbForm.refFormId.percentage) / 100,
         0
       );
 
@@ -2361,8 +2366,14 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateVbFormBy({
         updateBy: '_id',
-        value: vbForm._id,
+        value: video.vbForm._id,
         dataForUpdate: { advancePaymentReceived: true },
+      });
+
+      await updateVideoBy({
+        searchBy: '_id',
+        searchValue: video._id,
+        dataToInc: { balance: -advanceAmount },
       });
 
       const objDBForSet = {
@@ -2374,7 +2385,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       };
 
       await updateUser({
-        userId: vbForm.sender._id,
+        userId: video.vbForm.sender._id,
         objDBForUnset: {},
         objDBForSet,
         objDBForIncrement,

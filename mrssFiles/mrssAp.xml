@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+          <rss xmlns:atom="http://www.w3.org/2005/Atom"
+          xmlns:media="http://search.yahoo.com/mrss/"
+          xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
+          xmlns:dfpvideo="http://api.google.com/dfpvideo"
+          xmlns:tms="http://data.tmsapi.com/v1.1"
+          version="2.0">
+            <channel>
+              <title>ViralBear videos</title>
+              <dfpvideo:version>2</dfpvideo:version>
+                
+                       </channel>
+                    </rss>
+                  

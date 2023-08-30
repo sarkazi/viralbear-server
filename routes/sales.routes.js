@@ -6,6 +6,9 @@ const xlsx = require('xlsx');
 
 const mongoose = require('mongoose');
 
+var Mutex = require('async-mutex').Mutex;
+const mutex = new Mutex();
+
 const {
   createNewSale,
   deleteSaleById,
@@ -22,6 +25,8 @@ const {
 } = require('../controllers/user.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
+
+const { updateVideoBy } = require('../controllers/video.controller');
 
 const pullOutProcessingDataFromPairedReport = require('../utils/pullOutProcessingDataFromPairedReport');
 const definitionThePartnerCompanyByFileHeader = require('../utils/definitionThePartnerCompanyByFileHeader');
@@ -40,7 +45,7 @@ const moment = require('moment');
 const authMiddleware = require('../middleware/auth.middleware');
 const Sales = require('../entities/Sales');
 
-router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
+router.post('/manualAddition', authMiddleware, async (req, res) => {
   try {
     const { company, videoId, amount, usage } = req.body;
 
@@ -124,7 +129,7 @@ router.post('/manualGenerationPreSale', authMiddleware, async (req, res) => {
 });
 
 router.post(
-  '/fileGenerationPreSale',
+  '/parsingFromFile',
   authMiddleware,
   multer({ storage: storage }).fields([
     {
@@ -134,6 +139,7 @@ router.post(
   ]),
   async (req, res) => {
     const { csv } = req.files;
+    const { revShare } = req.body;
     const { confirmDownload } = req.query;
 
     if (!csv) {
@@ -183,245 +189,470 @@ router.post(
         });
       }
 
-      const parseReport = await Promise.all(
-        workbook.SheetNames.map(async (sheetName, index) => {
-          if (companyName === 'kameraone') {
-            return {
-              ...(index === 0 && {
-                common: xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]),
-              }),
-              ...(index === 1 && {
-                perMonth: xlsx.utils.sheet_to_row_object_array(
-                  workbook.Sheets[sheetName]
-                ),
-              }),
-            };
-          } else {
-            return {
-              ...(index === 0 && {
-                perMonth: xlsx.utils.sheet_to_row_object_array(
-                  workbook.Sheets[sheetName]
-                ),
-              }),
-            };
-          }
-        })
-      ).then((parseLists) => {
-        return parseLists.filter((list) => Object.keys(list).length !== 0);
-      });
+      if (companyName === 'kameraone' && !revShare) {
+        return res.status(200).json({
+          status: 'warning',
+          message: 'Missing value for the kameraone report: "rev share"',
+        });
+      }
 
-      console.log(parseReport.find((list) => list.common).common, 67856865);
+      let totalSumFromKameraOne = null;
+
+      const sheetNameList = workbook.SheetNames;
+
+      const parseReport = xlsx.utils.sheet_to_row_object_array(
+        workbook.Sheets[
+          companyName === 'kameraone' ? sheetNameList[1] : sheetNameList[0]
+        ]
+      );
+
+      if (companyName === 'kameraone') {
+        totalSumFromKameraOne =
+          parseReport[parseReport.length - 1][' EUR/clip'];
+      }
+
+      if (companyName === 'kameraone' && totalSumFromKameraOne === null) {
+        return res.status(200).json({
+          status: 'warning',
+          message:
+            'The total amount for the month for the kameraone report was not found',
+        });
+      }
 
       const filterParseReport = removeValuesWithoutKeyFieldInPairedReport({
-        parseReport: parseReport.find((list) => list.perMonth).perMonth,
+        parseReport: parseReport,
         companyName,
       });
 
       const processingData = await pullOutProcessingDataFromPairedReport({
         parseReport: filterParseReport,
         companyName,
+        ...(companyName === 'kameraone' && {
+          revShare: +revShare,
+          totalSumFromKameraOne,
+        }),
       });
 
-      const newReport = await Promise.all(
+      // массив для определения актуального баланса видео
+      let temporaryStorage = [];
+
+      let newReport = await Promise.all(
         processingData.data.map(async (obj, index) => {
-          if (!!obj.videoId) {
-            if (obj.videoId < 1460) {
-              return {
-                videoId: obj.videoId,
-                status: 'lessThen1460',
-              };
-            } else {
-              const videoDb = await findVideoByValue({
-                searchBy: 'videoData.videoId',
-                value: obj.videoId,
-              });
-
-              if (!videoDb) {
-                return {
-                  videoId: obj.videoId,
-                  status: 'notFound',
-                };
-              } else {
-                let amountToResearcher = 0;
-
-                const videoResearchers = videoDb.trelloData.researchers;
-                const amount = +(+obj.amount).toFixed(2);
-
-                if (!videoResearchers.length) {
-                  amountToResearcher = 0;
-                } else if (videoResearchers.length > 1) {
-                  amountToResearcher = +(
-                    amount *
-                    (0.4 / videoResearchers.length)
-                  ).toFixed(2);
-                } else {
-                  const researcher = await getUserBy({
-                    searchBy: 'email',
-                    value: videoResearchers[0].email,
-                  });
-
-                  if (!researcher) {
-                    amountToResearcher = 0;
-                  } else {
-                    if (researcher.percentage) {
-                      amountToResearcher = +(
-                        (amount * researcher.percentage) /
-                        100
-                      ).toFixed(2);
-                    } else {
-                      amountToResearcher = +(amount * 0.4).toFixed(2);
-                    }
-                  }
-                }
-
-                return {
-                  researchers: videoResearchers.length
-                    ? videoResearchers.map((researcher) => {
-                        return {
-                          email: researcher.email,
-                          name: researcher.name,
-                        };
-                      })
-                    : [],
-                  videoId: obj.videoId,
-                  ...(!!videoDb?.vbForm && {
-                    vbForm: videoDb.vbForm._id,
-                  }),
-                  usage: obj.usage ? obj.usage : null,
-                  amount,
-                  videoTitle: videoDb.videoData.title,
-                  company: processingData.company,
-                  amountToResearcher: amountToResearcher,
-                  date: moment().format('ll'),
-                  status: 'found',
-                  authorEmail: videoDb?.vbForm?.sender?.email
-                    ? videoDb.vbForm.sender.email
-                    : null,
-                  advance: !videoDb?.vbForm?.refFormId
-                    ? null
-                    : !videoDb.vbForm.refFormId?.advancePayment
-                    ? 0
-                    : videoDb.vbForm.refFormId.advancePayment,
-                  percentage: !videoDb?.vbForm?.refFormId
-                    ? null
-                    : !videoDb.vbForm.refFormId?.percentage
-                    ? 0
-                    : videoDb.vbForm.refFormId.percentage,
-                  saleIdForClient: index + 1,
-                  report: csv[0].originalname,
-                };
-              }
-            }
-          } else {
-            const videoDb = await findVideoByValue({
-              searchBy: 'videoData.title',
-              value: obj.title,
-            });
-
-            if (!videoDb) {
-              return {
-                videoId: obj.title,
-                status: 'notFound',
-              };
-            } else {
-              if (videoDb.videoData.videoId < 1460) {
+          return await mutex.runExclusive(async () => {
+            //если это продажи, определенные по videoId
+            if (!!obj.videoId) {
+              if (obj.videoId < 1460) {
                 return {
                   videoId: obj.videoId,
                   status: 'lessThen1460',
                 };
               } else {
-                let amountToResearcher = 0;
+                const videoDb = await findVideoByValue({
+                  searchBy: 'videoData.videoId',
+                  value: obj.videoId,
+                });
 
-                const videoResearchers = videoDb.trelloData.researchers;
-                const amount = +(+obj.amount).toFixed(2);
-
-                if (!videoResearchers.length) {
-                  amountToResearcher = 0;
-                } else if (videoResearchers.length > 1) {
-                  amountToResearcher = +(
-                    amount *
-                    (0.4 / videoResearchers.length)
-                  ).toFixed(2);
+                if (!videoDb) {
+                  return {
+                    videoId: obj.videoId,
+                    status: 'notFound',
+                  };
                 } else {
-                  const researcher = await getUserBy({
-                    searchBy: 'email',
-                    value: videoResearchers[0].email,
-                  });
+                  let amountToResearcher = 0;
+                  let amount = 0;
 
-                  if (!researcher) {
-                    amountToResearcher = 0;
+                  //ресечеры видео
+                  const videoResearchers = videoDb.trelloData.researchers;
+
+                  //если массив для баланса содержит это видео
+                  if (
+                    temporaryStorage.find(
+                      (videoInfo) => videoInfo.videoId === obj.videoId
+                    )
+                  ) {
+                    temporaryStorage.map((videoInfo, index) => {
+                      //если это текущее видео
+                      if (videoInfo.videoId === obj.videoId) {
+                        //если баланс меньше нуля, но текущая сумма продажи выбивает его в положительно число...
+                        if (
+                          videoInfo.videoBalance < 0 &&
+                          videoInfo.videoBalance + obj.amount > 0
+                        ) {
+                          //тогда записываем этот остаток к данному видео
+                          videoInfo.left = videoInfo.videoBalance + obj.amount;
+                        } else {
+                          videoInfo.left = 0;
+                        }
+                        //обновляем баланс текущего видео
+                        videoInfo.videoBalance =
+                          videoInfo.videoBalance + obj.amount;
+                      } else {
+                        return videoInfo;
+                      }
+                    });
+
+                    //иначе добавляем запись о текущем видео
                   } else {
-                    if (researcher.percentage) {
-                      amountToResearcher = +(
-                        (amount * researcher.percentage) /
-                        100
-                      ).toFixed(2);
+                    temporaryStorage.push({
+                      videoId: obj.videoId,
+                      videoBalance: videoDb.balance + obj.amount,
+                      left: 0,
+                    });
+                  }
+
+                  //положительный ли баланс во временном массиве
+                  const thereIsPositiveBalanceInArray =
+                    temporaryStorage.find(
+                      (videoInfo) => videoInfo.videoId === obj.videoId
+                    )?.videoBalance > 0;
+
+                  //содержит ли остаток
+                  const containsRemainderInArray =
+                    temporaryStorage.find(
+                      (videoInfo) => videoInfo.videoId === obj.videoId
+                    )?.left > 0;
+
+                  //остаток
+                  const remainderInArray = temporaryStorage.find(
+                    (videoInfo) => videoInfo.videoId === obj.videoId
+                  )?.left;
+
+                  //баланс текущего видео
+                  const videoBalanceInArray = temporaryStorage.find(
+                    (videoInfo) => videoInfo.videoId === obj.videoId
+                  )?.videoBalance;
+
+                  //если баланс текущего видео положительный или есть остаток
+                  if (
+                    thereIsPositiveBalanceInArray ||
+                    containsRemainderInArray
+                  ) {
+                    //сумма продажи
+                    amount = containsRemainderInArray
+                      ? +remainderInArray.toFixed(2)
+                      : +(+obj.amount).toFixed(2);
+
+                    //процент автора
+                    const percentToAuthor =
+                      (amount * videoDb?.vbForm?.refFormId?.percentage) / 100;
+
+                    //предусмотрена ли выплата процента автора с данного видео
+                    const percentageProvidedToAuthor =
+                      !!videoDb?.vbForm?.refFormId?.percentage;
+
+                    //если нет ресечеров у видео
+                    if (!videoResearchers.length) {
+                      amountToResearcher = 0;
+
+                      //если список ресечеров у видео более 1
+                    } else if (videoResearchers.length > 1) {
+                      const percentToResearcher =
+                        amount * (0.4 / videoResearchers.length);
+
+                      amountToResearcher = percentageProvidedToAuthor
+                        ? +(
+                            (amount - percentToAuthor) *
+                            (0.4 / videoResearchers.length)
+                          ).toFixed(2)
+                        : +percentToResearcher.toFixed(2);
+
+                      //если список ресечеров у видео равно 1
                     } else {
-                      amountToResearcher = +(amount * 0.4).toFixed(2);
+                      const researcher = await getUserBy({
+                        searchBy: 'email',
+                        value: videoResearchers[0].email,
+                      });
+
+                      if (!researcher) {
+                        amountToResearcher = 0;
+                      } else {
+                        //если ресечеру предусмотрен процент
+                        if (researcher.percentage) {
+                          //сумма для ресечера
+                          const percentToResearcher =
+                            (amount * researcher.percentage) / 100;
+
+                          amountToResearcher = percentageProvidedToAuthor
+                            ? +(
+                                ((amount - percentToAuthor) *
+                                  researcher.percentage) /
+                                100
+                              ).toFixed(2)
+                            : +percentToResearcher.toFixed(2);
+                          //если ресечеру не предусмотрен процент
+                        } else {
+                          const percentToResearcher = amount * 0.4;
+
+                          amountToResearcher = percentageProvidedToAuthor
+                            ? +((amount - percentToAuthor) * 0.4).toFixed(2)
+                            : +percentToResearcher.toFixed(2);
+                        }
+                      }
                     }
                   }
-                }
 
+                  return {
+                    researchers: videoResearchers.length
+                      ? videoResearchers.map((researcher) => {
+                          return {
+                            email: researcher.email,
+                            name: researcher.name,
+                          };
+                        })
+                      : [],
+                    videoId: obj.videoId,
+                    ...(!!videoDb?.vbForm && {
+                      vbForm: videoDb.vbForm._id,
+                    }),
+                    usage: obj.usage ? obj.usage : null,
+
+                    videoBalance: +videoBalanceInArray.toFixed(2),
+                    amount: {
+                      notConsideringTheBalance: obj.amount,
+                      consideringTheBalance: amount,
+                    },
+                    amountToResearcher: amountToResearcher,
+                    videoTitle: videoDb.videoData.title,
+                    company: processingData.company,
+
+                    date: moment().format('ll'),
+                    status: 'found',
+                    authorEmail: videoDb?.vbForm?.sender?.email
+                      ? videoDb.vbForm.sender.email
+                      : null,
+                    advance: !videoDb?.vbForm?.refFormId
+                      ? null
+                      : !videoDb.vbForm.refFormId?.advancePayment
+                      ? 0
+                      : videoDb.vbForm.refFormId.advancePayment,
+                    percentage: !videoDb?.vbForm?.refFormId
+                      ? null
+                      : !videoDb.vbForm.refFormId?.percentage
+                      ? 0
+                      : videoDb.vbForm.refFormId.percentage,
+                    saleIdForClient: index + 1,
+                    report: csv[0].originalname,
+                    repaymentOfNegativeBalance: containsRemainderInArray
+                      ? 'partially'
+                      : thereIsPositiveBalanceInArray
+                      ? 'none'
+                      : 'fully',
+                  };
+                }
+              }
+              //если это продажи, определенные по videoTitle
+            } else {
+              const videoDb = await findVideoByValue({
+                searchBy: 'videoData.title',
+                value: obj.title,
+              });
+              if (!videoDb) {
                 return {
-                  researchers: videoResearchers.length
-                    ? videoResearchers.map((researcher) => {
-                        return {
-                          email: researcher.email,
-                          name: researcher.name,
-                        };
-                      })
-                    : [],
-                  videoId: videoDb.videoData.videoId,
-                  ...(!!videoDb?.vbForm && {
-                    vbForm: videoDb.vbForm._id,
-                  }),
-                  usage: obj.usage ? obj.usage : null,
-                  amount,
-                  report: csv[0].originalname,
-                  videoTitle: obj.title,
-                  company: processingData.company,
-                  amountToResearcher: amountToResearcher,
-                  date: moment().format('ll'),
-                  status: 'found',
-                  authorEmail: videoDb?.vbForm?.sender?.email
-                    ? videoDb.vbForm.sender.email
-                    : null,
-                  advance: !videoDb?.vbForm?.refFormId
-                    ? null
-                    : !videoDb.vbForm.refFormId?.advancePayment
-                    ? 0
-                    : videoDb.vbForm.refFormId.advancePayment,
-                  percentage: !videoDb?.vbForm?.refFormId
-                    ? null
-                    : !videoDb.vbForm.refFormId?.percentage
-                    ? 0
-                    : videoDb.vbForm.refFormId.percentage,
-                  saleIdForClient: index + 1,
+                  videoId: obj.title,
+                  status: 'notFound',
                 };
+              } else {
+                if (videoDb.videoData.videoId < 1460) {
+                  return {
+                    videoId: obj.videoId,
+                    status: 'lessThen1460',
+                  };
+                } else {
+                  let amountToResearcher = 0;
+                  let amount = 0;
+                  const videoResearchers = videoDb.trelloData.researchers;
+
+                  if (
+                    temporaryStorage.find(
+                      (videoInfo) => videoInfo.videoTitle === obj.title
+                    )
+                  ) {
+                    temporaryStorage.map((videoInfo, index) => {
+                      if (videoInfo.videoTitle === obj.title) {
+                        if (
+                          videoInfo.videoBalance < 0 &&
+                          videoInfo.videoBalance + obj.amount > 0
+                        ) {
+                          videoInfo.left = videoInfo.videoBalance + obj.amount;
+                        } else {
+                          videoInfo.left = 0;
+                        }
+                        videoInfo.videoBalance =
+                          videoInfo.videoBalance + obj.amount;
+                      } else {
+                        return videoInfo;
+                      }
+                    });
+                  } else {
+                    temporaryStorage.push({
+                      videoTitle: obj.title,
+                      videoBalance: videoDb.balance + obj.amount,
+                      left: 0,
+                    });
+                  }
+
+                  //положительный ли баланс во временном массиве
+                  const thereIsPositiveBalanceInArray =
+                    temporaryStorage.find(
+                      (videoInfo) => videoInfo.videoTitle === obj.title
+                    )?.videoBalance > 0;
+
+                  //содержит ли остаток
+                  const containsRemainderInArray =
+                    temporaryStorage.find(
+                      (videoInfo) => videoInfo.videoTitle === obj.title
+                    )?.left > 0;
+
+                  //остаток
+                  const remainderInArray = temporaryStorage.find(
+                    (videoInfo) => videoInfo.videoTitle === obj.title
+                  )?.left;
+
+                  //баланс текущего видео
+                  const videoBalanceInArray = temporaryStorage.find(
+                    (videoInfo) => videoInfo.videoTitle === obj.title
+                  )?.videoBalance;
+
+                  //если баланс текущего видео положительный или есть остаток
+                  if (
+                    thereIsPositiveBalanceInArray ||
+                    containsRemainderInArray
+                  ) {
+                    //сумма продажи
+                    amount = containsRemainderInArray
+                      ? +remainderInArray.toFixed(2)
+                      : +(+obj.amount).toFixed(2);
+
+                    //процент автора
+                    const percentToAuthor =
+                      (amount * videoDb?.vbForm?.refFormId?.percentage) / 100;
+
+                    console.log(percentToAuthor, 88);
+
+                    //предусмотрена ли выплата процента автора с данного видео
+                    const percentageProvidedToAuthor =
+                      !!videoDb?.vbForm?.refFormId?.percentage;
+
+                    //если нет ресечеров у видео
+                    if (!videoResearchers.length) {
+                      amountToResearcher = 0;
+
+                      //если список ресечеров у видео более 1
+                    } else if (videoResearchers.length > 1) {
+                      const percentToResearcher =
+                        amount * (0.4 / videoResearchers.length);
+
+                      amountToResearcher = percentageProvidedToAuthor
+                        ? +(
+                            (amount - percentToAuthor) *
+                            (0.4 / videoResearchers.length)
+                          ).toFixed(2)
+                        : +percentToResearcher.toFixed(2);
+
+                      //если список ресечеров у видео равно 1
+                    } else {
+                      const researcher = await getUserBy({
+                        searchBy: 'email',
+                        value: videoResearchers[0].email,
+                      });
+
+                      if (!researcher) {
+                        amountToResearcher = 0;
+                      } else {
+                        //если ресечеру предусмотрен процент
+                        if (researcher.percentage) {
+                          //сумма для ресечера
+                          const percentToResearcher =
+                            (amount * researcher.percentage) / 100;
+
+                          amountToResearcher = percentageProvidedToAuthor
+                            ? +(
+                                ((amount - percentToAuthor) *
+                                  researcher.percentage) /
+                                100
+                              ).toFixed(2)
+                            : +percentToResearcher.toFixed(2);
+                          //если ресечеру не предусмотрен процент
+                        } else {
+                          const percentToResearcher = amount * 0.4;
+
+                          amountToResearcher = percentageProvidedToAuthor
+                            ? +((amount - percentToAuthor) * 0.4).toFixed(2)
+                            : +percentToResearcher.toFixed(2);
+                        }
+                      }
+                    }
+                  }
+
+                  return {
+                    researchers: videoResearchers.length
+                      ? videoResearchers.map((researcher) => {
+                          return {
+                            email: researcher.email,
+                            name: researcher.name,
+                          };
+                        })
+                      : [],
+                    videoId: videoDb.videoData.videoId,
+                    ...(!!videoDb?.vbForm && {
+                      vbForm: videoDb.vbForm._id,
+                    }),
+                    usage: obj.usage ? obj.usage : null,
+
+                    report: csv[0].originalname,
+                    videoTitle: obj.title,
+                    company: processingData.company,
+                    videoBalance: +videoBalanceInArray.toFixed(2),
+                    amount: {
+                      notConsideringTheBalance: obj.amount,
+                      consideringTheBalance: amount,
+                    },
+                    amountToResearcher: amountToResearcher,
+                    date: moment().format('ll'),
+                    status: 'found',
+                    authorEmail: videoDb?.vbForm?.sender?.email
+                      ? videoDb.vbForm.sender.email
+                      : null,
+                    advance: !videoDb?.vbForm?.refFormId
+                      ? null
+                      : !videoDb.vbForm.refFormId?.advancePayment
+                      ? 0
+                      : videoDb.vbForm.refFormId.advancePayment,
+                    percentage: !videoDb?.vbForm?.refFormId
+                      ? null
+                      : !videoDb.vbForm.refFormId?.percentage
+                      ? 0
+                      : videoDb.vbForm.refFormId.percentage,
+                    saleIdForClient: index + 1,
+                    repaymentOfNegativeBalance: containsRemainderInArray
+                      ? 'partially'
+                      : thereIsPositiveBalanceInArray
+                      ? 'none'
+                      : 'fully',
+                  };
+                }
               }
             }
-          }
+          });
         })
-      ).then((arr) =>
-        arr.reduce(
-          (res, item) => {
-            res[
-              item.status === 'found'
-                ? 'suitable'
-                : item.status === 'lessThen1460'
-                ? 'lessThen1460'
-                : 'notFounded'
-            ].push(item);
-            return res;
-          },
-          { suitable: [], notFounded: [], lessThen1460: [] }
-        )
+      );
+
+      newReport = newReport.reduce(
+        (res, item) => {
+          res[
+            item.status === 'found'
+              ? 'suitable'
+              : item.status === 'lessThen1460'
+              ? 'lessThen1460'
+              : 'notFounded'
+          ].push(item);
+          return res;
+        },
+        { suitable: [], notFounded: [], lessThen1460: [] }
       );
 
       const apiData = {
-        emptyKeyField:
-          parseReport.find((list) => list.perMonth).perMonth.length -
-          filterParseReport.length,
+        emptyKeyField: parseReport.length - filterParseReport.length,
         idLess1460: newReport.lessThen1460.length,
         suitable: newReport.suitable,
         notFounded: newReport.notFounded.length,
@@ -444,11 +675,11 @@ router.post(
   }
 );
 
-router.post('/create', authMiddleware, async (req, res) => {
+router.post('/ingestInSystem', authMiddleware, async (req, res) => {
   try {
     const body = req.body;
 
-    const promiseAfterCreated = await Promise.all(
+    const promiseAfterIngestInSystem = await Promise.all(
       body.map(async (obj) => {
         const users = obj.researchers.length
           ? await findUsersByValueList({
@@ -468,7 +699,8 @@ router.post('/create', authMiddleware, async (req, res) => {
                 return {
                   id: el._id,
                   name: el.name,
-                  paidFor: false,
+                  paidFor:
+                    obj.repaymentOfNegativeBalance === 'fully' ? true : false,
                 };
               })
             : [],
@@ -492,41 +724,38 @@ router.post('/create', authMiddleware, async (req, res) => {
         await createNewSale(objDB);
 
         return {
-          status: 'created',
           videoId: obj.videoId,
+          balance: obj.videoBalance,
         };
       })
     );
 
-    const salesInfo = promiseAfterCreated.reduce(
-      (res, item) => {
-        res[item.status === 'existed' ? 'existed' : 'created'].push(item);
-        return res;
-      },
-      { existed: [], created: [] }
+    newReport = promiseAfterIngestInSystem.reduce((res, video) => {
+      if (!Object.hasOwn(res, video.videoId)) {
+        res[video.videoId] = [];
+      }
+      res[video.videoId].push(video.balance);
+      return res;
+    }, {});
+
+    newReport = Object.entries(newReport).reduce((res, [key, value]) => {
+      res[key] = Math.max.apply(null, value);
+      return res;
+    }, {});
+
+    await Promise.all(
+      Object.entries(newReport).map(async ([key, value]) => {
+        await updateVideoBy({
+          searchBy: 'videoData.videoId',
+          searchValue: +key,
+          dataToUpdate: { balance: +value },
+        });
+      })
     );
 
     return res.status(200).json({
-      status: salesInfo.existed.length ? 'warning' : 'success',
-      message: salesInfo.existed.length
-        ? `Sales with video ${salesInfo.existed
-            .map((obj) => {
-              return obj.videoId;
-            })
-            .join(',')} previously added to the database${
-            salesInfo.created.length
-              ? `, ${salesInfo.created
-                  .map((obj) => {
-                    return obj.videoId;
-                  })
-                  .join(',')} have been added`
-              : ''
-          }`
-        : `Sales with video ${salesInfo.created
-            .map((obj) => {
-              return obj.videoId;
-            })
-            .join(',')} has been added to the database`,
+      status: 'success',
+      message: 'sales have been successfully added to the system',
     });
   } catch (err) {
     console.log(err);
@@ -588,13 +817,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
           relatedToTheVbForm: JSON.parse(relatedToTheVbForm),
         }),
     });
-
-    console.log(
-      sales.map((el) => {
-        return el.vbFormInfo;
-      }),
-      47856578657
-    );
 
     const sumAmount = sales.reduce((acc, item) => {
       return acc + item.amount;

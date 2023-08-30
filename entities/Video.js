@@ -191,7 +191,8 @@ const schema = new Schema(
     },
     balance: {
       type: Number,
-      required: false,
+      required: true,
+      default: 0,
     },
   },
   { timestamps: true }

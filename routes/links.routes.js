@@ -79,6 +79,8 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
 
     const foundWorkers = await findWorkersForCard(workers, selfWorker.name);
 
+    console.log(foundWorkers, 9789);
+
     if (!foundWorkers.length) {
       return res.status(200).json({
         message: 'Not a single user with the role of "worker" was found',
@@ -87,6 +89,8 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
     }
 
     const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
+
+    console.log(foundWorkersTrelloIds, 9789);
 
     if (!foundWorkersTrelloIds.length) {
       return res.status(200).json({

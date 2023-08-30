@@ -42,7 +42,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
       refForm && !!researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
         : process.env.SERVICE_LICENSING_EMAIL,
-    subject: `New video was submitted! ${formId}`,
+    subject: `New video was submitted! VB code: ${+formId.replace('VB', '')}`,
     html: `
 
    <b>Name: ${name}</b><br>
@@ -139,10 +139,12 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
         : process.env.SERVICE_LICENSING_EMAIL,
     subject: `information from the survey (form «${formId}»)`,
     html: `
-         <b>Where was this video filmed: ${
+         <b>Where was this video filmed (city): ${
            whereFilmed ? whereFilmed : '-'
          }</b><br>
-         <b>When was this video filmed: ${whenFilmed ? whenFilmed : '-'}</b><br>
+         <b>When was this video filmed (date): ${
+           whenFilmed ? whenFilmed : '-'
+         }</b><br>
          <b>Who appears in the video? Their names and ages?: ${
            whoAppears ? whoAppears : '-'
          }</b><br>
