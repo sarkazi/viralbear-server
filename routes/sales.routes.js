@@ -139,7 +139,7 @@ router.post(
   ]),
   async (req, res) => {
     const { csv } = req.files;
-    const { revShare } = req.body;
+    const { revShare } = req.query;
     const { confirmDownload } = req.query;
 
     if (!csv) {
@@ -160,6 +160,7 @@ router.post(
           message:
             'You already ingested this report before. Are you sure you want to proceed?',
           status: 'await',
+          awaitReason: 'already loaded',
         });
       }
 
@@ -191,8 +192,9 @@ router.post(
 
       if (companyName === 'kameraone' && !revShare) {
         return res.status(200).json({
-          status: 'warning',
+          status: 'await',
           message: 'Missing value for the kameraone report: "rev share"',
+          awaitReason: 'missing value',
         });
       }
 
@@ -688,7 +690,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
             })
           : [];
 
-        const amount = +obj.amount;
+        const amount = +obj.amount.consideringTheBalance;
         const amountToResearcher = obj.amountToResearcher;
 
         const objDB = {

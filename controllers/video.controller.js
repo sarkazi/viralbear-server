@@ -722,6 +722,9 @@ const getAllVideos = async ({
             ...(typeof researcher.advanceHasBeenPaid === 'boolean' && {
               advanceHasBeenPaid,
             }),
+            ...(typeof researcher.isAcquirer === 'boolean' && {
+              main: researcher.isAcquirer,
+            }),
           },
         },
       }),
@@ -1036,8 +1039,6 @@ const markResearcherAdvanceForOneVideoAsPaid = async ({
   videoId,
   researcherId,
 }) => {
-  console.log(videoId, researcherId, 999);
-
   return Video.updateOne(
     { 'videoData.videoId': videoId },
     { $set: { 'trelloData.researchers.$[field].advanceHasBeenPaid': true } },
@@ -1068,6 +1069,7 @@ module.exports = {
   deleteVideoById,
   findByNotApproved,
   getAllVideos,
+
   findVideoByValue,
   getCountVideosBy,
   updateVideosBy,

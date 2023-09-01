@@ -61,6 +61,7 @@ const {
   updateVideosBy,
   updateVideoBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,
+  getCountVideos,
 } = require('../controllers/video.controller');
 
 const {
@@ -519,8 +520,6 @@ router.patch(
         await updateUser({
           userId: userIdToUpdate,
           objDBForUnset: { paymentInfo: 1 },
-         
-         
         });
       }
 
@@ -654,7 +653,7 @@ router.patch(
 
       await updateUser({
         userId: userIdToUpdate,
-       
+
         objDBForSet,
         objDBForIncrement,
       });
@@ -902,6 +901,31 @@ router.get(
             ? Math.round(earnedTotal / acquiredVideosCountMainRole)
             : 0;
 
+          const acquiredVideosMainRole = await getAllVideos({
+            isApproved: true,
+            researcher: {
+              searchBy: 'email',
+              value: user.email,
+              isAcquirer: true,
+            },
+          });
+
+          const profitableVideos = acquiredVideosMainRole.filter((video) => {
+            if (!!video.vbForm?.refFormId?.percentage) {
+              return (
+                video.balance -
+                  (video.balance * video.vbForm.refFormId.percentage) / 100 >
+                10
+              );
+            } else {
+              return video.balance > 10;
+            }
+          });
+
+          const percentageOfProfitableVideos = !acquiredVideosCountMainRole
+            ? 0
+            : (profitableVideos.length / acquiredVideosCountMainRole) * 100;
+
           //-----------------------------------------------------------------------------------------------------
 
           let advance = 0;
@@ -938,7 +962,6 @@ router.get(
             if (advance > percentage) {
               return {
                 tooltip: `Advance payment for ${videosCountWithUnpaidAdvance}`,
-                //paymentFor: ['advance', !!user?.note && 'note'],
               };
             } else if (
               advance < percentage ||
@@ -946,12 +969,10 @@ router.get(
             ) {
               return {
                 tooltip: `Percentage for ${unpaidSales.length} sales`,
-                //paymentFor: ['percent', !!user?.note && 'note'],
               };
             } else {
               return {
                 tooltip: `Main payment`,
-                //paymentFor: [!!user?.note && 'note'],
               };
             }
           };
@@ -1054,6 +1075,8 @@ router.get(
               last30Days: Math.round(earnedYourselfLast30Days),
             },
             average,
+            percentageOfProfitableVideos:
+              +percentageOfProfitableVideos.toFixed(2),
             earnedCompanies:
               balance < 0
                 ? Math.round(earnedCompanies + balance)
@@ -1074,12 +1097,25 @@ router.get(
         })
       );
 
+      console.log(
+        employeeStat.map((tt) => {
+          return tt.percentageOfProfitableVideos;
+        })
+      );
+
       const totalSumOfStatFields = employeeStat.reduce(
         (acc = {}, user = {}) => {
           //суммарный баланс работников
           acc.balance = Math.round(acc.balance + user.balance);
+
           acc.average = acc.average + user.average;
+
+          acc.percentageOfProfitableVideos =
+            acc.percentageOfProfitableVideos +
+            user.percentageOfProfitableVideos;
+
           acc.gettingPaid = Math.round(acc.gettingPaid + user.gettingPaid);
+
           acc.amountOfAdvancesToAuthors = Math.round(
             acc.amountOfAdvancesToAuthors + user.amountOfAdvancesToAuthors
           );
@@ -1121,6 +1157,7 @@ router.get(
 
           //суммарный общий заработок работников
           acc.earnedTotal = Math.round(acc.earnedTotal + user.earnedTotal);
+
           //суммарный заработок компании
           acc.earnedCompanies = Math.round(
             acc.earnedCompanies + user.earnedCompanies
@@ -1168,6 +1205,7 @@ router.get(
             total: 0,
           },
           average: 0,
+          percentageOfProfitableVideos: 0,
           percentageOfExclusivityToNonExclusivityVideos: {
             last30Days: 0,
             total: 0,
@@ -1228,6 +1266,10 @@ router.get(
                 employeeStat.length
               ).toFixed(2),
             },
+            percentageOfProfitableVideos: +(
+              totalSumOfStatFields.percentageOfProfitableVideos /
+              employeeStat.length
+            ).toFixed(2),
           },
         },
       });
@@ -1516,6 +1558,34 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       ? Math.round(earnedTotal / acquiredVideosCountMainRole)
       : 0;
 
+    const acquiredVideosMainRole = await getAllVideos({
+      isApproved: true,
+      researcher: {
+        searchBy: 'email',
+        value: user.email,
+        isAcquirer: true,
+      },
+    });
+
+    const profitableVideos = acquiredVideosMainRole.filter((video) => {
+      if (!!video.vbForm?.refFormId?.percentage) {
+        return (
+          video.balance -
+            (video.balance * video.vbForm.refFormId.percentage) / 100 >
+          10
+        );
+      } else {
+        return video.balance > 10;
+      }
+    });
+
+    const percentageOfProfitableVideos = !acquiredVideosCountMainRole
+      ? 0
+      : +(
+          (profitableVideos.length / acquiredVideosCountMainRole) *
+          100
+        ).toFixed(2);
+
     let advance = 0;
     let percentage = 0;
 
@@ -1545,26 +1615,42 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       );
     }
 
-    const paymentSubject = () => {
+    const definePaymentSubject = () => {
       if (advance > percentage) {
-        return {
-          tooltip: `advance payment for ${videosCountWithUnpaidAdvance} videos`,
-          paymentFor: 'advance',
-        };
+        return [
+          `advance payment for ${videosCountWithUnpaidAdvance} videos`,
+          ...(!!user?.note && [`$${user.note} in notepad`]),
+        ];
       } else if (
         advance < percentage ||
         (advance === percentage && advance > 0 && percentage > 0)
       ) {
-        return {
-          tooltip: `percentage for ${unpaidSales.length} sales`,
-          paymentFor: 'percent',
-        };
+        return [
+          `percentage for ${unpaidSales.length} sales`,
+          ...(!!user?.note && [`$${user.note} in notepad`]),
+        ];
       } else {
-        return {
-          tooltip: null,
-          paymentFor: null,
-        };
+        return [...(!!user?.note && [`$${user.note} in notepad`])];
       }
+    };
+
+    const calcAmountToBePaid = () => {
+      let amount = 0;
+
+      if (advance > percentage) {
+        amount += advance;
+      } else if (
+        advance < percentage ||
+        (advance === percentage && advance > 0 && percentage > 0)
+      ) {
+        amount += percentage;
+      }
+
+      if (!!user?.note) {
+        amount += user.note;
+      }
+
+      return amount;
     };
 
     const apiData = {
@@ -1625,10 +1711,13 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
             ),
       },
       average,
+      percentageOfProfitableVideos,
       percentage: user.percentage ? user.percentage : 0,
       advancePayment: user.advancePayment ? user.advancePayment : 0,
-      amountToBePaid: advance > percentage ? advance : percentage,
-      paymentSubject: paymentSubject(),
+      payable: {
+        sum: calcAmountToBePaid(),
+        forWhat: definePaymentSubject(),
+      },
       name: user.name,
       salesCount: sales.length,
     };
@@ -1671,8 +1760,10 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
 
     if (
       !userId ||
-      (!amountToBePaid.advance && !amountToBePaid.note && !extraPayment) ||
-      (!amountToBePaid.percentage && !amountToBePaid.note && !extraPayment)
+      (!amountToBePaid.percentage &&
+        !amountToBePaid.advance &&
+        !amountToBePaid.note &&
+        !extraPayment)
     ) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
@@ -2230,7 +2321,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-        
+
         objDBForSet,
         objDBForIncrement,
       });
@@ -2294,7 +2385,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-       
+
         objDBForSet,
         objDBForIncrement,
       });
@@ -2384,7 +2475,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-       
+
         objDBForSet,
         objDBForIncrement,
       });
@@ -2458,9 +2549,8 @@ router.post('/authors/register', async (req, res) => {
 
     await updateUser({
       userId: vbForm.sender,
-     
+
       objDBForSet,
-     
     });
 
     const { accessToken, refreshToken } = generateTokens(candidate);
