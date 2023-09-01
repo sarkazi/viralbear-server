@@ -519,8 +519,8 @@ router.patch(
         await updateUser({
           userId: userIdToUpdate,
           objDBForUnset: { paymentInfo: 1 },
-          objDBForSet: {},
-          objDBForIncrement: {},
+         
+         
         });
       }
 
@@ -654,7 +654,7 @@ router.patch(
 
       await updateUser({
         userId: userIdToUpdate,
-        objDBForUnset: {},
+       
         objDBForSet,
         objDBForIncrement,
       });
@@ -1669,12 +1669,10 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   try {
     const { userId, amountToBePaid, extraPayment } = req.body;
 
-    console.log(req.body, 74554);
-
     if (
       !userId ||
       (!amountToBePaid.advance && !amountToBePaid.note && !extraPayment) ||
-      (!amountToBePaid.percent && !amountToBePaid.note && !extraPayment)
+      (!amountToBePaid.percentage && !amountToBePaid.note && !extraPayment)
     ) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
@@ -1794,7 +1792,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       user: userId,
       purpose: [
         ...(!!amountToBePaid?.advance ? ['advance'] : []),
-        ...(!!amountToBePaid?.percent ? ['percent'] : []),
+        ...(!!amountToBePaid?.percentage ? ['percent'] : []),
         ...(!!amountToBePaid?.note ? ['note'] : []),
         ...(!!extraPayment ? ['extra'] : []),
       ],
@@ -1803,7 +1801,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
           advance: amountToBePaid.advance,
         }),
         ...(!!amountToBePaid?.percent && {
-          percentage: amountToBePaid.percent,
+          percentage: amountToBePaid.percentage,
         }),
         ...(!!amountToBePaid?.note && {
           note: amountToBePaid.note,
@@ -2232,7 +2230,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-        objDBForUnset: {},
+        
         objDBForSet,
         objDBForIncrement,
       });
@@ -2296,7 +2294,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-        objDBForUnset: {},
+       
         objDBForSet,
         objDBForIncrement,
       });
@@ -2386,7 +2384,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-        objDBForUnset: {},
+       
         objDBForSet,
         objDBForIncrement,
       });
@@ -2460,9 +2458,9 @@ router.post('/authors/register', async (req, res) => {
 
     await updateUser({
       userId: vbForm.sender,
-      objDBForUnset: {},
+     
       objDBForSet,
-      objDBForIncrement: {},
+     
     });
 
     const { accessToken, refreshToken } = generateTokens(candidate);

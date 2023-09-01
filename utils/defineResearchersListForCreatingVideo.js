@@ -2,16 +2,18 @@ const defineResearchersListForCreatingVideo = ({
   mainResearcher,
   allResearchersList,
 }) => {
+  console.log(mainResearcher, allResearchersList, 99);
+
   return allResearchersList.map((researcher) => {
     return {
-      id: researcher.id,
+      id: researcher._id,
       main: !mainResearcher
         ? false
         : mainResearcher._id.toString() === researcher._id.toString()
         ? true
         : false,
       name: researcher.name,
-      ...(!!researcher.avatarUrl && {avatarUrl: researcher.avatarUrl}),
+      ...(!!researcher.avatarUrl && { avatarUrl: researcher.avatarUrl }),
       email: researcher.email,
       advanceHasBeenPaid: false,
     };

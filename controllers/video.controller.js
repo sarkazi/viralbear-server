@@ -1032,6 +1032,19 @@ const markVideoEmployeeAsHavingReceivedAnAdvance = async ({
   );
 };
 
+const markResearcherAdvanceForOneVideoAsPaid = async ({
+  videoId,
+  researcherId,
+}) => {
+  console.log(videoId, researcherId, 999);
+
+  return Video.updateOne(
+    { 'videoData.videoId': videoId },
+    { $set: { 'trelloData.researchers.$[field].advanceHasBeenPaid': true } },
+    { arrayFilters: [{ 'field.id': researcherId }] }
+  );
+};
+
 module.exports = {
   findLastVideo,
   findByIsBrandSafe,
@@ -1060,4 +1073,5 @@ module.exports = {
   updateVideosBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,
   updateVideoBy,
+  markResearcherAdvanceForOneVideoAsPaid,
 };

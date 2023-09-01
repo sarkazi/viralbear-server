@@ -58,6 +58,7 @@ const {
   writingFileToDisk,
   getAllVideos,
   findVideoByValue,
+  markResearcherAdvanceForOneVideoAsPaid,
 } = require('../controllers/video.controller');
 
 const {
@@ -792,6 +793,7 @@ router.patch(
       reuters,
       commentToAdmin,
       acquirerName,
+      acquirerPaidAdvance,
     } = req.body;
 
     if (
@@ -1113,6 +1115,31 @@ router.patch(
         },
       });
 
+      if (!!acquirerPaidAdvance) {
+        if (!acquirerName) {
+          return res.status(200).json({
+            message: 'No acquirer found to record a note',
+            status: 'warning',
+          });
+        }
+
+        await markResearcherAdvanceForOneVideoAsPaid({
+          videoId: +videoId,
+          researcherId: acquirer._id,
+        });
+
+        await updateUser({
+          userId: acquirer._id,
+          objDBForIncrement: {
+            ...(!video.trelloData.researchers.find(
+              (researcher) =>
+                researcher.id.toString() === acquirer._id.toString()
+            ).advanceHasBeenPaid && { balance: -acquirer?.advancePayment }),
+            note: +acquirerPaidAdvance,
+          },
+        });
+      }
+
       if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
         console.log('change');
 
@@ -1142,7 +1169,16 @@ router.patch(
       return res.status(200).json({
         message: `Video with id "${videoId}" has been successfully updated`,
         status: 'success',
-        apiData: data,
+        apiData: {
+          ...data,
+          ...(data.trelloData.researchers.find(
+            (researcher) => researcher.main
+          ) && {
+            acquirerName: data.trelloData.researchers.find(
+              (researcher) => researcher.main
+            ).name,
+          }),
+        },
       });
     } catch (err) {
       console.log(err);
@@ -1230,6 +1266,7 @@ router.patch(
       reuters,
       commentToAdmin,
       acquirerName,
+      acquirerPaidAdvance,
     } = req.body;
 
     if (
@@ -1551,6 +1588,31 @@ router.patch(
         },
       });
 
+      if (!!acquirerPaidAdvance) {
+        if (!acquirerName) {
+          return res.status(200).json({
+            message: 'No acquirer found to record a note',
+            status: 'warning',
+          });
+        }
+
+        await markResearcherAdvanceForOneVideoAsPaid({
+          videoId: +videoId,
+          researcherId: acquirer._id,
+        });
+
+        await updateUser({
+          userId: acquirer._id,
+          objDBForIncrement: {
+            ...(!video.trelloData.researchers.find(
+              (researcher) =>
+                researcher.id.toString() === acquirer._id.toString()
+            ).advanceHasBeenPaid && { balance: -acquirer?.advancePayment }),
+            note: +acquirerPaidAdvance,
+          },
+        });
+      }
+
       await Video.updateOne(
         { 'videoData.videoId': +videoId },
         { $unset: { needToBeFixed: 1 } }
@@ -1583,7 +1645,19 @@ router.patch(
       return res.status(200).json({
         message: `Video with id "${videoId}" has been successfully updated`,
         status: 'success',
-        apiData: data,
+        apiData: {
+          ...data,
+          ...(data.trelloData.researchers.find(
+            (researcher) => researcher.main
+          ) && {
+            acquirerName: data.trelloData.researchers.find(
+              (researcher) => researcher.main
+            ).name,
+          }),
+        },
+
+
+       
       });
     } catch (err) {
       console.log(err);
@@ -1663,6 +1737,7 @@ router.patch(
       reuters,
       socialMedia,
       acquirerName,
+      acquirerPaidAdvance,
     } = req.body;
 
     if (
@@ -2001,6 +2076,31 @@ router.patch(
         },
       });
 
+      if (!!acquirerPaidAdvance) {
+        if (!acquirerName) {
+          return res.status(200).json({
+            message: 'No acquirer found to record a note',
+            status: 'warning',
+          });
+        }
+
+        await markResearcherAdvanceForOneVideoAsPaid({
+          videoId: +videoId,
+          researcherId: acquirer._id,
+        });
+
+        await updateUser({
+          userId: acquirer._id,
+          objDBForIncrement: {
+            ...(!video.trelloData.researchers.find(
+              (researcher) =>
+                researcher.id.toString() === acquirer._id.toString()
+            ).advanceHasBeenPaid && { balance: -acquirer?.advancePayment }),
+            note: +acquirerPaidAdvance,
+          },
+        });
+      }
+
       const updatedVideo = await findVideoByValue({
         searchBy: 'videoData.videoId',
         value: +videoId,
@@ -2018,6 +2118,7 @@ router.patch(
           },
         }
       );
+
       //меняем кастомное поле "brand safe" в карточке trello
       await updateCustomFieldByTrelloCard(
         updatedVideo.trelloData.trelloCardId,
@@ -2028,6 +2129,7 @@ router.patch(
             : '6363888c65a44802954d88e4',
         }
       );
+
       //убираем наклейку "not published" в карточке trello
       await deleteLabelFromTrelloCard(
         updatedVideo.trelloData.trelloCardId,

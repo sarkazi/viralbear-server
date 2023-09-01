@@ -185,9 +185,9 @@ const updateUser = async ({
       _id: userId,
     },
     {
-      ...(Object.keys(objDBForSet).length && { $set: objDBForSet }),
-      ...(Object.keys(objDBForUnset).length && { $unset: objDBForUnset }),
-      ...(Object.keys(objDBForIncrement).length && { $inc: objDBForIncrement }),
+      ...(objDBForSet && { $set: objDBForSet }),
+      ...(objDBForUnset && { $unset: objDBForUnset }),
+      ...(objDBForIncrement && { $inc: objDBForIncrement }),
     }
   );
 };
