@@ -27,6 +27,7 @@ const findOne = async (objDB) => {
         email: 1,
         name: 1,
         paymentInfo: 1,
+        activatedTheAccount: 1,
       },
     });
 };

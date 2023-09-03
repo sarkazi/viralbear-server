@@ -630,7 +630,15 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
 
 router.get('/findByAuthor', authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const { authorId } = req.query;
+
+    let userId = null;
+
+    if (authorId) {
+      userId = authorId;
+    } else {
+      userId = req.user.id;
+    }
 
     const videosWithVbCode = await getAllVideos({
       vbFormExists: true,
@@ -642,67 +650,54 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
       ],
     });
 
-    //let videos = await Promise.all(
-    //  videosWithVbCode.map(async (video) => {
-    //    const vbForm = await findOne({
-    //      searchBy: '_id',
-    //      param: video.vbForm,
-    //    });
+    let videos = await Promise.all(
+      videosWithVbCode.map(async (video) => {
+        if (video?.vbForm?.sender?._id.toString() === userId.toString()) {
+          const sales = await getAllSales({ videoId: video.videoData.videoId });
 
-    //    if (vbForm?.sender && vbForm.sender.toString() === userId.toString()) {
-    //      const sales = await getAllSales({ videoId: video.videoData.videoId });
+          let revenue = 0;
 
-    //      let refForm = null;
-    //      let revenue = 0;
+          if (sales.length && !!video?.vbForm?.refFormId?.percentage) {
+            revenue = sales.reduce(
+              (acc, sale) =>
+                acc + (sale.amount * video.vbForm.refFormId.percentage) / 100,
+              0
+            );
+          }
 
-    //      if (vbForm?.refFormId) {
-    //        refForm = await findOneRefFormByParam({
-    //          searchBy: '_id',
-    //          value: vbForm.refFormId,
-    //        });
-    //      }
+          return {
+            title: video.videoData.title,
+            videoId: video.videoData.videoId,
+            screenPath: video.bucket.cloudScreenLink,
+            agreementDate: moment(video?.vbForm?.createdAt).format(),
+            videoByThisAuthor: true,
+            revenue: +revenue.toFixed(2),
+            percentage: video?.vbForm?.refFormId?.percentage
+              ? video.vbForm.refFormId.percentage
+              : 0,
+          };
+        } else {
+          return { videoByThisAuthor: false };
+        }
+      })
+    );
 
-    //      if (sales.length && refForm && refForm?.percentage) {
-    //        revenue = sales.reduce(
-    //          (acc, sale) => acc + (sale.amount * refForm.percentage) / 100,
-    //          0
-    //        );
-    //      }
-
-    //      console.log(refForm, revenue);
-
-    //      return {
-    //        title: video.videoData.title,
-    //        videoId: video.videoData.videoId,
-    //        screenPath: video.bucket.cloudScreenLink,
-    //        agreementDate: moment(vbForm.createdAt).format(),
-    //        videoByThisAuthor: true,
-    //        revenue: +revenue.toFixed(2),
-    //        percentage:
-    //          refForm && refForm?.percentage ? refForm?.percentage : 0,
-    //      };
-    //    } else {
-    //      return { ...video._doc, videoByThisAuthor: false };
-    //    }
-    //  })
-    //);
-
-    //videos = videos.reduce(
-    //  (res, videoData) => {
-    //    if (videoData.videoByThisAuthor) {
-    //      res['videosByThisAuthor'].push(videoData);
-    //    } else {
-    //      res['videosIsNotByThisAuthor'].push(videoData);
-    //    }
-    //    return res;
-    //  },
-    //  { videosByThisAuthor: [], videosIsNotByThisAuthor: [] }
-    //);
+    videos = videos.reduce(
+      (res, videoData) => {
+        if (videoData.videoByThisAuthor) {
+          res['videosByThisAuthor'].push(videoData);
+        } else {
+          res['videosIsNotByThisAuthor'].push(videoData);
+        }
+        return res;
+      },
+      { videosByThisAuthor: [], videosIsNotByThisAuthor: [] }
+    );
 
     return res.status(200).json({
       message: `Videos with statistics received`,
       status: 'success',
-      //apiData: videos.videosByThisAuthor,
+      apiData: videos.videosByThisAuthor,
     });
   } catch (err) {
     console.log(err);
@@ -1655,9 +1650,6 @@ router.patch(
             ).name,
           }),
         },
-
-
-       
       });
     } catch (err) {
       console.log(err);

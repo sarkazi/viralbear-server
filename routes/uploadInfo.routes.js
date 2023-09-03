@@ -462,7 +462,7 @@ router.post(
         });
       }
 
-      const accountActivationLink = `${process.env.CLIENT_URI}/licensors/?unq=${vbForm._id}`;
+      const accountActivationLink = `${process.env.CLIENT_URI}/login/?auth_hash=${vbForm._id}`;
 
       const TextOfMailForAuthor =
         !vbForm.refFormId ||

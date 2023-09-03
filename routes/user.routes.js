@@ -507,8 +507,6 @@ router.patch(
 
       const body = req.body;
 
-      console.log(body, 111);
-
       if (!user) {
         return res.status(200).json({
           message: 'User not found',
@@ -516,7 +514,7 @@ router.patch(
         });
       }
 
-      if (!body?.paymentMethod && !!user?.paymentInfo) {
+      if (!body?.paymentInfo?.paymentMethod && !!user?.paymentInfo) {
         await updateUser({
           userId: userIdToUpdate,
           objDBForUnset: { paymentInfo: 1 },
@@ -525,16 +523,27 @@ router.patch(
 
       let paymentInfo = null;
 
-      if (body?.paymentMethod) {
-        if (body.paymentMethod === 'bankTransfer') {
+      if (body?.paymentInfo) {
+        if (body.paymentInfo.paymentMethod === 'bankTransfer') {
+          const {
+            phoneNumber,
+            email,
+            address,
+            zipCode,
+            bankName,
+            fullName,
+            iban,
+            paymentMethod,
+          } = body?.paymentInfo;
+
           if (
-            !body?.phoneBankTransfer ||
-            !body?.emailBankTransfer ||
-            !body?.addressBankTransfer ||
-            !body?.zipCodeBankTransfer ||
-            !body?.bankNameBankTransfer ||
-            !body?.fullNameBankTransfer ||
-            !body?.accountNumberBankTransfer
+            !phoneNumber ||
+            !email ||
+            !address ||
+            !zipCode ||
+            !bankName ||
+            !fullName ||
+            !iban
           ) {
             return res.status(200).json({
               message: 'Missing parameters for changing payment data',
@@ -544,20 +553,22 @@ router.patch(
 
           paymentInfo = {
             paymentInfo: {
-              variant: body.paymentMethod,
-              phoneNumber: body.phoneBankTransfer,
-              email: body.emailBankTransfer,
-              address: body.addressBankTransfer,
-              zipCode: body.zipCodeBankTransfer,
-              bankName: body.bankNameBankTransfer,
-              fullName: body.fullNameBankTransfer,
-              iban: body.accountNumberBankTransfer,
+              variant: paymentMethod,
+              phoneNumber,
+              email,
+              address,
+              zipCode,
+              bankName,
+              fullName,
+              iban,
             },
           };
         }
 
-        if (body.paymentMethod === 'payPal') {
-          if (!body?.payPalEmail) {
+        if (body.paymentInfo.paymentMethod === 'payPal') {
+          const { payPalEmail, paymentMethod } = body?.paymentInfo;
+
+          if (!payPalEmail) {
             return res.status(200).json({
               message: 'Missing parameters for changing payment data',
               status: 'warning',
@@ -566,14 +577,16 @@ router.patch(
 
           paymentInfo = {
             paymentInfo: {
-              variant: body.paymentMethod,
-              payPalEmail: body.payPalEmail,
+              variant: paymentMethod,
+              payPalEmail,
             },
           };
         }
 
-        if (body.paymentMethod === 'other') {
-          if (!body?.textFieldOther) {
+        if (body.paymentInfo.paymentMethod === 'other') {
+          const { value, paymentMethod } = body?.paymentInfo;
+
+          if (!value) {
             return res.status(200).json({
               message: 'Missing parameters for changing payment data',
               status: 'warning',
@@ -582,8 +595,8 @@ router.patch(
 
           paymentInfo = {
             paymentInfo: {
-              variant: body.paymentMethod,
-              value: body.textFieldOther,
+              variant: paymentMethod,
+              value,
             },
           };
         }
@@ -653,7 +666,6 @@ router.patch(
 
       await updateUser({
         userId: userIdToUpdate,
-
         objDBForSet,
         objDBForIncrement,
       });
@@ -2506,9 +2518,9 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
 router.post('/authors/register', async (req, res) => {
   try {
-    const { vbFormId, password: reqPassword } = req.body;
+    const { authorRegHash, password: reqPassword } = req.body;
 
-    if (!vbFormId) {
+    if (!authorRegHash) {
       return res.status(200).json({
         message:
           'There is no referral hash. Contact your administrator or try again',
@@ -2518,7 +2530,7 @@ router.post('/authors/register', async (req, res) => {
 
     const objToSearchVbForm = {
       searchBy: '_id',
-      param: vbFormId,
+      param: authorRegHash,
     };
 
     const vbForm = await findOne(objToSearchVbForm);
@@ -2549,14 +2561,22 @@ router.post('/authors/register', async (req, res) => {
 
     await updateUser({
       userId: vbForm.sender,
-
       objDBForSet,
     });
 
-    const { accessToken, refreshToken } = generateTokens(candidate);
+    const { accessToken, refreshToken } = generateTokens({
+      userId: candidate._id,
+      userRole: candidate.role,
+    });
 
     return res.status(200).json({
-      apiData: { accessToken, refreshToken, role: candidate.role },
+      apiData: {
+        accessToken,
+        refreshToken,
+        role: candidate.role,
+        userId: candidate._id,
+        name: candidate.name,
+      },
       status: 'success',
       message: 'Congratulations on registering on the service!',
     });

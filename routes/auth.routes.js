@@ -10,6 +10,7 @@ const { compare } = require('bcryptjs');
 const {
   getUserByEmail,
   getUserById,
+  getUserBy,
 } = require('../controllers/user.controller');
 const {
   generateTokens,
@@ -106,7 +107,7 @@ router.post('/getMe', authMiddleware, async (req, res) => {
 
 router.post('/authenticate', authMiddleware, async (req, res) => {
   if (req?.user?.role) {
-    const user = await getUserById(req?.user?.id);
+    const user = await getUserBy({ searchBy: '_id', value: req?.user?.id });
 
     return res.status(200).json({
       apiData: {
@@ -114,6 +115,9 @@ router.post('/authenticate', authMiddleware, async (req, res) => {
         userId: req.user.id,
         name: user?.name,
         email: user.email,
+        ...(!!user?.paymentInfo?.variant && {
+          paymentInfo: user.paymentInfo,
+        }),
       },
       status: 'success',
       code: 200,
