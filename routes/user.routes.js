@@ -494,6 +494,8 @@ router.patch(
 
       const { userId } = req.query;
 
+      console.log(userId, 4857568);
+
       const userIdToUpdate = userId ? userId : req.user.id;
 
       if (!userIdToUpdate) {
@@ -1300,8 +1302,6 @@ router.get(
   authMiddleware,
   async (req, res) => {
     const { roles } = req.query;
-
-    console.log(roles, 98578745);
 
     try {
       const users = await getAllUsers({
@@ -2588,6 +2588,21 @@ router.post('/authors/register', async (req, res) => {
     });
   }
 });
+
+//router.post('/authors/getAnalyticsOnOneVideo/:videoId', async (req, res) => {
+//  try {
+//    return res.status(200).json({
+//      status: 'success',
+//      message: 'Congratulations on registering on the service!',
+//    });
+//  } catch (err) {
+//    console.log(err);
+//    return res.status(500).json({
+//      message: 'Server side error',
+//      status: 'error',
+//    });
+//  }
+//});
 
 router.get(
   '/researchers/collectStatOnAcquiredVideos',

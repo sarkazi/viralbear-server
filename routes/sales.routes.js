@@ -261,6 +261,7 @@ router.post(
                   };
                 } else {
                   let amountToResearcher = 0;
+                  let amountToAuthor = 0;
                   let amount = 0;
 
                   //ресечеры видео
@@ -414,6 +415,11 @@ router.post(
                       consideringTheBalance: amount,
                     },
                     amountToResearcher: amountToResearcher,
+                    ...(!!videoDb?.vbForm?.refFormId?.percentage && {
+                      amountToAuthor:
+                        (obj.amount * videoDb?.vbForm?.refFormId?.percentage) /
+                        100,
+                    }),
                     videoTitle: videoDb.videoData.title,
                     company: processingData.company,
 
@@ -608,6 +614,11 @@ router.post(
                       consideringTheBalance: amount,
                     },
                     amountToResearcher: amountToResearcher,
+                    ...(!!videoDb?.vbForm?.refFormId?.percentage && {
+                      amountToAuthor:
+                        (obj.amount * videoDb?.vbForm?.refFormId?.percentage) /
+                        100,
+                    }),
                     date: moment().format('ll'),
                     status: 'found',
                     authorEmail: videoDb?.vbForm?.sender?.email
@@ -709,6 +720,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
             vbFormInfo: {
               uid: obj.vbForm,
               paidFor: false,
+              amount: !!obj?.amountToAuthor ? obj.amountToAuthor : 0,
             },
           }),
           amount,
@@ -778,6 +790,8 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       relatedToTheVbForm,
       forLastDays,
     } = req.query;
+
+    console.log(company, 788);
 
     if (
       relatedToTheVbForm &&

@@ -137,9 +137,16 @@ router.post(
         didNotGiveRights,
         ip,
         formHash,
+        formHashSimple,
       } = req?.body;
 
       const { videos } = req.files;
+
+      //'''''''''''''''''''''''''
+
+      console.log(formHashSimple, 88878);
+
+      //'''''''''''''''''''''''''
 
       if (!videos && !videoLink) {
         return res.status(200).json({
@@ -300,10 +307,6 @@ router.post(
         searchBy: 'formId',
         param: `VB${vbCode}`,
       });
-
-      if (formHash && authorLinkWithThisHash) {
-        await markRefFormAsUsed(authorLinkWithThisHash._id, { used: true });
-      }
 
       const apiData = {
         name,

@@ -1069,7 +1069,6 @@ module.exports = {
   deleteVideoById,
   findByNotApproved,
   getAllVideos,
-
   findVideoByValue,
   getCountVideosBy,
   updateVideosBy,

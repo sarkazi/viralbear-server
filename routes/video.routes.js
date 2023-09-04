@@ -10,6 +10,7 @@ const moment = require('moment');
 const { v4: createUniqueHash } = require('uuid');
 
 const Video = require('../entities/Video');
+const Sales = require('../entities/Sales');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -26,6 +27,7 @@ const { findOne } = require('../controllers/uploadInfo.controller');
 
 const {
   findOneRefFormByParam,
+  markRefFormAsUsed,
 } = require('../controllers/authorLink.controller');
 
 var Mutex = require('async-mutex').Mutex;
@@ -2128,6 +2130,12 @@ router.patch(
         process.env.TRELLO_LABEL_NOT_PUBLISHED
       );
 
+      if (!!updatedVideo?.vbForm?.refFormId) {
+        await markRefFormAsUsed(updatedVideo.vbForm.refFormId._id, {
+          used: true,
+        });
+      }
+
       return res.status(200).json({
         status: 'success',
         message: 'The video was successfully published',
@@ -2197,6 +2205,116 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     console.log(err);
     return res.status(500).json({
       message: err?.message ? err?.message : 'Server side error',
+      status: 'error',
+    });
+  }
+});
+
+router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
+  const { videoId } = req.params;
+
+  try {
+    const video = await findVideoByValue({
+      searchBy: 'videoData.videoId',
+      value: +videoId,
+    });
+
+    if (!video) {
+      return res.status(200).json({
+        status: 'warning',
+        message: "Couldn't get analytics on this video",
+      });
+    }
+
+    const percentageOfAuthor = video?.vbForm?.refFormId?.percentage;
+
+    let sales = await getAllSales({
+      videoId,
+    });
+
+    const pipelineToSearchForAllSales = [
+      {
+        $match: {
+          videoId: +video.videoData.videoId,
+        },
+      },
+      {
+        $group: {
+          _id: '$videoId',
+          amount: { $sum: '$amount' },
+        },
+      },
+    ];
+
+    const totalOfAllSales = await Sales.aggregate(pipelineToSearchForAllSales);
+
+    let shareOfSales = 0;
+
+    if (!!percentageOfAuthor && !!totalOfAllSales[0]?.amount) {
+      shareOfSales = (totalOfAllSales[0].amount * percentageOfAuthor) / 100;
+    }
+
+    const pipelineForFindingPaidSales = [
+      {
+        $match: {
+          videoId: +video.videoData.videoId,
+          'vbFormInfo.paidFor': true,
+        },
+      },
+      {
+        $group: {
+          _id: '$videoId',
+          amount: { $sum: '$vbFormInfo.amount' },
+        },
+      },
+    ];
+
+    const amountOfPaidSales = await Sales.aggregate(
+      pipelineForFindingPaidSales
+    );
+
+    const pipelineForFindingUnpaidSales = [
+      {
+        $match: {
+          videoId: +video.videoData.videoId,
+          'vbFormInfo.paidFor': false,
+        },
+      },
+      {
+        $group: {
+          _id: '$videoId',
+          amount: { $sum: '$vbFormInfo.amount' },
+        },
+      },
+    ];
+
+    const amountOfUnpaidSales = await Sales.aggregate(
+      pipelineForFindingUnpaidSales
+    );
+
+    const apiData = {
+      sales,
+      analytics: {
+        totalReceived: !totalOfAllSales.length ? 0 : totalOfAllSales[0].amount,
+        shareOfSales,
+        totalPayment: !amountOfPaidSales.length
+          ? 0
+          : amountOfPaidSales[0].amount,
+        currentAccountBalance: !amountOfUnpaidSales.length
+          ? 0
+          : amountOfUnpaidSales[0].amount,
+      },
+    };
+
+    return res.status(200).json({
+      apiData,
+      status: 'success',
+      message: 'Video analytics on sales received',
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Server side error',
       status: 'error',
     });
   }

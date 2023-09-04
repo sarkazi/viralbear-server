@@ -26,6 +26,10 @@ const schema = new Schema(
         type: Boolean,
         required: false,
       },
+      amount: {
+        type: Number,
+        required: false,
+      },
     },
     company: {
       type: String,
