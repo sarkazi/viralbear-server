@@ -11,18 +11,22 @@ const schema = new Schema({
   },
   videoLink: {
     type: String,
-    required: true,
+    required: false,
   },
   videoId: {
     type: String,
-    required: true,
+    required: false,
   },
   formLink: {
     type: String,
-    required: true,
+    required: false,
   },
   formHash: {
     type: String,
+    required: false,
+  },
+  paid: {
+    type: Boolean,
     required: true,
   },
   used: {
@@ -33,7 +37,6 @@ const schema = new Schema({
     type: Boolean,
     required: true,
   },
-
   trelloCardUrl: {
     type: String,
     required: false,

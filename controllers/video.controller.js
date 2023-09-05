@@ -697,6 +697,8 @@ const getAllVideos = async ({
   skip,
   sort,
 }) => {
+  console.log(isApproved, researcher, forLastDays, 87878);
+
   return Video.find(
     {
       ...(typeof vbFormExists === 'boolean' && {
@@ -719,10 +721,10 @@ const getAllVideos = async ({
         'trelloData.researchers': {
           $elemMatch: {
             [researcher.searchBy]: researcher.value,
-            ...(typeof researcher.advanceHasBeenPaid === 'boolean' && {
+            ...(typeof researcher?.advanceHasBeenPaid === 'boolean' && {
               advanceHasBeenPaid,
             }),
-            ...(typeof researcher.isAcquirer === 'boolean' && {
+            ...(typeof researcher?.isAcquirer === 'boolean' && {
               main: researcher.isAcquirer,
             }),
           },
@@ -754,7 +756,13 @@ const getAllVideos = async ({
   )
     .populate({
       path: 'vbForm',
-      select: { formId: 1, sender: 1, refFormId: 1, advancePaymentReceived: 1 },
+      select: {
+        formId: 1,
+        sender: 1,
+        refFormId: 1,
+        advancePaymentReceived: 1,
+        createdAt: 1,
+      },
       populate: {
         path: 'sender refFormId',
         select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },

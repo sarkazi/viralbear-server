@@ -25,6 +25,8 @@ const {
 const {
   markRefFormAsUsed,
   findOneRefFormByParam,
+  updateManyAuthorLinks,
+  createNewAuthorLink,
 } = require('../controllers/authorLink.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
@@ -96,8 +98,8 @@ router.patch('/addAdditionalInfo', async (req, res) => {
       ...(whoAppears && { whoAppears }),
       ...(whyDecide && { whyDecide }),
       ...(whatHappen && { whatHappen }),
-      refForm: vbForm?.refFormId ? true : false,
-      ...(vbForm?.refFormId?.researcher?.email && {
+      refForm: !!vbForm?.refFormId ? true : false,
+      ...(!!vbForm?.refFormId?.researcher?.email && {
         researcherEmail: vbForm.refFormId.researcher.email,
       }),
     };
@@ -141,12 +143,6 @@ router.post(
       } = req?.body;
 
       const { videos } = req.files;
-
-      //'''''''''''''''''''''''''
-
-      console.log(formHashSimple, 88878);
-
-      //'''''''''''''''''''''''''
 
       if (!videos && !videoLink) {
         return res.status(200).json({
@@ -277,6 +273,26 @@ router.post(
       const isFormImpliesAnAdvancePayment =
         authorLinkWithThisHash && !!authorLinkWithThisHash.advancePayment;
 
+      let authorLinkForConnectWithResearcher = null;
+
+      if (!!formHashSimple) {
+        const researcher = await getUserBy({
+          searchBy: '_id',
+          value: formHashSimple,
+        });
+
+        if (!!researcher) {
+          authorLinkForConnectWithResearcher = await createNewAuthorLink({
+            researcher: researcher._id,
+            advancePayment: 0,
+            percentage: 0,
+            exclusivity: true,
+            used: true,
+            paid: false,
+          });
+        }
+      }
+
       const objDB = {
         sender: author._id,
         videoLinks,
@@ -293,8 +309,11 @@ router.post(
         didNotGiveRights,
         formId: `VB${vbCode}`,
         ip,
-        ...(formHash && {
-          refFormId: authorLinkWithThisHash._id,
+        ...((!!authorLinkWithThisHash ||
+          !!authorLinkForConnectWithResearcher) && {
+          refFormId: !!authorLinkWithThisHash
+            ? authorLinkWithThisHash._id
+            : authorLinkForConnectWithResearcher._id,
         }),
         ...(isFormImpliesAnAdvancePayment && {
           advancePaymentReceived: false,
@@ -307,6 +326,16 @@ router.post(
         searchBy: 'formId',
         param: `VB${vbCode}`,
       });
+
+      if (!!authorLinkWithThisHash) {
+        await updateManyAuthorLinks({
+          searchBy: 'videoId',
+          searchValue: authorLinkWithThisHash.videoId,
+          objForSet: {
+            used: true,
+          },
+        });
+      }
 
       const apiData = {
         name,
@@ -511,17 +540,17 @@ router.post(
         createdAt: vbForm.createdAt,
         agreementLink: agreementLink,
         formId: vbForm.formId,
-        refForm: vbForm.refFormId ? true : false,
-        ...(vbForm?.refFormId?.trelloCardUrl && {
+        refForm: !!vbForm.refFormId ? true : false,
+        ...(!!vbForm?.refFormId?.trelloCardUrl && {
           trelloCardUrl: vbForm.refFormId.trelloCardUrl,
         }),
-        ...(vbForm?.refFormId?.advancePayment && {
+        ...(!!vbForm?.refFormId?.advancePayment && {
           advancePayment: vbForm.refFormId.advancePayment,
         }),
-        ...(vbForm?.refFormId?.percentage && {
+        ...(!!vbForm?.refFormId?.percentage && {
           percentage: vbForm.refFormId.percentage,
         }),
-        ...(vbForm?.refFormId?.researcher && {
+        ...(!!vbForm?.refFormId?.researcher && {
           researcherEmail: vbForm?.refFormId?.researcher?.email,
         }),
         ...(!!vbForm?.refFormId?.researcher?.email &&
@@ -542,7 +571,7 @@ router.post(
         text: TextOfMailForAuthor,
       };
 
-      if (vbForm.refFormId) {
+      if (!!vbForm.refFormId?.paid) {
         const linkData = await findLinkByVideoId(vbForm.refFormId.videoId);
 
         if (linkData) {

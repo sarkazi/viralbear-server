@@ -10,57 +10,453 @@
                 <dfpvideo:version>2</dfpvideo:version>
                   
                         <item>
-                          <media:title>gfdg</media:title>
-                          <media:description>dfgfdg</media:description>
-                          <media:keywords>gfdg</media:keywords>
+                          <media:title>gfg</media:title>
+                          <media:description>fg</media:description>
+                          <media:keywords>fdg</media:keywords>
                           <media:city>gfdg</media:city>
-                          <media:country>Andorra</media:country>
-                          <media:regionCode>AD</media:regionCode>
+                          <media:country>Anguilla</media:country>
+                          <media:regionCode>AI</media:regionCode>
                           <media:categoryCode>WAR</media:categoryCode>
                           <media:category>Weather</media:category>
                           <media:exclusivity>exclusive</media:exclusivity>
-                          <media:filmingDate>Mon, 4 Sep 2023</media:filmingDate>
-                          <guid>2901</guid>
-                          <pubDate>Mon, 04 Sep 2023 17:15:27 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2901.jpg" />
-                          <media:content url="https://viralbear2.storage.yandexcloud.net/reuters-videos/2901.mp4" />
+                          <media:filmingDate>Tue, 5 Sep 2023</media:filmingDate>
+                          <guid>2927</guid>
+                          <pubDate>Tue, 05 Sep 2023 20:46:51 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2927.jpg" />
+                          <media:content url="https://viralbear2.storage.yandexcloud.net/reuters-videos/2927.mp4" />
                           <dfpvideo:lastModifiedDate/>
                           </item>
                         
                         <item>
-                          <media:title>gfdgghgfhghghgh</media:title>
-                          <media:description>fg</media:description>
-                          <media:keywords>fgdgf</media:keywords>
-                          <media:city>fdg</media:city>
-                          <media:country>Angola</media:country>
-                          <media:regionCode>AO</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Road accidents</media:category>
-                          <media:exclusivity>exclusive</media:exclusivity>
+                          <media:title>Embracing the unexpected: walking through the mud at Burning Man 2023</media:title>
+                          <media:description>Amidst the unexpected turn of events at the Burning Man festival in Black Rock Desert, Nevada, USA, attendees found themselves navigating a transformed landscape. Following heavy rainfall, what was once a dusty desert turned into a muddy quagmire, stranding over 70,000 festival-goers and their vehicles. One intrepid attendee, @bp22 captured a video on September 4, 2023, embracing the muddy adventure, walking through the mud with friends. With a playful spirit, he reassured his companions that getting a little dirty was okay as long as they do not fall. While some sought ways to escape the mire, others chose to go with the flow, illustrating the diverse reactions to this unexpected twist in the annual festival's storyline. </media:description>
+                          <media:keywords>desert,adventure,mud,Burning Man,festival,Nevada,rain,stranded,video,buddies,hiking,unexpected,experience,quagmire,escapade,playful,exploration,camaraderie,atmosphere,memories</media:keywords>
+                          <media:city>Black Rock Desert, Nevada</media:city>
+                          <media:country>United States</media:country>
+                          <media:regionCode>US</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
                           <media:filmingDate>Mon, 4 Sep 2023</media:filmingDate>
-                          <guid>2900</guid>
-                          <pubDate>Sun, 03 Sep 2023 21:56:19 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2900.jpg" />
-                          <media:content url="https://viralbear2.storage.yandexcloud.net/reuters-videos/2900.mp4" />
-                          <dfpvideo:lastModifiedDate>Sun, 03 Sep 2023 21:59:48 GMT</dfpvideo:lastModifiedDate>
+                          <guid>2926</guid>
+                          <pubDate>Mon, 04 Sep 2023 15:05:10 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2926.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2926.mp4" />
+                          <dfpvideo:lastModifiedDate/>
                           </item>
                         
                         <item>
-                          <media:title>gfdgfgdfg44</media:title>
-                          <media:description>fdg</media:description>
-                          <media:keywords>gfdg</media:keywords>
-                          <media:city>gfdg</media:city>
-                          <media:country>Angola</media:country>
-                          <media:regionCode>AO</media:regionCode>
+                          <media:title>Ukrainian soldiers march through desolate Bakhmut</media:title>
+                          <media:description>In the haunting aftermath of conflict, Ukrainian soldier @diman15688 captured a chilling glimpse of Bakhmut, Ukraine, on January 13, 2023. The once-thriving city now lay eerily deserted, its streets overgrown with foliage, and many buildings bearing the scars of destruction. Bakhmut has become a major battleground in the ongoing Ukraine-Russia conflict, and the Ukrainian soldiers seen in the video were on their way back from a challenging combat mission. </media:description>
+                          <media:keywords>conflict,soldiers,Ukraine,Bakhmut,video,aftermath,destruction,foliage,battleground,war,combat,mission,abandoned,chilling,eerie,deserted,haunting,violence,turmoil,human cost</media:keywords>
+                          <media:city>Bakhmut</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Fri, 13 Jan 2023</media:filmingDate>
+                          <guid>2925</guid>
+                          <pubDate>Mon, 04 Sep 2023 14:40:26 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2925.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2925.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Hyper-realistic animatronic heart sculpture comes to life!</media:title>
+                          <media:description>In a mesmerizing video captured in London, UK by @bariskareli on December 1, 2022, a breathtaking hyper-realistic animatronic human heart model takes center stage. The author, renowned for his expertise in hyper-realistic sculptures, animatronics, prop making, practical special effects, prosthetic makeup, and makeup effects, showcased his exceptional craftsmanship with this creation. The heart model, featuring an ingenious on/off switch hidden discreetly within an artery, comes to life at the artist's touch. As he activates the switch, the heart in his hand remarkably simulates the rhythmic beat of a human heart, pulsating with lifelike precision until he decides to turn it off.</media:description>
+                          <media:keywords>sculpture,animatronics,prop,effects,makeup,prosthetic,heart,artist,London,model,switch,artery,creative,realism,captivating,craftsmanship,video,technology,lifelike,talent</media:keywords>
+                          <media:city>London</media:city>
+                          <media:country>United Kingdom</media:country>
+                          <media:regionCode>GB</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Thu, 1 Dec 2022</media:filmingDate>
+                          <guid>2924</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:55:29 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2924.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2924.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Mesmerizing rainbow delights at Burning Man after the rain</media:title>
+                          <media:description>In the heart of Nevada's Black Rock City, USA, the annual Burning Man festival unfolded its enchanting spectacle once again, leaving attendees in awe as they witnessed a breathtaking rainbow gracing the desert skies on September 1, 2023. @ShervinNatan, a festival-goer, captured this mesmerizing moment on video, showcasing nature's vibrant display of colors following a refreshing bout of rain. Burning Man, renowned for its celebration of community, art, self-expression, and self-reliance, is marked by the symbolic burning of a colossal wooden effigy known as "the Man." This captivating rainbow served as a reminder of the extraordinary experiences that unfold amidst the arid desert landscape during this week-long event. As the video circulates, anticipation for the festival's conclusion, known as "Exodus," brims with excitement, promising an unforgettable conclusion to this year's Burning Man.</media:description>
+                          <media:keywords>desert,art,community,self-expression,self-reliance,rainbow,Burning Man,festival,Nevada,Black Rock City,nature,video,rain,awe,captivating,spectacle,vibrant,enchanting,surreal,Exodus</media:keywords>
+                          <media:city>Black Rock City, Nevada</media:city>
+                          <media:country>United States</media:country>
+                          <media:regionCode>US</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Fri, 1 Sep 2023</media:filmingDate>
+                          <guid>2923</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:39:35 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2923.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2923.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Berliners take to the streets for climate: raving against A100 motorway extension</media:title>
+                          <media:description>On September 2, 2023, Berliners made a bold statement in favor of climate action, choosing music and dance as their tools of protest. Thousands of clubbers, climate activists, and local residents gathered in the Friedrichshain district of eastern Berlin in Germany to block a kilometer-long stretch of a main road. With the blessing of Berlin authorities, local nightclubs transformed the roadway into an impromptu outdoor dancefloor, complete with smoke machines, glitter balls, and drinks stands. A @bikeberlin13 captured a video showing people demonstrating out of a certain building. Their message was clear: they aimed to prevent the extension of the A100 motorway, which threatened to cut through this vibrant urban neighborhood and destroy some of Berlin's most beloved nightclubs. In this unique demonstration, the people of Berlin showcased their dedication to preserving their city's cultural and environmental heritage.</media:description>
+                          <media:keywords>protest,dance,climate,Berlin,road,activists,rave,demonstration,music,environment,city,nightclubs,urban,extension,statement,community,resistance,unity,festival,sustainability</media:keywords>
+                          <media:city>Berlin</media:city>
+                          <media:country>Germany</media:country>
+                          <media:regionCode>DE</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sat, 2 Sep 2023</media:filmingDate>
+                          <guid>2922</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:39:06 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2922.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2922.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Courageous defense: Ukrainian soldiers hold the line in Bakhmut's Khromove settlement</media:title>
+                          <media:description>In the midst of the ongoing conflict between Ukraine and Russia, a gripping video captured by @lid_skhid on March 8, 2023, offers a raw and unfiltered glimpse into the Ukrainian frontline. The footage unfolds in the trenches on the outskirts of Bakhmut, specifically in the settlement of Khromove. Ukrainian troops, alongside GUR policemen, valiantly hold their ground, defending against Russian assaults. Their mission, as described by @lid_skhid, involves navigating treacherous terrain, trudging through muddy fields for a grueling 3 kilometers, occupying strategic positions, and steadfastly repelling enemy advances.</media:description>
+                          <media:keywords>soldiers,conflict,trenches,warfare,Ukraine,Russia,Bakhmut,Khromove,defense,resilience,bravery,video,struggle,frontline,occupation,assault,GUR,policemen,adversity,homeland</media:keywords>
+                          <media:city>Bakhmut</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
                           <media:categoryCode>WAR</media:categoryCode>
-                          <media:category>Weather</media:category>
-                          <media:exclusivity>exclusive</media:exclusivity>
-                          <media:filmingDate>Mon, 4 Sep 2023</media:filmingDate>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Wed, 8 Mar 2023</media:filmingDate>
+                          <guid>2921</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:55:57 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2921.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2921.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Architectural challenge: a risky climb on Buenos Aires' ice cream stick structure</media:title>
+                          <media:description>On April 25, 2023, in Buenos Aires, Argentina, a captivating incident was caught on video by @abbytamargo_. At a yearly university event featuring structures designed by architecture students, the primary criterion for passing was that these models must support over 20 kilograms. During a demonstration, a student was asked to stand on one of the models, constructed from cardboard and ice cream sticks, which nearly resulted in a precarious tumble. However, quick action from two individuals prevented her from taking a fall, showcasing the impressive structural integrity of the student's creation.</media:description>
+                          <media:keywords>architecture,student,model,cardboard,ice cream sticks,Buenos Aires,Argentina,demonstration,support,incident,video,university,event,teacher,challenge,structure,integrity,precarious,tumble,teamwork</media:keywords>
+                          <media:city>Buenos Aires</media:city>
+                          <media:country>Argentina</media:country>
+                          <media:regionCode>AR</media:regionCode>
+                          <media:categoryCode>ENT</media:categoryCode>
+                          <media:category>Cool,Fails and Funnies</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Tue, 25 Apr 2023</media:filmingDate>
+                          <guid>2919</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:53:03 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2919.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2919.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Heroic rescue efforts amidst phosphorus mines: saving 'Malysh' the dog in Chasiv Yar, Ukraine</media:title>
+                          <media:description>In Chasiv Yar, Donetsk region, Ukraine, a heartwarming rescue mission unfolded as a group of individuals attempted to evacuate a dog named "Malysh" from an abandoned homestead. The video was captured by @ludenskyi on April 1, 2023. As they settled outside with the canine, a series of white objects began falling from the sky, later identified as phosphorous mines. Thankfully, the dog was safely hidden in a cage. However later, as they approached a tow car, an illuminating mine landed perilously close. With quick thinking and a stroke of luck, the mine detonated in mid-air, sparing the car from destruction. The rescue team proceeded to reposition the vehicle and successfully retrieved the dog, but not without witnessing several more mine landings nearby, causing small fires. </media:description>
+                          <media:keywords>rescue,dog,homestead,Ukraine,phosphorus,mine,evacuation,courage,danger,video,lucky,car,fire,mission,sky,illuminating,Chasiv Yar,Donetsk,Malysh,April</media:keywords>
+                          <media:city>Chasiv Yar, Donetsk region</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News,Rescue</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sat, 1 Apr 2023</media:filmingDate>
+                          <guid>2918</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:52:27 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2918.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2918.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Volunteers from the White Tserkva working in Bakhmut help Ukrainian soldiers to launch a new drone</media:title>
+                          <media:description>Volunteers from the White Tserkva in Bakhmut, Ukraine, came together to support their country's soldiers during the ongoing conflict with Russia. On June 10, 2023, a video captured by @dmitriykirishun showcased the dedicated efforts of these volunteers as they assisted Ukrainian soldiers in launching a new drone. </media:description>
+                          <media:keywords>unity,resilience,volunteers,Ukraine,conflict,support,soldiers,drone,Bakhmut,Russia,dedication,collaboration,spirit,adversity,homeland,hope,video,capture,June,2023</media:keywords>
+                          <media:city>Bakhmut</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sat, 10 Jun 2023</media:filmingDate>
+                          <guid>2917</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:51:45 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2917.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2917.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Ukrainian soldiers retaliate with AKs and RPG7s in conflict zone</media:title>
+                          <media:description>In a harrowing video captured by @oleksandr081290 on February 27, 2022, in Bakhmut, Ukraine, Ukrainian soldiers were seen valiantly defending an abandoned neighborhood amidst the ongoing conflict with Russia. With the sound of gunfire ringing through the air, these brave soldiers, armed only with AK assault rifles and RPG-7 rocket launchers, stood their ground against the advancing enemy forces. Their determination was evident as one of them said, "We stood at 0 and saw that the gangs were climbing, it must be stopped at any cost." </media:description>
+                          <media:keywords>soldiers,conflict,ukraine,video,battle,abandoned,houses,gunfire,defense,AK,RPG7,enemy,bravery,determination,perilous,homeland,Bakhmut,Russia,capture,@oleksandr081290</media:keywords>
+                          <media:city>Bakhmut</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>WAR</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sun, 27 Feb 2022</media:filmingDate>
+                          <guid>2916</guid>
+                          <pubDate>Mon, 04 Sep 2023 10:02:39 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2916.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2916.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Uncanny creations: Japanese artist crafts human-like accessories with a twist</media:title>
+                          <media:description>In a captivating display of artistry, a Japanese creator known as @doooo_cds has ventured into the realm of uncanny craftsmanship. Their latest video, posted on July 14, 2021, from a location in Japan, showcases an assortment of accessories that bear an unsettling resemblance to human traits and flesh. Among the curious creations featured, two particularly intriguing items are a piggy bank and a dice cube, both adorned with eerily lifelike human eyes that can open and close at will. The uncanny collection also includes a coin purse resembling a human chin with lips, a magnet masquerading as a human ear, a baseball ball, and nose toy, all meticulously designed to blur the lines between the ordinary and the uncanny. </media:description>
+                          <media:keywords>artistic,surreal,uncanny,accessories,craftsmanship,creativity,human-like,video,Japan,@doooo_cds,piggy bank,dice cube,eyes,coin purse,chin,lips,magnet,ear,baseball,nose</media:keywords>
+                          <media:city>Tokio</media:city>
+                          <media:country>Japan</media:country>
+                          <media:regionCode>JP</media:regionCode>
+                          <media:categoryCode>ODD</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Wed, 14 Jul 2021</media:filmingDate>
+                          <guid>2915</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:48:55 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2915.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2915.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Projectile launch bought with a donation from a girl from the Crimea</media:title>
+                          <media:description>A video captured by @brsk_ea__elya, a Ukrainian soldier in Bakhmut, Ukraine, launched a single missile from a land-based missile launcher on February 28, 2023. According to the author, this projectile was bought with a donation from Elya from the Crimea.</media:description>
+                          <media:keywords>gratitude,soldier,missile,charity,support,Ukraine,Crimea,Russia,conflict,dedication,unity,resilience,gesture,Bakhmut,celebration,annexation,heartfelt,solidarity,donation,event</media:keywords>
+                          <media:city>Bakhmut</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Tue, 28 Feb 2023</media:filmingDate>
+                          <guid>2914</guid>
+                          <pubDate>Mon, 04 Sep 2023 09:48:26 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2914.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2914.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Captured on camera: spectacular meteorite lights up Turkish sky</media:title>
+                          <media:description>On the night of September 2, 2023, in Gümüşhane, Turkey, a remarkable celestial event unfolded as captured by @Habip785's dashcam. While driving along the Erzincan road, a dazzling meteorite streaked across the sky, illuminating the darkness with its brilliant light. The video footage showcases the car's journey on the winding road, with the meteorite's breathtaking passage stealing the spotlight as it blazed a trail across the heavens. This captivating celestial display was not confined to a single observer; people from various parts of the country reported witnessing the meteorite's spectacular light show,</media:description>
+                          <media:keywords>meteorite,sky,dashcam,video,Gümüşhane,Turkey,Erzincan road,night,celestial,event,dazzling,illuminating,darkness,breathtaking,passage,heavens,captivating,observers,spectacle,wonder</media:keywords>
+                          <media:city>Gümüşhane</media:city>
+                          <media:country>Turkey</media:country>
+                          <media:regionCode>TR</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sat, 2 Sep 2023</media:filmingDate>
+                          <guid>2912</guid>
+                          <pubDate>Sun, 03 Sep 2023 18:41:04 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2912.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2912.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Floods strikes Serramar, Alcanar, Spain: waist-high waters inundate homes</media:title>
+                          <media:description>In a harrowing scene from Serramar, Alcanar, Spain, captured by @enjolrmus on September 3, 2023, a video reveals the extent of a devastating flood that has besieged the tranquil urbanization. The footage showcases waist-high waters inundating both the interior of a home and its surrounding yard. With homes and property submerged beneath the rising waters, residents of Serramar find themselves grappling with the grim reality of a natural disaster that has left their community submerged. The flooding has been caused by torrential rains that has hit the area.  </media:description>
+                          <media:keywords>flooded,spain,alcanar,serramar,water,crisis,video,devastation,community,resilience,disaster,home,yard,inundation,residents,natural,event,adversity,capture,determination</media:keywords>
+                          <media:city>Serramar, Alcanar</media:city>
+                          <media:country>Spain</media:country>
+                          <media:regionCode>ES</media:regionCode>
+                          <media:categoryCode>DIS</media:categoryCode>
+                          <media:category>News,Weather</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sun, 3 Sep 2023</media:filmingDate>
+                          <guid>2911</guid>
+                          <pubDate>Sun, 03 Sep 2023 18:13:22 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2911.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2911.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>A landslide covers a medieval monastery near Mtskheta in Georgia</media:title>
+                          <media:description>On August 27, 2023, near the town of Mtskheta, Georgia, an astonishing event unfolded as eyewitnesses captured a harrowing video of a massive chunk of land breaking away from the hillside and tumbling down towards the ancient Shiomgvime Monastery. The Shio-Mgvime Monastery, nestled in a narrow limestone canyon along the northern bank of the Kura River, approximately 30 kilometers from Georgia's capital, Tbilisi, witnessed a dramatic spectacle. As the land detached, a colossal cloud of dust billowed into the air, shrouding the surroundings. Swift and coordinated efforts led to the safe evacuation of the area, thankfully preventing any casualties.</media:description>
+                          <media:keywords>hillside,georgia,monastery,landslide,eyewitnesses,video,ancient,shiomgvime,dust,evacuation,dramatic,spectacle,nature,resilience,historical,treasures,mtskheta,kura river,limestone canyon,capital</media:keywords>
+                          <media:city>Mtskheta</media:city>
+                          <media:country>Georgia</media:country>
+                          <media:regionCode>GE</media:regionCode>
+                          <media:categoryCode>DIS</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sun, 27 Aug 2023</media:filmingDate>
+                          <guid>2910</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:49:36 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2910.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2910.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Tomie's mouth coin purse: coin-chomping creation of a human flesh artist</media:title>
+                          <media:description>In the realm of unconventional artistry, Japanese creator @doooo_cds has unveiled a peculiar yet fascinating addition to his portfolio. On December 3, 2022, in Japan, he shared a captivating video featuring his latest creation, the "Tomie's Mouth Coin Purse." A human flesh artist known for crafting toys and accessories with a distinct human-like aesthetic, @doooo_cds demonstrated the functionality of this unique coin purse. In the video, he delicately opened the purse's mouth, strikingly resembling that of a human, and deposited a handful of coins inside. With a deft motion, he closed the purse and proceeded to give it a gentle shake, showcasing the practicality hidden within its eerie façade.</media:description>
+                          <media:keywords>art,creativity,design,craft,coins,purse,bizarre,macabre,artist,human,flesh,toy,accessories,video,Japan,mouth,coin purse,@doooo_cds,December 3,2023</media:keywords>
+                          <media:city>Tokyo</media:city>
+                          <media:country>Japan</media:country>
+                          <media:regionCode>JP</media:regionCode>
+                          <media:categoryCode>ODD</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sat, 3 Dec 2022</media:filmingDate>
+                          <guid>2908</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:19:18 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2908.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2908.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Tomie-Inspired dice with blinking human-like eye</media:title>
+                          <media:description>In a captivating display of artistic ingenuity, @doooo_cds, a renowned human flesh artist based in Japan, unveiled a truly mesmerizing creation on July 14, 2021. The artist's video footage left viewers awestruck as it featured a human-like flesh dice that he called the 'Tomie's Blinking Eye Dice' complete with eyes that eerily opened and closed. </media:description>
+                          <media:keywords>artistic,surreal,macabre,innovative,mesmerizing,enigmatic,captivating,organic,ethereal,supernatural,boundless,imagination,human,dice,flesh,eyes,artist,video,creation,Japan</media:keywords>
+                          <media:city>Tokyo</media:city>
+                          <media:country>Japan</media:country>
+                          <media:regionCode>JP</media:regionCode>
+                          <media:categoryCode>ODD</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Wed, 14 Jul 2021</media:filmingDate>
+                          <guid>2905</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:15:25 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2905.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2905.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Japan's unique human-like finger RCA connectors: a fascinating creation by a flesh artist</media:title>
+                          <media:description>In a captivating glimpse into the world of human flesh artistry, a video captured by an artist known as @doooo_cds on April 18, 2023, in Japan has set the internet abuzz. The footage showcases a set of finger-like RCA connectors that bear an uncanny resemblance to human fingers. These connectors, intricately crafted by @doooo_cds, offer a mesmerizing blend of technology and artistry, underscoring the artist's specialization in crafting toys, gadgets, and accessories. </media:description>
+                          <media:keywords>toy,gadget,artistry,connectors,technology,creativity,flesh,artist,Japan,video,fingers,human-like,unique,internet,capture,April,2023,accessories,captivating,resemblance</media:keywords>
+                          <media:city>Tokyo</media:city>
+                          <media:country>Japan</media:country>
+                          <media:regionCode>JP</media:regionCode>
+                          <media:categoryCode>ODD</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Tue, 18 Apr 2023</media:filmingDate>
+                          <guid>2904</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:14:47 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2904.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2904.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Japanese human flesh artist unveils 'crimes of the future' human-like ear magnet</media:title>
+                          <media:description>In a captivating video captured by @doooo_cds on August 18, 2023, in Japan, the world caught a mesmerizing glimpse of a peculiar creation by the renowned human flesh artist. This unconventional craftsman, specializing in crafting unusual gadgets and accessories that eerily resemble real human flesh, revealed a magnet that bore an astonishing resemblance to a human ear. What made this piece even more enigmatic was the intricate tattoo inscribed upon it, boldly stating 'Crimes of the Future.'</media:description>
+                          <media:keywords>art,creativity,magnet,heart,tattoo,flesh,artist,Japan,video,unusual,accessories,craftsman,futuristic,enigmatic,masterpiece,@doooo_cds,boundary-pushing,mesmerizing,craftsmanship,intrigue</media:keywords>
+                          <media:city>Tokyo</media:city>
+                          <media:country>Japan</media:country>
+                          <media:regionCode>JP</media:regionCode>
+                          <media:categoryCode>ODD</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Fri, 18 Aug 2023</media:filmingDate>
+                          <guid>2903</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:14:10 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2903.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2903.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>A human-like piggy bank sleeps in a crib</media:title>
+                          <media:description>In a surreal and captivating video captured by the enigmatic human flesh artist @doooo_cds, dated August 5, 2023, from Japan, an unusual sight has been unveiled. Nestled within a crib, a piggy bank takes on an eerie semblance of life with an eye that eerily resembles that of a human being. The video depicts the piggy bank being gently rocked to sleep, evoking an uncanny sense of anthropomorphism. </media:description>
+                          <media:keywords>art,creativity,surreal,crib,piggy bank,Japan,video,human,flesh,artist,eye,sleep,rocking,enigmatic,captivating,anthropomorphism,boundaries,imagination,wonderment,unconventional</media:keywords>
+                          <media:city>Tokyo</media:city>
+                          <media:country>Japan</media:country>
+                          <media:regionCode>JP</media:regionCode>
+                          <media:categoryCode>ODD</media:categoryCode>
+                          <media:category>Cool</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sat, 5 Aug 2023</media:filmingDate>
+                          <guid>2902</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:13:26 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2902.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2902.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Chill escalator standoff: daughter refuses to be touched by her father</media:title>
+                          <media:description>In a heartwarming yet amusing moment captured by @abilaratughania on August 13, 2023, in Sentul City, Bogor, Indonesia, a father and his determined daughter found themselves in a delightful standoff on an escalator. The video reveals the father extending his hand towards his little girl, attempting to guide her safely down the escalator. However, the young girl had her priorities clear - she yearned for ice cream. She was mad at her father because he had refused to buy her ice cream citing that she had cold. </media:description>
+                          <media:keywords>father,daughter,escalator,ice cream,refusal,bonding,child,family,love,Indonesia,Sentul City,Bogor,cute,moment,hungry,chilly,video,August,2023,capture</media:keywords>
+                          <media:city>Sentul City, Bogor</media:city>
+                          <media:country>Indonesia</media:country>
+                          <media:regionCode>ID</media:regionCode>
+                          <media:categoryCode>ENT</media:categoryCode>
+                          <media:category>Fails and Funnies</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sun, 13 Aug 2023</media:filmingDate>
+                          <guid>2901</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:07:08 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2901.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2901.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Swinging fail: a romantic video gone wrong on Pari Island</media:title>
+                          <media:description>On a sunny day in Pari Island, Thousand Islands, Indonesia, a couple's attempt to create a romantic video took an unexpected and humorous turn. In a video captured by @kangkopinyantaiiiii on July 5, 2023, a man was seen inviting his lady counterpart to join him on a swing. Their intention was to create a charming and romantic moment for the camera, but as she attempted to sit beside him, the swing unexpectedly toppled, sending them both tumbling to the ground. With laughter and good spirits, the lady remarked, "The intention was to make romantic-style content like that, instead it fell, it failed." </media:description>
+                          <media:keywords>romantic,island,couple,swing,laughter,mishap,video,Indonesia,Pari,unexpected,humorous,moment,content,capture,lady,man,toppled,sunny,failed,attempt</media:keywords>
+                          <media:city>Pari Island, Thousand Islands</media:city>
+                          <media:country>Indonesia</media:country>
+                          <media:regionCode>ID</media:regionCode>
+                          <media:categoryCode>ENT</media:categoryCode>
+                          <media:category>Fails and Funnies</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Wed, 5 Jul 2023</media:filmingDate>
+                          <guid>2900</guid>
+                          <pubDate>Fri, 01 Sep 2023 19:06:02 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2900.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2900.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Heroes of Bakhmut: Ukrainian soldiers defend against Wagnerites amidst devastation</media:title>
+                          <media:description>In the war-torn city of Bakhmut, Ukraine, on March 23, 2023, a harrowing video captured the courageous efforts of Ukrainian soldiers as they sprinted towards their military vehicles against a backdrop of wreckage and destruction. The soldiers, led by @ferbootboom, were resolute in their determination to defend their homeland against constant assaults by Wagnerite forces, who had suffered significant losses in their relentless attacks. </media:description>
+                          <media:keywords>conflict,soldiers,Ukraine,Russia,Bakhmut,defense,bravery,devastation,video,Wagnerites,heroes,resistance,evacuation,warfare,courage,infantry,paratroopers,invaders,wounded,support</media:keywords>
+                          <media:city>Bakhmut</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Thu, 23 Mar 2023</media:filmingDate>
                           <guid>2899</guid>
-                          <pubDate>Sun, 03 Sep 2023 21:35:09 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/2899.jpg" />
-                          <media:content url="https://viralbear2.storage.yandexcloud.net/reuters-videos/2899.mp4" />
-                          <dfpvideo:lastModifiedDate>Mon, 04 Sep 2023 13:21:26 GMT</dfpvideo:lastModifiedDate>
+                          <pubDate>Fri, 01 Sep 2023 14:29:23 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2899.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2899.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title>Ukrainian soldiers lighten the mood: behind-the-scenes humor in Bakhmut</media:title>
+                          <media:description>On August 31, 2023, in the city of Bakhmut, Ukraine, a video captured by @rocket_brutto_ showcased a lighthearted moment among Ukrainian soldiers. In the video, one soldier can be seen adjusting his army uniform before playfully running away and hiding behind the bushes. These soldiers are part of the mortar crew. </media:description>
+                          <media:keywords>soldiers,humor,camaraderie,Bakhmut,Ukrainian,video,moment,military,helicopter,charging,uniform,laughter,unity,troops,resilience,candid,mischievous,joking,bushes,capture</media:keywords>
+                          <media:city>Bakhmut</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Thu, 31 Aug 2023</media:filmingDate>
+                          <guid>2898</guid>
+                          <pubDate>Fri, 01 Sep 2023 14:21:25 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2898.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2898.mp4" />
+                          <dfpvideo:lastModifiedDate/>
                           </item>
                         
                         <item>
@@ -3216,408 +3612,6 @@ Later, the Federal Air Transport Agency reported that a man named Yevgeny Prigoz
                           <pubDate>Tue, 08 Aug 2023 10:36:13 GMT</pubDate>
                           <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2655.jpg" />
                           <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2655.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Midnight motorbike melody: barking serenade by excited street dogs</media:title>
-                          <media:description>In a captivating video captured by @abdullaev.222 on July 9, 2023, in Saratov Rakhova, Russia, a group of street dogs showcased their curious behavior towards a motorbike. As the rider turned on the engine, the dogs immediately came rushing towards him, barking excitedly. However, whenever the engine was switched off, they would retreat, only to return with renewed enthusiasm once it roared to life again. The intriguing scene unfolded during the night when the rider stopped to answer a phone call, catching the dogs' attention and prompting him to start recording the delightful encounter. It's a heartwarming reminder of the special bond between humans and their four-legged companions, even in unexpected and amusing circumstances.</media:description>
-                          <media:keywords>motorbike,dogs,street,night,Russia,Saratov,barking,excitement,video,capture,curious,engine,retreat,enthusiasm,phone,call,recording,bond,humans,companions</media:keywords>
-                          <media:city> Saratov Rakhova</media:city>
-                          <media:country>Russia</media:country>
-                          <media:regionCode>RU</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Animals</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sun, 9 Jul 2023</media:filmingDate>
-                          <guid>2609</guid>
-                          <pubDate>Thu, 03 Aug 2023 08:12:32 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2609.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2609.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>From frontlines to family: a heartwarming homecoming in Far East, Russia</media:title>
-                          <media:description>In a heartwarming scene captured on video in the Far East, Russia on July 12, 2023, a Russian soldier made his triumphant return home from the frontlines of the Russia-Ukraine conflict. Clutching a bouquet of flowers in his hands, he was met with tears of joy and embraces from his eagerly awaiting family members. His wife's sobbing embrace was soon joined by his mother's, as the simple day transformed into a jubilant celebration for this resilient family. The touching reunion served as a poignant reminder of the deep emotions and sacrifices that soldiers and their families endure during times of conflict.</media:description>
-                          <media:keywords>soldier,homecoming,family,Russia,frontlines,conflict,Ukraine,video,flowers,tears,joy,embrace,celebration,reunion,resilience,emotions,sacrifices,war,Far East,sobbing</media:keywords>
-                          <media:city>Far East </media:city>
-                          <media:country>Russia</media:country>
-                          <media:regionCode>RU</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>Heartwarming</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Wed, 12 Jul 2023</media:filmingDate>
-                          <guid>27500000</guid>
-                          <pubDate>Thu, 17 Aug 2023 10:23:44 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2750.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2750.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Raging forest fire forces evacuations as blaze engulfs acres of Tenerife's Mount Teide</media:title>
-                          <media:description>A raging forest fire has swept through the pristine landscapes of Tenerife, the largest of Spain's Canary Islands, leaving a trail of destruction in its wake. The blaze, which originated on the iconic Mount Teide, has devoured hundreds of acres of forested land, its ferocity exacerbated by strong winds and dry conditions. Disturbing footage captured by @fran40tf on August 16, 2023 from Santa Ursula shows the ominous sight of towering flames and billowing smoke, a grim testament to the fire's intensity. Despite the valiant efforts of firefighters, the inferno remains uncontained, prompting the evacuation of five villages in its path.</media:description>
-                          <media:keywords>fire,Tenerife,forest,blaze,evacuation,Mount Teide,Canary Islands,destruction,smoke,flames,firefighters,villages,landscape,intensity,wind,dry conditions,@fran40tf,Santa Ursula,devastation,uncontained</media:keywords>
-                          <media:city>Santa Ursula </media:city>
-                          <media:country>Spain</media:country>
-                          <media:regionCode>ES</media:regionCode>
-                          <media:categoryCode>DIS</media:categoryCode>
-                          <media:category>News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Wed, 16 Aug 2023</media:filmingDate>
-                          <guid>27460000</guid>
-                          <pubDate>Thu, 17 Aug 2023 09:29:29 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2746.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2746.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Raging torrents: Yoshii River swells amidst heavy rain</media:title>
-                          <media:description>In a dramatic display of nature's power, a recent video captured by @yashimamathi on August 15, 2023, showcased the Yoshii River at Okutsugawa Nishi, Kagamino town, Tomata district, Okayama prefecture, Japan, surging with tumultuous waters that came alarmingly close to flooding nearby houses. The footage depicts the river's relentless swells, brought about by an onslaught of heavy rainfall in the region. The raging torrents cascaded just beneath the bridge, serving as a stark reminder of the unpredictable force of nature. As residents closely monitored the rising waters, the event highlighted both the stunning beauty and potential danger that natural elements can bring.</media:description>
-                          <media:keywords>swollen,houses,video,river,flooding,bridge,rainfall,nature,power,danger,beauty,residents,waters,event,region,stunning,force,preparedness,environmental,fluctuations</media:keywords>
-                          <media:city>Okutsugawa Nishi, Kagamino town, Tomata district, Okayama prefecture</media:city>
-                          <media:country>Japan</media:country>
-                          <media:regionCode>JP</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>Weather,News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Tue, 15 Aug 2023</media:filmingDate>
-                          <guid>27320000</guid>
-                          <pubDate>Wed, 16 Aug 2023 07:27:49 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2732.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2732.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Gravity-defying stunts: pickup soars and lands with elegance over Xuzhou sand dunes</media:title>
-                          <media:description>In a mesmerizing display of off-road prowess, a daring car enthusiast from Xuzhou, central China, recently wowed onlookers as he captured a jaw-dropping video of a pickup truck soaring over sand dunes and touching down with remarkable finesse. The adrenaline-charged spectacle, shared by @XuzhouWranglerweddingcar on August 3, 2023, showcased the fearless driver's mastery as he skillfully maneuvered the vehicle through the desert off-road field. The video left viewers astounded as the pickup defied gravity, ascending the dunes and executing a flawless landing that mirrored a choreographed aerial performance. </media:description>
-                          <media:keywords>sand,dunes,pickup,off-road,enthusiast,video,flying,adrenaline,skill,desert,driving,practice,Xuzhou,central China,@XuzhouWranglerweddingcar,gravity-defying,spectacle,mastery,landing,exploration</media:keywords>
-                          <media:city>Xuzhou </media:city>
-                          <media:country>China</media:country>
-                          <media:regionCode>CN</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Cool</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Thu, 3 Aug 2023</media:filmingDate>
-                          <guid>27110000</guid>
-                          <pubDate>Tue, 15 Aug 2023 07:49:03 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2711.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2711.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Massive explosion rocks Sergiev Posad: pyrotechnics warehouse blast shatters windows and sends shockwaves across the region</media:title>
-                          <media:description>In a startling incident that shook Sergiev Posad, Russia, an explosion of immense magnitude occurred at an optical-mechanical plant on August 9, 2023. The blast, which was captured by surveillance cameras, emanated from a warehouse housing pyrotechnics within the plant's premises. Astonishingly, despite the deafening noise and mushroom-shaped cloud that billowed into the sky, local residents appeared surprisingly nonchalant, going about their daily routines as fragments of shattered glass and mosquito nets rained down around them. The explosion's impact was so severe that windows in numerous nearby buildings were blown out by the powerful shockwave, and car alarms were triggered by the force. More than ten individuals sustained injuries in the incident, prompting a swift evacuation of all plant facilities, including rented spaces. Law enforcement personnel and district leader Dmitry Akulov promptly arrived at the scene, aiming to manage the aftermath of this alarming event.</media:description>
-                          <media:keywords>explosion,surveillance,residents,pyrotechnics,plant,injuries,evacuation,law enforcement,district,mushroom cloud,shockwave,windows,glass,mosquito nets,car alarms,impact,blast,incident,aftermath,Sergiev Posad</media:keywords>
-                          <media:city>Sergiev Posad</media:city>
-                          <media:country>Russia</media:country>
-                          <media:regionCode>RU</media:regionCode>
-                          <media:categoryCode>DIS</media:categoryCode>
-                          <media:category>News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Wed, 9 Aug 2023</media:filmingDate>
-                          <guid>26700000</guid>
-                          <pubDate>Wed, 09 Aug 2023 21:15:42 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2670.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2670.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Corn connoisseur cat: a hilarious tale of Coconut's seasonal delight</media:title>
-                          <media:description>In a heartwarming and humorous scene captured by @plukchi__ on July 30, 2023, in Odesa, Ukraine, a feline friend named Coconut has become an internet sensation for his unique love of corn. The video depicts Coconut indulging in his favorite seasonal treat – corn on the cob – alongside the author's friend, @maks_elash. Previously known as Cosmos, the cat earned the endearing moniker Coconut due to his passion for the vegetable. Despite initial restrictions, Coconut's determination led him to master the art of opening a garbage drawer to savor corn cobs. The footage not only showcases Coconut's adorable corn-eating technique but also highlights the strong bond between the cat and his human. </media:description>
-                          <media:keywords>corn,cat,coconut,friendship,humor,video,Odesa,Ukraine,TikTok,viral,pet,feline,delight,seasonal,treat,bond,quirky,munching,adorable,internet</media:keywords>
-                          <media:city>Odesa </media:city>
-                          <media:country>Ukraine</media:country>
-                          <media:regionCode>UA</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Animals</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sun, 30 Jul 2023</media:filmingDate>
-                          <guid>26600000</guid>
-                          <pubDate>Wed, 09 Aug 2023 07:24:01 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2660.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2660.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Unusual collision in Jiangsu: scooters smile and carry on despite impact at crossing</media:title>
-                          <media:description>In a peculiar incident captured by @trafficsafetyeveryday in Jiangsu Province, China, on July 24, 2023, two motorists collided in front of a moving car at a crossing area. The collision involved a woman driving an electric scooter and a delivery rider, both also on electric scooters. Surprisingly, despite the impact, the two parties showed an unexpected reaction. Instead of anger and frustration, they exchanged smiles after checking for injuries and continued on their way. The scene left the author intrigued, leading them to save the video. The incident serves as a unique reminder of how even in the midst of accidents, a moment of understanding and positivity can arise on the roads.</media:description>
-                          <media:keywords>collision,motorists,Jiangsu,China,video,crossing,traffic lights,electric bicycles,delivery rider,interesting,smile,accident,understanding,positivity,roads,@trafficsafetyeveryday,July 24,2023,intriguing,motorists,movement</media:keywords>
-                          <media:city>Jiangsu</media:city>
-                          <media:country>China</media:country>
-                          <media:regionCode>CN</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>Road accidents</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Mon, 24 Jul 2023</media:filmingDate>
-                          <guid>26240000</guid>
-                          <pubDate>Fri, 04 Aug 2023 13:57:46 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2624.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2624.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Convicted thief escapes Blagoveshchensk pre-trial detention center through transmission window</media:title>
-                          <media:description>In a daring escape, a young man convicted of theft managed to break free from a pre-trial detention center in Blagoveshchensk, Russia, through a transmission window on July 30, 2023. The incident occurred on Sunday during a visitation and transfer session, taking advantage of the warden's absence. After being on the run for a few hours, the fugitive was finally apprehended on the night of July 31st. According to the Russian Federal Penitentiary Service for the Amur Region, the escapee had been in detention since December 2022. Now facing severe consequences, the convict may be sentenced to forced labor or imprisonment for up to four years, as per Article 313 of the Criminal Code of Russia. Additionally, the court will charge him for the expenses incurred during the search operation. The Federal Penitentiary Service is currently conducting an internal audit to assess the security breach that allowed this escape to occur.</media:description>
-                          <media:keywords>escape,convict,theft,pretrial,detention,Blagoveshchensk,Russia,transmission,window,caught,criminal,penalty,fugitive,imprisonment,audit,warden,apprehended,visitation,expenses</media:keywords>
-                          <media:city>Blagoveshchensk</media:city>
-                          <media:country>Russia</media:country>
-                          <media:regionCode>RU</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sun, 30 Jul 2023</media:filmingDate>
-                          <guid>26170000</guid>
-                          <pubDate>Thu, 03 Aug 2023 13:22:11 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2617.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2617.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Adorable foster kittens indulge in a 'paws'-itively messy drink!</media:title>
-                          <media:description>In a heartwarming scene captured by @emiliexfosters on July 18, 2023, in Milwaukee, USA, three adorable foster kittens were caught on video enjoying a drink from a bowl. However, one mischievous kitten had its legs dipped into the liquid as it drank, resulting in a cute yet messy moment. With quick reflexes, the author lifted the little one out of the bowl, revealing its front paws soaked in the brown liquid used for weaning them. </media:description>
-                          <media:keywords>adorable,foster,kittens,video,drink,bowl,legs,soaked,weaning,messy,cute,moment,reflexes,furballs,caring,animals,pets,Milwaukee,USA,cat</media:keywords>
-                          <media:city> Milwaukee </media:city>
-                          <media:country>United States</media:country>
-                          <media:regionCode>US</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Animals</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Tue, 18 Jul 2023</media:filmingDate>
-                          <guid>26150000</guid>
-                          <pubDate>Thu, 03 Aug 2023 13:22:47 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2615.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2615.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Thrilling mishap: Audi drift attempt ends in guardrail collision at Suzhou GTshow </media:title>
-                          <media:description>During the annual Suzhou GTshow on July 22, 2023, a highly anticipated automotive cultural event in China, a heart-pounding incident occurred as an Audi car attempted a daring drift maneuver. The vehicle lost control and collided with a guardrail, sending shockwaves through the crowd of car enthusiasts. Thankfully, no one was injured in the dramatic collision. The video captured by @ShanghaiUPAutomotiveTechnicalService shows the intensity of the moment, serving as a reminder of the risks involved in high-speed automotive displays. Despite the unexpected mishap, the event continued, showcasing a spectacular display of Custom cars and Supercars to the delight of the attendees.</media:description>
-                          <media:keywords>drift,audi,collision,guardrail,suzhou,china,g t show,automotive,event,enthusiasts,custom,supercar,annual,mishap,excitement,car,culture,display,injured,risk</media:keywords>
-                          <media:city>Suzhou</media:city>
-                          <media:country>China</media:country>
-                          <media:regionCode>CN</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>Accidents</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sat, 22 Jul 2023</media:filmingDate>
-                          <guid>2603</guid>
-                          <pubDate>Tue, 01 Aug 2023 13:19:39 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2603.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2603.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Adventurous Manda: a curious cat's high-rise escapades in Yogyakarta!</media:title>
-                          <media:description>In a captivating moment caught on video by @a.youu_ on July 4, 2023, in Yogyakarta, Indonesia, a curious cat named Manda was spotted perched atop an unfinished building. The enigmatic feline appeared unsure of its surroundings, leaving viewers both amused and intrigued by its daring escapade. With a playful spirit, the author decided to record the charming scene, showcasing Manda's adventurous nature and uncertain demeanor as it surveyed the world from its lofty vantage point.</media:description>
-                          <media:keywords>cat,video,Yogyakarta,Indonesia,Manda,building,perched,curious,confused,fun,playful,adventurous,daring,charming,uncertain,climb,pet,antics,moment,heartwarming</media:keywords>
-                          <media:city>Yogyakarta</media:city>
-                          <media:country>Indonesia</media:country>
-                          <media:regionCode>ID</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Animals</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Tue, 4 Jul 2023</media:filmingDate>
-                          <guid>2573</guid>
-                          <pubDate>Sat, 29 Jul 2023 08:15:12 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2573.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2573.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Drone crashes into Moscow City tower in Russia</media:title>
-                          <media:description>An explosion occurred on 30 July 2023 in the 50-storey building of the IQ-quarter located in Moscow City.
-
-The incident took place in the building at 10/2 Presnenskaya Embankment, at the level of the fifth or sixth floors, where the glazing was “broken”. No harm done.
-
-The tower was evacuated, law enforcement agencies arrived at the scene.
-
-Shortly before this, air defense systems repelled an attack by drones in the Moscow region. According to 112, the drones were shot down near Odintsovo and Krasnogorsk.</media:description>
-                          <media:keywords>moscow,russia,drone,crash,war,ukraine,moscow city,explosion</media:keywords>
-                          <media:city>Moscow</media:city>
-                          <media:country>Russia</media:country>
-                          <media:regionCode>RU</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sun, 30 Jul 2023</media:filmingDate>
-                          <guid>2582</guid>
-                          <pubDate>Sun, 30 Jul 2023 17:45:16 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2582.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2582.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Cake mishap: hilarious family moment in Ankara, Turkey</media:title>
-                          <media:description>In a heartwarming yet comical family moment captured in Ankara, Turkey, a video shared by @amywinehouzze on July 15, 2023, showcased their little one indulging in a cake while kneeling on a dining chair. The child's innocent delight was infectious as they merrily savored the cake in one hand, but alas, laughter ensued as the sweet treat slipped from their grasp while trying to juggle it with the other hand. Surrounding family members couldn't help but burst into fits of laughter, turning the mishap into an unforgettable memory. This endearing scene reminds us of the simple joys and shared laughter that bring families together, creating cherished moments to be cherished for years to come.</media:description>
-                          <media:keywords>cake,kid,dining,table,Ankara,Turkey,video,laughter,family,moment,comical,mishap,sweet,treat,delight,memorable,joy,shared,precious,memory</media:keywords>
-                          <media:city>Ankara</media:city>
-                          <media:country>Turkey</media:country>
-                          <media:regionCode>TR</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Fails and Funnies</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sat, 15 Jul 2023</media:filmingDate>
-                          <guid>2581</guid>
-                          <pubDate>Sun, 30 Jul 2023 17:45:47 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2581.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2581.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Intense hailstorm hits Central Ottawa: golf ball sized hail pummels the city for 5 minutes!</media:title>
-                          <media:description>On July 28, 2023, residents of Ottawa, Canada, experienced an intense hailstorm that left them astonished and wary. The event was captured on video by @paulajroy, who shared the gripping footage of the hailstorm outside her house. Lasting for approximately five minutes, the hailstones reached nearly the size of golf balls, causing significant concern for property damage and potential risks to individuals caught outdoors. The severe weather phenomenon swept through central Ottawa, leaving a trail of destruction in its wake.</media:description>
-                          <media:keywords>hailstorm,ottawa,canada,weather,intense,video,paulajroy,golfball,sized,hail,central,astonishment,damage,risk,outdoors,severe,phenomenon,destruction,warnings,precautions</media:keywords>
-                          <media:city>Ottawa </media:city>
-                          <media:country>Canada</media:country>
-                          <media:regionCode>CA</media:regionCode>
-                          <media:categoryCode>DIS</media:categoryCode>
-                          <media:category>Weather</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Fri, 28 Jul 2023</media:filmingDate>
-                          <guid>2579</guid>
-                          <pubDate>Sun, 30 Jul 2023 17:39:58 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2579.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2579.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Ravaged city: Odesa hypermarket destroyed in Russian missile attacks amid ongoing Ukraine-Russia conflict</media:title>
-                          <media:description>On August 14, 2023, in the city of Odesa, Ukraine, a hypermarket fell victim to the destructive aftermath of Russian missile attacks. The grim scene, captured in a video by @alenastilist, showcased the devastating impact of two waves of drone and missile strikes that targeted the port city overnight. The attacks left at least three individuals wounded, casting a shadow of fear and instability over the region situated along the Black Sea. Ukrainian authorities reported that the assault triggered several fires as rocket fragments rained down, forcing local responders into action. Despite the damage, the spirit of resilience was evident as cranes worked to extinguish lingering flames in the hypermarket.</media:description>
-                          <media:keywords>destruction,conflict,missile attacks,Odesa,Ukraine,hypermarket,wounds,Russian,drone,fires,resilience,Black Sea,governor,cranes,aftermath,video,invasion,fear,instability,responders</media:keywords>
-                          <media:city>Odesa </media:city>
-                          <media:country>Ukraine</media:country>
-                          <media:regionCode>UA</media:regionCode>
-                          <media:categoryCode>DIS</media:categoryCode>
-                          <media:category>News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Mon, 14 Aug 2023</media:filmingDate>
-                          <guid>27580000</guid>
-                          <pubDate>Fri, 18 Aug 2023 08:39:11 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2758.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2758.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Adorable blue English staffy pup throws hilarious temper tantrum</media:title>
-                          <media:description>In a heartwarming and comical moment, @peppertheblueseal captured a delightful scene in Adelaide, South Australia, on July 17, 2023. The video showcases her blue English Staffy pup, Pepper, indulging in an adorable temper tantrum that remarkably resembles the cries of a newborn baby. Pepper's antics have quickly won the hearts of viewers, as the endearing pup showcases a playful and spirited side. </media:description>
-                          <media:keywords>pup,tantrum,video,adorable,staffy,blue,Pepper,hilarious,baby-like,cute,pet,dog,funny,moment,South Australia,social media,viral,behavior,comical,heartwarming</media:keywords>
-                          <media:city>Adelaide </media:city>
-                          <media:country>Australia</media:country>
-                          <media:regionCode>AU</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Animals,Fails and Funnies</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Mon, 17 Jul 2023</media:filmingDate>
-                          <guid>27420000</guid>
-                          <pubDate>Wed, 16 Aug 2023 10:19:44 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2742.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2742.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Joyful celebration: a heartwarming birthday serenade for Bududuts, the resilient furbaby</media:title>
-                          <media:description>In a heartwarming display of love and resilience, @bulonchufurbabies from Antipolo City, Philippines, shared a touching video on April 30, 2023, capturing the celebration of her beloved dog Bududuts' 2nd birthday. Despite the challenges life might have thrown their way, the duo found a way to make the occasion special, showering Bududuts, affectionately known as Duts, with affection. The video shows Duts being serenaded with a rendition of "Happy Birthday," which he clearly enjoyed. As the camera pans, we see a table adorned with a spread fit for a canine king – a sumptuous feast of chicken and rice, with a chicken standing in for a birthday cake. </media:description>
-                          <media:keywords>dog,birthday,celebration,love,resilience,video,singing,Antipolo City,Philippines,Bududuts,Duts,beloved,affection,serenade,chicken,rice,bond,furry,companions,cherished</media:keywords>
-                          <media:city>Antipolo City </media:city>
-                          <media:country>Philippines</media:country>
-                          <media:regionCode>PH</media:regionCode>
-                          <media:categoryCode>ENT</media:categoryCode>
-                          <media:category>Animals,Heartwarming</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sun, 30 Apr 2023</media:filmingDate>
-                          <guid>27390000</guid>
-                          <pubDate>Wed, 16 Aug 2023 07:53:20 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2739.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2739.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Resilience amidst conflict: evacuation of a Ukrainian family from the frontline village of Druzhby</media:title>
-                          <media:description>In the midst of the ongoing Ukraine-Russia conflict, a poignant scene unfolds in the village of Druzhby, Ukraine. Captured on June 8, 2023, by @alexbutukr, a heartrending video depicts a family's courageous evacuation from the relentless shelling of their frontline home. The family's decision to leave was guided by the concern for their safety, and volunteers played a crucial role in assisting and convincing them to evacuate. Against the backdrop of turmoil, this footage stands as a testament to the resilience and unity exhibited by both the affected families and the compassionate volunteers striving to ensure their well-being.</media:description>
-                          <media:keywords>conflict,evacuation,frontline,shelling,Ukraine,Russia,village,family,safety,volunteers,compassion,unity,turmoil,resilience,video,Druzhby,ongoing,captured,June 8,2023</media:keywords>
-                          <media:city>Druzhby </media:city>
-                          <media:country>Ukraine</media:country>
-                          <media:regionCode>UA</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>Heartwarming</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Thu, 8 Jun 2023</media:filmingDate>
-                          <guid>27370000</guid>
-                          <pubDate>Wed, 16 Aug 2023 07:40:29 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2737.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2737.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Yekaterinburg woman caught on camera assaulting children over toys in courtyard clash</media:title>
-                          <media:description>A disturbing incident unfolded in Yekaterinburg, Russia on July 9, 2023, as a woman was captured on surveillance camera footage beating two children in the courtyard of house number 4 on Luganskaya Street. The distressing video reveals the woman initially snatching the children's toys and hurling them aside before escalating to physical aggression, repeatedly pushing both a younger and older child. The altercation apparently began when the woman's son joined the two brothers in their play, prompting a dispute over the toys. The father of the affected children, identified as Ivan, recounted the incident, stating that the woman's son became upset when denied the toys. Ivan's wife attempted to intervene, instructing her own son not to upset the younger child. However, things took a troubling turn when the woman entered the scene, forcibly confiscating the children's toys and even damaging their personal belongings. Ivan promptly reported the incident to the police and engaged with the territorial commission on juvenile affairs, while the police launched an investigation into the matter.</media:description>
-                          <media:keywords>surveillance,altercation,incident,aggression,children,toys,courtyard,Yekaterinburg,Russia,woman,camera,footage,assault,clash,confrontation,investigation,statement,police,territorial commission,juvenile affairs</media:keywords>
-                          <media:city>Yekaterinburg</media:city>
-                          <media:country>Russia</media:country>
-                          <media:regionCode>RU</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sun, 9 Jul 2023</media:filmingDate>
-                          <guid>27220000</guid>
-                          <pubDate>Tue, 15 Aug 2023 08:03:25 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2722.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2722.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Shocking dashcam footage captures motorcycle collision with pedestrian in Shanxi Province</media:title>
-                          <media:description>In a startling incident captured by @TrafficSafetyeveryday's dashboard camera on June 1, 2023, in Shanxi Province, China, a pedestrian narrowly escaped serious injury as he was struck by a speeding motorcycle while crossing an intersection. The video footage shows the man attempting to cross near the parked vehicle when a motorbike from the opposite direction suddenly accelerates, colliding with him. Although the impact left the man slightly injured, the incident serves as a reminder of the importance of road safety and cautious driving.</media:description>
-                          <media:keywords>accident,intersection,pedestrian,motorcycle,collision,dashcam,video,incident,speeding,injury,road,safety,crossing,parked car,footage,impact,caution,reminder,China,Shanxi</media:keywords>
-                          <media:city>Shanxi Province </media:city>
-                          <media:country>China</media:country>
-                          <media:regionCode>CN</media:regionCode>
-                          <media:categoryCode>DIS</media:categoryCode>
-                          <media:category>Road accidents</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Thu, 1 Jun 2023</media:filmingDate>
-                          <guid>27070000</guid>
-                          <pubDate>Mon, 14 Aug 2023 09:42:56 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2707.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2707.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
-                          <media:title>Devastation and desolation: witnessing the ravages of conflict in Zaporizhzhia</media:title>
-                          <media:description>In a haunting scene captured by @stanislavskayaa on August 10, 2023, in Zaporizhzhia, Ukraine, a vehicle lays destroyed and emitting smoke in front of a hotel bearing the scars of an ongoing conflict. The hotel's once pristine side stands shattered, a stark testimony to the enduring struggle between Ukraine and Russia that has persisted for over a year. </media:description>
-                          <media:keywords>conflict,destruction,turmoil,aftermath,devastation,Ukraine,Russia,Zaporizhzhia,hotel,car,smoke,ongoing,scars,struggle,impact,inhabitants,video,captured,haunting,scene</media:keywords>
-                          <media:city>Zaporizhzhia </media:city>
-                          <media:country>Ukraine</media:country>
-                          <media:regionCode>UA</media:regionCode>
-                          <media:categoryCode>DIS</media:categoryCode>
-                          <media:category>News</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Thu, 10 Aug 2023</media:filmingDate>
-                          <guid>27020000</guid>
-                          <pubDate>Mon, 14 Aug 2023 09:26:33 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2702.jpg" />
-                          <media:content url="https://viralbear.storage.yandexcloud.net/reuters-videos/2702.mp4" />
                           <dfpvideo:lastModifiedDate/>
                           </item>
                         

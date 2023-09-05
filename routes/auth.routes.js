@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth.middleware');
 
 const { validationResult, check } = require('express-validator');
 
-const { compare } = require('bcryptjs');
+const { compare, hash } = require('bcryptjs');
 
 const {
   getUserByEmail,
@@ -118,6 +118,7 @@ router.post('/authenticate', authMiddleware, async (req, res) => {
         ...(!!user?.paymentInfo?.variant && {
           paymentInfo: user.paymentInfo,
         }),
+        ...(hash && { hash }),
       },
       status: 'success',
       code: 200,

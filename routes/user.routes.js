@@ -1355,6 +1355,33 @@ router.get(
             ? Math.round(earnedTotal / acquiredVideosCount)
             : 0;
 
+          const acquiredVideosMainRole = await getAllVideos({
+            isApproved: true,
+            researcher: {
+              searchBy: 'email',
+              value: user.email,
+              isAcquirer: true,
+            },
+          });
+
+          const profitableVideos = acquiredVideosMainRole.filter((video) => {
+            if (!!video.vbForm?.refFormId?.percentage) {
+              return (
+                video.balance -
+                  (video.balance * video.vbForm.refFormId.percentage) / 100 >
+                10
+              );
+            } else {
+              return video.balance > 10;
+            }
+          });
+
+          const percentageOfProfitableVideos = !acquiredVideosCount
+            ? 0
+            : +((profitableVideos.length / acquiredVideosCount) * 100).toFixed(
+                2
+              );
+
           return {
             ...user._doc,
             acquiredVideosCount: {
@@ -1363,6 +1390,7 @@ router.get(
               last7Days: acquiredVideosCountLast7Days,
             },
             average,
+            percentageOfProfitableVideos,
           };
         })
       );
@@ -1601,8 +1629,10 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     let advance = 0;
     let percentage = 0;
 
-    if (user?.advancePayment) {
-      const videosCountWithUnpaidAdvance = await getCountVideosBy({
+    let videosCountWithUnpaidAdvance = null;
+
+    if (!!user?.advancePayment) {
+      videosCountWithUnpaidAdvance = await getCountVideosBy({
         isApproved: true,
         user: {
           value: user.email,
@@ -1631,7 +1661,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       if (advance > percentage) {
         return [
           `advance payment for ${videosCountWithUnpaidAdvance} videos`,
-          ...(!!user?.note && [`$${user.note} in notepad`]),
+          ...(!!user?.note && [`$${user?.note} in notepad`]),
         ];
       } else if (
         advance < percentage ||
@@ -1639,10 +1669,10 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       ) {
         return [
           `percentage for ${unpaidSales.length} sales`,
-          ...(!!user?.note && [`$${user.note} in notepad`]),
+          ...(!!user?.note && [`$${user?.note} in notepad`]),
         ];
       } else {
-        return [...(!!user?.note && [`$${user.note} in notepad`])];
+        return [...(!!user?.note && [`$${user?.note} in notepad`])];
       }
     };
 

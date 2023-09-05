@@ -106,6 +106,10 @@ const schema = new Schema({
       type: String,
       required: false,
     },
+    shortId: {
+      type: Number,
+      required: false,
+    },
     bankName: {
       type: String,
       required: false,

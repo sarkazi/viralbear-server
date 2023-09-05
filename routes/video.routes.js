@@ -11,11 +11,13 @@ const { v4: createUniqueHash } = require('uuid');
 
 const Video = require('../entities/Video');
 const Sales = require('../entities/Sales');
+const Users = require('../entities/User');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
 const { generateVideoId } = require('../utils/generateVideoId');
 const { findTimestampsBySearch } = require('../utils/findTimestampsBySearch');
+const { convertInMongoIdFormat } = require('../utils/convertInMongoIdFormat');
 
 const { getDurationFromBuffer } = require('fancy-video-duration');
 
@@ -67,6 +69,7 @@ const {
   findUsersByValueList,
   getUserBy,
   updateUser,
+  getAllUsers,
 } = require('../controllers/user.controller');
 
 const { sendEmail } = require('../controllers/sendEmail.controller');
@@ -459,18 +462,16 @@ router.get('/findAll', authMiddleware, async (req, res) => {
       ...(category && { category }),
       ...(tag && { tag }),
       ...(location && { location }),
-      ...(forLastDays && { forLastDays }),
-      ...(isApproved &&
-        typeof JSON.parse(isApproved) === 'boolean' && {
-          isApproved: JSON.parse(isApproved),
-        }),
-      ...(personal &&
-        typeof JSON.parse(personal) === 'boolean' && {
-          researcher: {
-            searchBy: 'id',
-            value: req.user.id,
-          },
-        }),
+      ...(forLastDays && { forLastDays: +forLastDays }),
+      ...(typeof JSON.parse(isApproved) === 'boolean' && {
+        isApproved: JSON.parse(isApproved),
+      }),
+      ...(typeof JSON.parse(personal) === 'boolean' && {
+        researcher: {
+          searchBy: 'id',
+          value: convertInMongoIdFormat({ string: req.user.id }),
+        },
+      }),
       ...(wasRemovedFromPublication &&
         typeof JSON.parse(wasRemovedFromPublication) === 'boolean' && {
           wasRemovedFromPublication: JSON.parse(wasRemovedFromPublication),
@@ -497,7 +498,7 @@ router.get('/findAll', authMiddleware, async (req, res) => {
           typeof JSON.parse(personal) === 'boolean' && {
             researcher: {
               searchBy: 'id',
-              value: req.user.id,
+              value: convertInMongoIdFormat({ string: req.user.id }),
             },
           }),
         ...(wasRemovedFromPublication &&
@@ -671,7 +672,9 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
             title: video.videoData.title,
             videoId: video.videoData.videoId,
             screenPath: video.bucket.cloudScreenLink,
-            agreementDate: moment(video?.vbForm?.createdAt).format(),
+            agreementDate: moment(video?.vbForm?.createdAt).format(
+              'D MMMM YYYY, HH:mm:ss Z'
+            ),
             videoByThisAuthor: true,
             revenue: +revenue.toFixed(2),
             percentage: video?.vbForm?.refFormId?.percentage
@@ -2130,12 +2133,6 @@ router.patch(
         process.env.TRELLO_LABEL_NOT_PUBLISHED
       );
 
-      if (!!updatedVideo?.vbForm?.refFormId) {
-        await markRefFormAsUsed(updatedVideo.vbForm.refFormId._id, {
-          used: true,
-        });
-      }
-
       return res.status(200).json({
         status: 'success',
         message: 'The video was successfully published',
@@ -2324,7 +2321,7 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
 
 router.post(
   '/test',
-  authMiddleware,
+
   multer({ storage: storage }).fields([
     {
       name: 'video',
@@ -2336,98 +2333,33 @@ router.post(
     },
   ]),
   async (req, res) => {
-    const video = req.files.video[0];
-    const userId = req.user.id;
+    const researchers = await getAllUsers({ roles: ['researcher'] });
 
-    console.log(mutex.isLocked(), 67577);
+    await Promise.all(
+      researchers.map(async (researcher) => {
+        console.log(researcher._id, 88);
 
-    mutex
-      .runExclusive(async () => {
-        try {
-          const response = await new Promise(async (resolve, reject) => {
-            const response = await convertingVideoToHorizontal(video, userId);
+        return await mutex.runExclusive(async () => {
+          const hh = await Users.findOne({ shortId: { $exists: true } });
 
-            if (response.status === 'error') {
-              reject({ status: 'error', message: response.message });
-            } else {
-              resolve({
-                status: 'success',
-                apiData: response.data,
-                message: response.message,
-              });
-            }
-          });
+          console.log(!hh, 888);
 
-          const bucketResponseByConvertedVideoUpload = await new Promise(
-            (resolve, reject) => {
-              fs.readFile(
-                path.resolve(
-                  `./videos/${req.user.id}/output-for-conversion.mp4`
-                ),
-                {},
-                async (err, buffer) => {
-                  if (err) {
-                    console.log(err);
-                    reject({
-                      status: 'error',
-                      message: 'Error when reading a file from disk',
-                    });
-                  } else {
-                    await uploadFileToStorage(
-                      video.originalname,
-                      'testo',
-                      createUniqueHash(),
-                      buffer,
-                      video.mimetype,
-                      path.extname(video.originalname),
-                      resolve,
-                      reject,
-                      'progressOfRequestInPublishing',
-                      'Uploading the converted video to the bucket',
-                      userId
-                    );
-                  }
-                }
-              );
-            }
-          );
+          if (!hh) {
+            await updateUser({
+              userId: researcher._id,
+              objDBForSet: { shortId: 11 },
+            });
+          } else {
+            const use = await Users.find().sort({ ' shortId ': -1 }).limit(1);
 
-          const bucketResponseByVideoUpload = await new Promise(
-            async (resolve, reject) => {
-              await uploadFileToStorage(
-                video.originalname,
-                'testo',
-                createUniqueHash(),
-                video.buffer,
-                video.mimetype,
-                path.extname(video.originalname),
-                resolve,
-                reject,
-                'progressOfRequestInPublishing',
-                'Uploading video to the bucket',
-                userId
-              );
-            }
-          );
-
-          console.log(bucketResponseByVideoUpload);
-
-          return res.status(200).json({
-            status: 'success',
-            message: response.message,
-            apiData: bucketResponseByVideoUpload,
-          });
-        } catch (err) {
-          console.log(err);
-          return res.status(500).json({
-            status: 'error',
-            message: err?.response?.message,
-          });
-        }
+            await updateUser({
+              userId: researcher._id,
+              objDBForSet: { shortId: use.shortId + 1 },
+            });
+          }
+        });
       })
-      .then((result) => {
-        console.log(result);
-      });
+    );
   }
 );
 

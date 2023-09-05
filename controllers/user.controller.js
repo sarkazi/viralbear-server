@@ -228,7 +228,6 @@ module.exports = {
   updateUser,
   findUsersByEmails,
   updateUserByIncrement,
-
   getUserBy,
   findWorkerEmailByWorkerName,
   findUsersByValueList,

@@ -38,6 +38,15 @@ const findAllAuthorLinks = async ({ userId, used }) => {
   });
 };
 
+const updateManyAuthorLinks = async ({ searchBy, searchValue, objForSet }) => {
+  return AuthorLink.updateMany(
+    {
+      [searchBy]: searchValue,
+    },
+    { $set: objForSet }
+  );
+};
+
 module.exports = {
   findAuthorLinkByVideoId,
   deleteAuthorLink,
@@ -45,4 +54,5 @@ module.exports = {
   findOneRefFormByParam,
   markRefFormAsUsed,
   findAllAuthorLinks,
+  updateManyAuthorLinks,
 };

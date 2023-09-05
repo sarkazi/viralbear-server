@@ -32,8 +32,6 @@ router.post('/create', authMiddleware, async (req, res) => {
     exclusivity,
   } = req.body;
 
-  
-
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(200).json({
       message: 'Missing parameters for link generation',
@@ -99,12 +97,10 @@ router.post('/create', authMiddleware, async (req, res) => {
           status: 'await',
           type: 'repeat',
         });
-      } else {
-        await deleteAuthorLink({ videoId });
       }
     }
 
-    const formHash = generateHash({ length: 13 });
+    const formHash = generateHash({ length: 7 });
 
     const bodyForNewAuthorLink = {
       percentage: percentage ? percentage : 0,
@@ -115,6 +111,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       videoLink: convertedLink,
       videoId,
       exclusivity,
+      paid: true,
 
       ...(link?.trelloCardUrl && { trelloCardUrl: link.trelloCardUrl }),
       ...(link?.trelloCardId && { trelloCardId: link.trelloCardId }),
