@@ -2,8 +2,6 @@ const defineResearchersListForCreatingVideo = ({
   mainResearcher,
   allResearchersList,
 }) => {
-  console.log(mainResearcher, allResearchersList, 99);
-
   return allResearchersList.map((researcher) => {
     return {
       id: researcher._id,

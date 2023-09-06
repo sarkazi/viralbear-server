@@ -276,9 +276,10 @@ router.post(
       let authorLinkForConnectWithResearcher = null;
 
       if (!!formHashSimple) {
-        const researcher = await getUserBy({
-          searchBy: '_id',
-          value: formHashSimple,
+        const allResearchers = await getAllUsers({ roles: ['researcher'] });
+
+        const researcher = allResearchers.find((researcher) => {
+          return researcher._id.toString().includes(formHashSimple);
         });
 
         if (!!researcher) {

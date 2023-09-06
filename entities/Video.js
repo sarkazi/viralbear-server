@@ -164,6 +164,14 @@ const schema = new Schema(
       type: Boolean,
       default: true,
     },
+    apVideoHub: {
+      type: Boolean,
+      default: true,
+    },
+    apVideoHubArchive: {
+      type: Boolean,
+      required: false,
+    },
     exclusivity: {
       type: Boolean,
       required: true,

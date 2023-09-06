@@ -67,6 +67,10 @@ const refreshMrssFiles = async () => {
       name: 'AP video hub',
     },
     {
+      path: `${__dirname}/../mrssFiles/mrssApArchive.xml`,
+      name: 'AP video hub archive',
+    },
+    {
       path: `${__dirname}/../mrssFiles/mrssSport.xml`,
       name: 'Sport',
     },
@@ -89,12 +93,26 @@ const refreshMrssFiles = async () => {
           'videoData.hasAudioTrack': true,
           reuters: true,
         }),
-        //...(obj.name === 'AP video hub' && {
-        //  'videoData.hasAudioTrack': true,
-        //  reuters: true,
-        //}),
+        ...(obj.name === 'AP video hub' && {
+          'videoData.hasAudioTrack': true,
+          'videoData.duration': {
+            $gte: 10,
+            $lt: 300,
+          },
+          apVideoHub: true,
+        }),
+        ...(obj.name === 'AP video hub archive' && {
+          'videoData.hasAudioTrack': true,
+          'videoData.duration': {
+            $gte: 10,
+            $lt: 300,
+          },
+          apVideoHubArchive: true,
+        }),
         ...(obj.name !== 'Converted Videos' &&
           obj.name !== 'Main' &&
+          obj.name !== 'AP video hub' &&
+          obj.name !== 'AP video hub archive' &&
           obj.name !== 'Social Media' && {
             'videoData.category': { $in: [obj.name] },
           }),
@@ -102,7 +120,7 @@ const refreshMrssFiles = async () => {
         .limit(200)
         .sort({ $natural: -1 });
 
-      if (obj.name === 'AP video hub') {
+      if (obj.name === 'AP video hub' || obj.name === 'AP video hub archive') {
         fs.writeFile(
           obj.path,
           `<?xml version="1.0" encoding="UTF-8"?>
@@ -111,6 +129,7 @@ const refreshMrssFiles = async () => {
           xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
           xmlns:dfpvideo="http://api.google.com/dfpvideo"
           xmlns:tms="http://data.tmsapi.com/v1.1"
+          xmlns:dc="http://purl.org/dc/elements/1.1/"
           version="2.0">
             <channel>
               <title>ViralBear videos</title>
@@ -119,16 +138,56 @@ const refreshMrssFiles = async () => {
                   .map((video) => {
                     return `
                       <item>
-                        <title>Sample Video</title>          
-                        <description>This is the first paragraph of the sample video script.This is the second paragraph of the sample video script. City, Country - March 8, 2013 1. This is a description of the first shot2. SOUNDBITE: "This is a sample soundbite."</description>         
-                        <media:keywords>keyword 1,keyword 2,keyword 3</media:keywords>          
-                        <pubDate>Tue, 06 Jun 2017 09:39:21 GMT</pubDate>          
-                        <guid isPermaLink="false">tag:example.com,2014:dad8b585-fa2e-417e-b043-2a5b148c34e0</guid>          
-                        <slugline>Sample Video Slug</slugline>          
-                        <media:content url="http://examplemedia.com/examples/mrss/example.mp4" lang="en">             
-                          <media:title>Sample Video</media:title>             
-                          <media:description> This is the first paragraph of the sample video script.This is the second paragraph of the sample video script. City, Country - March 8, 2013 1. This is a description of the first shot2. SOUNDBITE: "This is a sample soundbite."</media:description>          
-                        </media:content>         <dc:rights>This is a sample rights information, usage limitations and special restrictions statement.</dc:rights>
+                        <title>${video.videoData.title.replace(
+                          /&/g,
+                          '&amp;'
+                        )}</title>
+                        <description>${video.videoData.description.replace(
+                          /&/g,
+                          '&amp;'
+                        )}${video.videoData?.creditTo ? ' ' : ''}${
+                      !video.videoData?.creditTo
+                        ? ''
+                        : `Credit to: ${video.videoData.creditTo}`
+                    }</description>
+                        <media:keywords>${video.videoData.tags.slice(
+                          0,
+                          10
+                        )}</media:keywords>
+                        <pubDate>${new Date(
+                          video.pubDate
+                            ? video.pubDate
+                            : video?.updatedAt
+                            ? video.updatedAt
+                            : ''
+                        ).toGMTString()}</pubDate>
+                        <guid isPermaLink="false">${`tag:${process.env.CLIENT_URI},7777:${video.videoData.videoId}`}</guid>
+                        <viralbearID>${video.videoData.videoId}</viralbearID>
+                        <slugline>${video.videoData.title.replace(
+                          /&/g,
+                          '&amp;'
+                        )}</slugline>
+                        <media:content url="${
+                          video.bucket.cloudConversionVideoLink
+                        }" lang="en">
+                          <media:title>${video.videoData.title.replace(
+                            /&/g,
+                            '&amp;'
+                          )}</media:title>
+                          <media:description>${video.videoData.description.replace(
+                            /&/g,
+                            '&amp;'
+                          )}${video.videoData?.creditTo ? ' ' : ''}${
+                      !video.videoData?.creditTo
+                        ? ''
+                        : `Credit to: ${video.videoData.creditTo}`
+                    }</media:description>
+                        </media:content>
+                       
+                        <dc:rights>${
+                          video.exclusivity ? 'exclusive' : 'non-exclusive'
+                        }</dc:rights>
+
                       </item>
                       `;
                   })
@@ -915,22 +974,128 @@ const findReadyForPublication = async () => {
   return videosReadyForPublication;
 };
 
-const convertingVideoToHorizontal = async (video, userId) => {
+//const convertingVideoToHorizontal = async (video, userId) => {
+//  const directoryForInputVideo = `./videos/${userId}`;
+//  const directoryForOutputVideo = `./videos/${userId}`;
+
+//  await Promise.all(
+//    [directoryForInputVideo, directoryForOutputVideo].map((directory) => {
+//      if (!fs.existsSync(directory)) {
+//        fs.mkdirSync(directory);
+//      }
+//    })
+//  );
+
+//  fs.writeFileSync(
+//    path.resolve(`${directoryForInputVideo}/input-for-conversion.mp4`),
+//    video.buffer
+//  );
+
+//  const response = await new Promise(async (resolve, reject) => {
+//    ffmpeg(`${directoryForInputVideo}/input-for-conversion.mp4`).ffprobe(
+//      (err, info) => {
+//        if (err) {
+//          console.log(err);
+//          reject({
+//            message: 'Error when reading video parameters',
+//            status: 'error',
+//          });
+//        }
+
+//        const heightVideo = info.streams.find(
+//          (stream) => stream.codec_type === 'video'
+//        ).height;
+
+//        if (!heightVideo) {
+//          reject({
+//            message: 'Error in determining the height of the incoming video',
+//            status: 'error',
+//          });
+//        }
+
+//        const hasAudioTrack = info.streams.find(
+//          (stream) => stream.codec_type === 'audio'
+//        )
+//          ? true
+//          : false;
+
+//        ffmpeg(`${directoryForInputVideo}/input-for-conversion.mp4`)
+//          .withVideoCodec('libx264')
+//          .withAudioCodec('libmp3lame')
+//          .size(`?x${heightVideo}`)
+//          .aspect('16:9')
+//          .autopad('black')
+//          //.videoBitrate('4500', true)
+//          //.fps(60)
+//          .toFormat('mp4')
+//          .on('start', () => {
+//            console.log(
+//              '------------------ start conversion ----------------------'
+//            );
+//          })
+//          .on('progress', (progress) => {
+//            //console.log(progress, `видео ${video.originalname}`);
+
+//            const loaded = Math.round((progress.percent * 100) / 100);
+
+//            console.log(userId, 8989);
+
+//            socketInstance
+//              .io()
+//              .sockets.in(userId)
+//              .emit('progressOfRequestInPublishing', {
+//                event: 'Converting video to horizontal format',
+//                file: {
+//                  name: video.originalname,
+//                  loaded,
+//                },
+//              });
+//          })
+//          .on('end', () => {
+//            console.log(
+//              '------------------------- end conversion ----------------------------------'
+//            );
+//            resolve({
+//              message: 'the video has been successfully converted and saved',
+//              status: 'success',
+//              data: {
+//                hasAudioTrack,
+//              },
+//            });
+//          })
+//          .on('error', (err) => {
+//            console.log(err);
+//            reject({
+//              message: 'Error when converting video',
+//              status: 'error',
+//            });
+//          })
+//          .saveToFile(`${directoryForInputVideo}/output-for-conversion.mp4`);
+//      }
+//    );
+//  });
+
+//  return response;
+//};
+
+const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
   const directoryForInputVideo = `./videos/${userId}`;
   const directoryForOutputVideo = `./videos/${userId}`;
 
-  await Promise.all(
-    [directoryForInputVideo, directoryForOutputVideo].map((directory) => {
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory);
-      }
-    })
-  );
+  if (!!buffer) {
+    await Promise.all(
+      [directoryForInputVideo, directoryForOutputVideo].map((directory) => {
+        if (!fs.existsSync(directory)) {
+          fs.mkdirSync(directory);
+        }
+      })
+    );
 
-  fs.writeFileSync(
-    path.resolve(`${directoryForInputVideo}/input-for-conversion.mp4`),
-    video.buffer
-  );
+    fs.writeFileSync(
+      path.resolve(`${directoryForInputVideo}/input-for-conversion.mp4`),
+      buffer
+    );
+  }
 
   const response = await new Promise(async (resolve, reject) => {
     ffmpeg(`${directoryForInputVideo}/input-for-conversion.mp4`).ffprobe(
@@ -963,10 +1128,10 @@ const convertingVideoToHorizontal = async (video, userId) => {
         ffmpeg(`${directoryForInputVideo}/input-for-conversion.mp4`)
           .withVideoCodec('libx264')
           .withAudioCodec('libmp3lame')
-          .size(`?x${heightVideo}`)
+          .size(heightVideo <= 720 ? '1280x720' : '1920x1080')
           .aspect('16:9')
           .autopad('black')
-          //.videoBitrate('4500', true)
+          .videoBitrate('10000', true)
           //.fps(60)
           .toFormat('mp4')
           .on('start', () => {
@@ -987,7 +1152,7 @@ const convertingVideoToHorizontal = async (video, userId) => {
               .emit('progressOfRequestInPublishing', {
                 event: 'Converting video to horizontal format',
                 file: {
-                  name: video.originalname,
+                  name: filename,
                   loaded,
                 },
               });
@@ -1029,8 +1194,11 @@ const findVideoByValue = async ({ searchBy, value }) => {
   });
 };
 
-const updateVideosBy = async ({ updateBy, value, dataForUpdate }) => {
-  return Video.updateMany({ [updateBy]: value }, dataForUpdate);
+const updateVideosBy = async ({ updateBy, value, objForSet }) => {
+  return Video.updateMany(
+    { [updateBy]: value },
+    { ...(!!objForSet && { $set: objForSet }) }
+  );
 };
 
 const markVideoEmployeeAsHavingReceivedAnAdvance = async ({

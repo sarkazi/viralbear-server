@@ -4,6 +4,13 @@ const multer = require('multer');
 
 const fs = require('fs');
 const path = require('path');
+const request = require('request');
+
+const axios = require('axios');
+
+const socketInstance = require('../socket.instance');
+
+const Downloader = require('nodejs-file-downloader');
 
 const moment = require('moment');
 
@@ -63,6 +70,7 @@ const {
   getAllVideos,
   findVideoByValue,
   markResearcherAdvanceForOneVideoAsPaid,
+  updateVideosBy,
 } = require('../controllers/video.controller');
 
 const {
@@ -87,8 +95,6 @@ const {
 const {
   findTheRecordOfTheCardMovedToDone,
 } = require('../controllers/movedToDoneList.controller');
-
-const socketInstance = require('../socket.instance');
 
 const {
   defineResearchersListForCreatingVideo,
@@ -217,10 +223,11 @@ router.post(
           });
         }
 
-        const responseAfterConversion = await convertingVideoToHorizontal(
-          video[0],
-          req.user.id
-        );
+        const responseAfterConversion = await convertingVideoToHorizontal({
+          buffer: video[0].buffer,
+          userId: req.user.id,
+          filename: video[0].originalname,
+        });
 
         if (!reqVideoId) {
           videoId = await generateVideoId();
@@ -351,6 +358,7 @@ router.post(
           trelloCardUrl,
           trelloCardId,
           trelloCardName,
+
           researchers: researchersListForCreatingVideo,
           priority: JSON.parse(priority),
           exclusivity: JSON.parse(exclusivity),
@@ -386,6 +394,137 @@ router.post(
     });
   }
 );
+
+router.post('/convert', authMiddleware, async (req, res) => {
+  await mutex.runExclusive(async () => {
+    try {
+      const { videoId } = req.query;
+      const userId = req.user.id;
+
+      if (!videoId) {
+        return res
+          .status(200)
+          .json({ message: 'Missing videoId', status: 'warning' });
+      }
+
+      const video = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
+
+      if (!video) {
+        return res.status(200).json({
+          message: `Video with id ${+videoId} not found`,
+          status: 'warning',
+        });
+      }
+
+      const writer = fs.createWriteStream(
+        `./videos/${userId}/input-for-conversion.mp4`
+      );
+
+      const { data: stream } = await axios.get(video.bucket.cloudVideoLink, {
+        responseType: 'stream',
+      });
+
+      await new Promise((resolve, reject) => {
+        stream.pipe(writer);
+        let error = null;
+        writer.on('error', (err) => {
+          error = err;
+          writer.close();
+          reject(err);
+
+          return res.status(200).json({
+            message: `Error when downloading a file`,
+            status: 'warning',
+          });
+        });
+        writer.on('close', () => {
+          if (!error) {
+            resolve(true);
+          }
+        });
+      });
+
+      const responseAfterConversion = await convertingVideoToHorizontal({
+        userId: req.user.id,
+        filename: `${video.videoData.videoId}.mp4`,
+      });
+
+      const bucketResponseByConvertedVideoUpload = await new Promise(
+        (resolve, reject) => {
+          fs.readFile(
+            path.resolve(`./videos/${userId}/output-for-conversion.mp4`),
+            {},
+            async (err, buffer) => {
+              if (err) {
+                console.log(err);
+                reject({
+                  status: 'error',
+                  message: 'Error when reading a file from disk',
+                });
+              } else {
+                await uploadFileToStorage(
+                  video.videoData.videoId,
+                  'reuters-videos',
+                  video.videoData.videoId,
+                  buffer,
+                  'video/mp4',
+                  '.mp4',
+                  resolve,
+                  reject,
+                  'progressOfRequestInPublishing',
+                  'Uploading the converted video to the bucket',
+                  userId
+                );
+              }
+            }
+          );
+        }
+      );
+
+      socketInstance
+        .io()
+        .sockets.in(userId)
+        .emit('progressOfRequestInPublishing', {
+          event: 'Just a little bit left',
+          file: null,
+        });
+
+      await updateVideosBy({
+        updateBy: '_id',
+        value: video._id,
+        objForSet: {
+          'bucket.cloudConversionVideoLink':
+            bucketResponseByConvertedVideoUpload.response.Location,
+          'bucket.cloudConversionVideoPath':
+            bucketResponseByConvertedVideoUpload.response.Key,
+          'videoData.hasAudioTrack': responseAfterConversion.data.hasAudioTrack,
+          apVideoHubArchive: true,
+        },
+      });
+
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
+
+      await refreshMrssFiles();
+
+      return res.status(200).json({
+        message: 'The video has been successfully converted',
+        status: 'success',
+        apiData: updatedVideo,
+      });
+    } catch (err) {
+      console.log(err);
+      return res
+        .status(500)
+        .json({ message: 'Server side error', status: 'error' });
+    }
+  });
+});
 
 router.post('/generateExcelFile', authMiddleware, generateExcelFile);
 
@@ -791,6 +930,7 @@ router.patch(
       brandSafe,
       socialMedia,
       reuters,
+      apVideoHub,
       commentToAdmin,
       acquirerName,
       acquirerPaidAdvance,
@@ -899,10 +1039,11 @@ router.patch(
           });
         }
 
-        const responseAfterConversion = await convertingVideoToHorizontal(
-          reqVideo[0],
-          req.user.id
-        );
+        const responseAfterConversion = await convertingVideoToHorizontal({
+          buffer: video[0].buffer,
+          userId: req.user.id,
+          filename: video[0].originalname,
+        });
 
         const bucketResponseByConvertedVideoUpload = await new Promise(
           (resolve, reject) => {
@@ -1111,6 +1252,7 @@ router.patch(
           'trelloData.researchers': researchersListForCreatingVideo,
           ...(video.isApproved && { lastChange: new Date().toGMTString() }),
           reuters: JSON.parse(reuters),
+          apVideoHub: JSON.parse(apVideoHub),
           socialMedia: JSON.parse(socialMedia),
         },
       });
@@ -1264,6 +1406,7 @@ router.patch(
       brandSafe,
       socialMedia,
       reuters,
+      apVideoHub,
       commentToAdmin,
       acquirerName,
       acquirerPaidAdvance,
@@ -1372,10 +1515,11 @@ router.patch(
           });
         }
 
-        const responseAfterConversion = await convertingVideoToHorizontal(
-          reqVideo[0],
-          req.user.id
-        );
+        const responseAfterConversion = await convertingVideoToHorizontal({
+          buffer: video[0].buffer,
+          userId: req.user.id,
+          filename: video[0].originalname,
+        });
 
         const bucketResponseByConvertedVideoUpload = await new Promise(
           (resolve, reject) => {
@@ -1584,6 +1728,7 @@ router.patch(
           'trelloData.researchers': researchersListForCreatingVideo,
           ...(video.isApproved && { lastChange: new Date().toGMTString() }),
           reuters: JSON.parse(reuters),
+          apVideoHub: JSON.parse(apVideoHub),
           socialMedia: JSON.parse(socialMedia),
         },
       });
@@ -1732,6 +1877,7 @@ router.patch(
       date,
       brandSafe,
       reuters,
+      apVideoHub,
       socialMedia,
       acquirerName,
       acquirerPaidAdvance,
@@ -1854,10 +2000,11 @@ router.patch(
           });
         }
 
-        const responseAfterConversion = await convertingVideoToHorizontal(
-          reqVideo[0],
-          req.user.id
-        );
+        const responseAfterConversion = await convertingVideoToHorizontal({
+          buffer: video[0].buffer,
+          userId: req.user.id,
+          filename: video[0].originalname,
+        });
 
         const bucketResponseByConvertedVideoUpload = await new Promise(
           (resolve, reject) => {
@@ -2066,6 +2213,7 @@ router.patch(
           'videoData.city': city,
           'videoData.date': JSON.parse(date),
           'trelloData.researchers': researchersListForCreatingVideo,
+          apVideoHub: JSON.parse(apVideoHub),
           reuters: JSON.parse(reuters),
           socialMedia: JSON.parse(socialMedia),
           isApproved: true,

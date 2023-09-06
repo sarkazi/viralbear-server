@@ -1260,7 +1260,7 @@
     "async" ">=0.2.9"
     "which" "^1.1.1"
 
-"follow-redirects@^1.14.9":
+"follow-redirects@^1.14.9", "follow-redirects@^1.15.1":
   "integrity" "sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA=="
   "resolved" "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.15.2.tgz"
   "version" "1.15.2"
@@ -1941,7 +1941,7 @@
   "resolved" "https://registry.npmjs.org/mime-db/-/mime-db-1.52.0.tgz"
   "version" "1.52.0"
 
-"mime-types@^2.1.12", "mime-types@~2.1.19", "mime-types@~2.1.24", "mime-types@~2.1.34":
+"mime-types@^2.1.12", "mime-types@^2.1.27", "mime-types@~2.1.19", "mime-types@~2.1.24", "mime-types@~2.1.34":
   "integrity" "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="
   "resolved" "https://registry.npmjs.org/mime-types/-/mime-types-2.1.35.tgz"
   "version" "2.1.35"
@@ -2103,6 +2103,16 @@
   "version" "2.6.11"
   dependencies:
     "whatwg-url" "^5.0.0"
+
+"nodejs-file-downloader@^4.12.1":
+  "integrity" "sha512-LpfCTNhh805AlLnJnzt1PuEj+RmbrccbAQZ6hBRw2e6QPVR0Qntuo6qqyvPHG5s77/0w0IEKgRAD4nbSnr/X4w=="
+  "resolved" "https://registry.npmmirror.com/nodejs-file-downloader/-/nodejs-file-downloader-4.12.1.tgz"
+  "version" "4.12.1"
+  dependencies:
+    "follow-redirects" "^1.15.1"
+    "https-proxy-agent" "^5.0.0"
+    "mime-types" "^2.1.27"
+    "sanitize-filename" "^1.6.3"
 
 "nodemailer@^6.8.0":
   "integrity" "sha512-EjYvSmHzekz6VNkNd12aUqAco+bOkRe3Of5jVhltqKhEsjw/y0PYPJfp83+s9Wzh1dspYAkUW/YNQ350NATbSQ=="
@@ -2583,6 +2593,13 @@
   "resolved" "https://registry.npmjs.org/safer-buffer/-/safer-buffer-2.1.2.tgz"
   "version" "2.1.2"
 
+"sanitize-filename@^1.6.3":
+  "integrity" "sha512-y/52Mcy7aw3gRm7IrcGDFx/bCk4AhRh2eI9luHOQM86nZsqwiRkkq2GekHXBBD+SmPidc8i2PqtYZl+pWJ8Oeg=="
+  "resolved" "https://registry.npmmirror.com/sanitize-filename/-/sanitize-filename-1.6.3.tgz"
+  "version" "1.6.3"
+  dependencies:
+    "truncate-utf8-bytes" "^1.0.0"
+
 "saslprep@^1.0.3":
   "integrity" "sha512-/MY/PEMbk2SuY5sScONwhUDsV2p77Znkb/q3nSVstq/yQzYJOH/Azh29p9oJLsl3LnQwSvZDKagDGBsBwSooag=="
   "resolved" "https://registry.npmjs.org/saslprep/-/saslprep-1.0.3.tgz"
@@ -2890,6 +2907,13 @@
   "resolved" "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
   "version" "0.0.3"
 
+"truncate-utf8-bytes@^1.0.0":
+  "integrity" "sha512-95Pu1QXQvruGEhv62XCMO3Mm90GscOCClvrIUwCM0PYOXK3kaF3l3sIHxx71ThJfcbM2O5Au6SO3AWCSEfW4mQ=="
+  "resolved" "https://registry.npmmirror.com/truncate-utf8-bytes/-/truncate-utf8-bytes-1.0.2.tgz"
+  "version" "1.0.2"
+  dependencies:
+    "utf8-byte-length" "^1.0.1"
+
 "tslib@^2.4.0", "tslib@^2.5.0":
   "integrity" "sha512-5svOrSA2w3iGFDs1HibEVBGbDrAY82bFQ3HZ3ixB+88nsbsWQoKqDRb5UBYAUPEzbBn6dAp5gRNXglySbx1MlA=="
   "resolved" "https://registry.npmmirror.com/tslib/-/tslib-2.5.2.tgz"
@@ -2991,6 +3015,11 @@
   dependencies:
     "punycode" "1.3.2"
     "querystring" "0.2.0"
+
+"utf8-byte-length@^1.0.1":
+  "integrity" "sha512-4+wkEYLBbWxqTahEsWrhxepcoVOJ+1z5PGIjPZxRkytcdSUaNjIjBM7Xn8E+pdSuV7SzvWovBFA54FO0JSoqhA=="
+  "resolved" "https://registry.npmmirror.com/utf8-byte-length/-/utf8-byte-length-1.0.4.tgz"
+  "version" "1.0.4"
 
 "util-deprecate@^1.0.1", "util-deprecate@~1.0.1":
   "integrity" "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="
