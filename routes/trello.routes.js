@@ -187,7 +187,7 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
             ? 'approve'
             : 'done',
           url: card.url,
-          members: membersNames,
+          ...(membersNames && { members: membersNames }),
           ...((!!videoMovedToDone?.researcherId?.avatarUrl ||
             researcher?.avatarUrl) && {
             acquirer: {
@@ -215,13 +215,17 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
       doneTasks: !editor
         ? summaryData.done
         : summaryData.done.filter((doneCard) => {
-            return editor?.listOfResearchersToShow?.some(
-              (researcherExcludedForDisplay) => {
-                return doneCard.members.some((member) => {
-                  return researcherExcludedForDisplay !== member;
-                });
-              }
-            );
+            if (!!doneCard.members) {
+              return doneCard.members.every((member) => {
+                return editor?.listOfResearchersToShow.some(
+                  (researcherExcludedForDisplay) => {
+                    return researcherExcludedForDisplay === member;
+                  }
+                );
+              });
+            } else {
+              return !doneCard;
+            }
           }),
 
       approvedTasks: summaryData.approve
