@@ -13,6 +13,8 @@ const {
   getUserById,
   getAllUsers,
   getUserBy,
+  findUsersListByValuesList,
+  findUsersByValueList,
 } = require('../controllers/user.controller');
 const {
   getAllViewedMentionsByUser,
@@ -30,6 +32,7 @@ const {
 } = require('../controllers/movedToDoneList.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
+const { ObjectId } = require('mongodb');
 
 router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
   try {
@@ -90,6 +93,18 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
 
 router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
   try {
+    const role = req.user.role;
+
+    let editor = null;
+
+    if (role === 'editor') {
+      editor = await getUserBy({
+        searchBy: '_id',
+        value: new ObjectId(req.user.id),
+        fieldsInTheResponse: ['name', 'listOfResearchersToShow'],
+      });
+    }
+
     const prePublishingVideos = await findReadyForPublication();
     const videosWithUnfixedEdits = await findByFixed();
 
@@ -128,11 +143,28 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
           card.id
         );
 
-        if (card.members.length === 1) {
-          researcher = await getUserBy({
-            searchBy: 'nickname',
-            value: `@${card.members[0].username}`,
+        let membersNames = null;
+
+        if (card.members.length) {
+          const membersNicknames = card.members.map((member) => {
+            return `@${member.username}`;
           });
+
+          const users = await findUsersByValueList({
+            param: 'nickname',
+            valueList: membersNicknames,
+          });
+
+          membersNames = users.map((user) => {
+            return user.name;
+          });
+
+          if (card.members.length === 1) {
+            researcher = await getUserBy({
+              searchBy: 'nickname',
+              value: `@${card.members[0].username}`,
+            });
+          }
         }
 
         return {
@@ -155,11 +187,17 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
             ? 'approve'
             : 'done',
           url: card.url,
+          members: membersNames,
           ...((!!videoMovedToDone?.researcherId?.avatarUrl ||
             researcher?.avatarUrl) && {
-            acquirerAvatarUrl: !!videoMovedToDone?.researcherId?.avatarUrl
-              ? videoMovedToDone.researcherId.avatarUrl
-              : researcher.avatarUrl,
+            acquirer: {
+              avatarUrl: !!videoMovedToDone?.researcherId?.avatarUrl
+                ? videoMovedToDone.researcherId.avatarUrl
+                : researcher.avatarUrl,
+              name: !!videoMovedToDone?.researcherId
+                ? videoMovedToDone.researcherId.name
+                : researcher.name,
+            },
           }),
         };
       })
@@ -174,7 +212,18 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
     );
 
     const apiData = {
-      doneTasks: summaryData.done,
+      doneTasks: !editor
+        ? summaryData.done
+        : summaryData.done.filter((doneCard) => {
+            return editor?.listOfResearchersToShow?.some(
+              (researcherExcludedForDisplay) => {
+                return doneCard.members.some((member) => {
+                  return researcherExcludedForDisplay !== member;
+                });
+              }
+            );
+          }),
+
       approvedTasks: summaryData.approve
         .filter((approvedCard) => {
           return prePublishingVideos.every((video) => {

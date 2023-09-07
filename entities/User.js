@@ -83,6 +83,11 @@ const schema = new Schema({
     default: 0,
   },
 
+  listOfResearchersToShow: {
+    type: Array,
+    required: false,
+  },
+
   paymentInfo: {
     required: false,
     variant: {

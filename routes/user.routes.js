@@ -494,9 +494,7 @@ router.patch(
 
       const { userId } = req.query;
 
-      console.log(userId, 4857568);
-
-      const userIdToUpdate = userId ? userId : req.user.id;
+      const userIdToUpdate = !!userId ? userId : req.user.id;
 
       if (!userIdToUpdate) {
         return res.status(200).json({
@@ -507,14 +505,14 @@ router.patch(
 
       const user = await getUserById(userIdToUpdate);
 
-      const body = req.body;
-
       if (!user) {
         return res.status(200).json({
           message: 'User not found',
           status: 'warning',
         });
       }
+
+      const body = req.body;
 
       if (!body?.paymentInfo?.paymentMethod && !!user?.paymentInfo) {
         await updateUser({
@@ -642,28 +640,31 @@ router.patch(
       }
 
       objDBForSet = {
-        ...(body?.name && { name: body.name }),
-        ...(body?.position && { position: body.position }),
-        ...(body?.nickname && { nickname: `@${body.nickname}` }),
-        ...(body?.role && { role: body.role }),
-        ...(body?.email && { email: body.email }),
-        ...(body?.percentage && { percentage: body.percentage }),
-        ...(body?.advancePayment && { advancePayment: body.advancePayment }),
-        ...(body?.country && { country: body.country }),
-        ...(paymentInfo && paymentInfo),
-        ...(avatarUrl && { avatarUrl }),
+        ...(!!body?.name && { name: body.name }),
+        ...(!!body?.position && { position: body.position }),
+        ...(!!body?.nickname && { nickname: `@${body.nickname}` }),
+        ...(!!body?.role && { role: body.role }),
+        ...(!!body?.email && { email: body.email }),
+        ...(!!body?.percentage && { percentage: body.percentage }),
+        ...(!!body?.listOfResearchersToShow && {
+          listOfResearchersToShow: body.listOfResearchersToShow,
+        }),
+        ...(!!body?.advancePayment && { advancePayment: body.advancePayment }),
+        ...(!!body?.country && { country: body.country }),
+        ...(!!paymentInfo && paymentInfo),
+        ...(!!avatarUrl && { avatarUrl }),
         ...(typeof body?.canBeAssigned === 'boolean' && {
           canBeAssigned: body.canBeAssigned,
         }),
         ...(typeof body?.displayOnTheSite === 'boolean' && {
           displayOnTheSite: body.displayOnTheSite,
         }),
-        ...(body?.balance && { lastPaymentDate: moment().toDate() }),
+        ...(!!body?.balance && { lastPaymentDate: moment().toDate() }),
       };
 
       objDBForIncrement = {
-        ...(body?.balance && { balance: body.balance }),
-        ...(body?.note && { note: body.note }),
+        ...(!!body?.balance && { balance: body.balance }),
+        ...(!!body?.note && { note: body.note }),
       };
 
       await updateUser({

@@ -212,6 +212,25 @@ const findWorkerEmailByWorkerName = async (decodeResearchers) => {
   return workersEmailsList;
 };
 
+const findUsersListByValuesList = async ({
+  valuesList,
+  role,
+  valueForRequest,
+  valueForResponse,
+}) => {
+  const users = await User.find({ ...(!!role && { role }) });
+
+  return valuesList
+    .map((value) => {
+      const nameRespond = users.find((user) => {
+        return user[valueForRequest] === value;
+      });
+
+      return nameRespond[valueForResponse];
+    })
+    .filter((value) => value);
+};
+
 const findUsersByValueList = async ({ param, valueList }) => {
   return await User.find({ [param]: { $in: valueList } });
 };
@@ -231,4 +250,5 @@ module.exports = {
   getUserBy,
   findWorkerEmailByWorkerName,
   findUsersByValueList,
+  findUsersListByValuesList,
 };
