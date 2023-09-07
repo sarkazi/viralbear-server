@@ -46,6 +46,8 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
 
     const responseTrello = await getAllCommentsByBoard();
 
+    console.log(responseTrello.data[0].memberCreator, 88);
+
     if (responseTrello.data.length === 0) {
       return res
         .status(responseTrello.status)
@@ -56,24 +58,42 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
       user.nickname
     );
 
-    const commentsMentioningByUser = responseTrello.data
-      .filter((comment) => {
-        return comment.data.text.includes(user.nickname);
-      })
-      .map((comment) => {
-        return {
-          actionId: comment.id,
-          textOfComment: comment.data.text.replace(user.nickname, ''),
-          cardId: comment.data.card.id,
-          cardUrl: `https://trello.com/c/${comment.data.card.shortLink}/`,
-          ...(!!user.avatarUrl && { avatarUrl: user.avatarUrl }),
-        };
-      })
-      .filter((comment) => {
+    let commentsMentioningByUser = responseTrello.data.filter((comment) => {
+      return comment.data.text.includes(user.nickname);
+    });
+
+    if (commentsMentioningByUser.length) {
+      commentsMentioningByUser = commentsMentioningByUser.filter((comment) => {
         return allViewedMentionsCurrentUser.every((viewMention) => {
-          return viewMention.actionTrelloId !== comment.actionId;
+          return viewMention.actionTrelloId !== comment.id;
         });
       });
+    }
+
+    if (commentsMentioningByUser.length) {
+      commentsMentioningByUser = await Promise.all(
+        commentsMentioningByUser.map(async (comment) => {
+          const memberCreator = await getUserBy({
+            searchBy: 'nickname',
+            value: `@${comment.memberCreator.username}`,
+            fieldsInTheResponse: ['avatarUrl', 'name'],
+          });
+
+          return {
+            actionId: comment.id,
+            textOfComment: comment.data.text.replace(user.nickname, ''),
+            cardId: comment.data.card.id,
+            cardUrl: `https://trello.com/c/${comment.data.card.shortLink}/`,
+            ...(!!memberCreator && {
+              memberCreator: {
+                avatarUrl: memberCreator.avatarUrl,
+                name: memberCreator.name,
+              },
+            }),
+          };
+        })
+      );
+    }
 
     return res.status(200).json({
       message: `${commentsMentioningByUser.length} cards with the mention of ${user.nickname} were found`,

@@ -1662,7 +1662,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       if (advance > percentage) {
         return [
           `advance payment for ${videosCountWithUnpaidAdvance} videos`,
-          ...(!!user?.note && [`$${user?.note} in notepad`]),
+          ...(!!user?.note ? [`$${user?.note} in notepad`] : []),
         ];
       } else if (
         advance < percentage ||
@@ -1670,10 +1670,10 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       ) {
         return [
           `percentage for ${unpaidSales.length} sales`,
-          ...(!!user?.note && [`$${user?.note} in notepad`]),
+          ...(!!user?.note ? [`$${user?.note} in notepad`] : []),
         ];
       } else {
-        return [...(!!user?.note && [`$${user?.note} in notepad`])];
+        return [...(!!user?.note ? [`$${user?.note} in notepad`] : [])];
       }
     };
 
