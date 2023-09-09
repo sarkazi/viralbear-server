@@ -82,12 +82,14 @@ const schema = new Schema({
     required: true,
     default: 0,
   },
-
-  listOfResearchersToShow: {
-    type: Array,
-    required: false,
+  hiddenForEditor: {
+    type: Boolean,
+    default: false,
   },
-
+  hideForEditor: {
+    type: Boolean,
+    default: false,
+  },
   paymentInfo: {
     required: false,
     variant: {

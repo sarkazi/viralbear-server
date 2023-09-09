@@ -27,6 +27,7 @@ const getAllUsers = async ({
   displayOnTheSite,
   skip,
   limit,
+  hiddenForEditor,
 }) => {
   return await User.find(
     {
@@ -40,6 +41,9 @@ const getAllUsers = async ({
         }),
       ...(displayOnTheSite && {
         displayOnTheSite,
+      }),
+      ...(typeof hiddenForEditor === 'boolean' && {
+        hiddenForEditor,
       }),
       ...(nicknames && { nickname: { $in: nicknames } }),
     },
@@ -199,6 +203,13 @@ const updateUserByIncrement = async (field, emailsOfResearchers, objDB) => {
   );
 };
 
+const updateUsersBy = async ({ updateBy, userList, objDBForSet }) => {
+  return await User.updateMany(
+    { [updateBy]: { $in: userList } },
+    { ...(objDBForSet && objDBForSet) }
+  );
+};
+
 const findWorkerEmailByWorkerName = async (decodeResearchers) => {
   const workers = await User.find({ role: 'researcher' });
 
@@ -249,6 +260,7 @@ module.exports = {
   updateUserByIncrement,
   getUserBy,
   findWorkerEmailByWorkerName,
+  updateUsersBy,
   findUsersByValueList,
   findUsersListByValuesList,
 };

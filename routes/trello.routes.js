@@ -46,8 +46,6 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
 
     const responseTrello = await getAllCommentsByBoard();
 
-    console.log(responseTrello.data[0].memberCreator, 88);
-
     if (responseTrello.data.length === 0) {
       return res
         .status(responseTrello.status)
@@ -115,14 +113,25 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
   try {
     const role = req.user.role;
 
+    let researchersNicknamesHiddenToEditor = null;
     let editor = null;
 
     if (role === 'editor') {
       editor = await getUserBy({
         searchBy: '_id',
         value: new ObjectId(req.user.id),
-        fieldsInTheResponse: ['name', 'listOfResearchersToShow'],
       });
+
+      const researchersHiddenToEditor = await getAllUsers({
+        roles: ['researcher'],
+        hiddenForEditor: true,
+      });
+
+      researchersNicknamesHiddenToEditor = researchersHiddenToEditor.map(
+        (researcher) => {
+          return researcher.nickname.replace('@', '');
+        }
+      );
     }
 
     const prePublishingVideos = await findReadyForPublication();
@@ -138,6 +147,8 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
         card.labels.some((label) => label.id === '6243c7bd3718c276cb21e2cb')
       );
     });
+
+    console.log(researchersNicknamesHiddenToEditor, 11);
 
     let summaryData = await Promise.all(
       requiredCards.map(async (card) => {
@@ -163,20 +174,11 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
           card.id
         );
 
-        let membersNames = null;
+        let trelloCardNicknames = null;
 
         if (card.members.length) {
-          const membersNicknames = card.members.map((member) => {
-            return `@${member.username}`;
-          });
-
-          const users = await findUsersByValueList({
-            param: 'nickname',
-            valueList: membersNicknames,
-          });
-
-          membersNames = users.map((user) => {
-            return user.name;
+          trelloCardNicknames = card.members.map((member) => {
+            return member.username;
           });
 
           if (card.members.length === 1) {
@@ -207,7 +209,7 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
             ? 'approve'
             : 'done',
           url: card.url,
-          ...(membersNames && { members: membersNames }),
+          ...(trelloCardNicknames && { trelloCardNicknames }),
           ...((!!videoMovedToDone?.researcherId?.avatarUrl ||
             researcher?.avatarUrl) && {
             acquirer: {
@@ -232,21 +234,22 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
     );
 
     const apiData = {
-      doneTasks: !editor
-        ? summaryData.done
-        : summaryData.done.filter((doneCard) => {
-            if (!!doneCard.members) {
-              return doneCard.members.every((member) => {
-                return editor?.listOfResearchersToShow.some(
-                  (researcherExcludedForDisplay) => {
-                    return researcherExcludedForDisplay === member;
-                  }
-                );
-              });
-            } else {
-              return !doneCard;
-            }
-          }),
+      doneTasks:
+        role !== 'editor'
+          ? summaryData.done
+          : !editor.hideForEditor
+          ? summaryData.done
+          : summaryData.done.filter((doneCard) => {
+              return doneCard.trelloCardNicknames.every(
+                (trelloCardNickname) => {
+                  return researchersNicknamesHiddenToEditor.every(
+                    (researcherNickname) => {
+                      return researcherNickname !== trelloCardNickname;
+                    }
+                  );
+                }
+              );
+            }),
 
       approvedTasks: summaryData.approve
         .filter((approvedCard) => {

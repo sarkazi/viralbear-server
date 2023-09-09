@@ -38,7 +38,7 @@ const refreshMrssFiles = async () => {
     { path: `${__dirname}/../mrssFiles/mrss2.xml`, name: 'Social Media' },
     {
       path: `${__dirname}/../mrssFiles/mrssConvertedVideos.xml`,
-      name: 'Converted Videos',
+      name: 'Reuters',
     },
     {
       path: `${__dirname}/../mrssFiles/mrssAccidents.xml`,
@@ -89,27 +89,28 @@ const refreshMrssFiles = async () => {
       const videos = await Video.find({
         isApproved: true,
         ...(obj.name === 'Social Media' && { brandSafe: true }),
-        ...(obj.name === 'Converted Videos' && {
+        ...(obj.name === 'Reuters' && {
           'videoData.hasAudioTrack': true,
           reuters: true,
         }),
         ...(obj.name === 'AP video hub' && {
-          'videoData.hasAudioTrack': true,
-          'videoData.duration': {
-            $gte: 10,
-            $lt: 300,
-          },
+          //'videoData.hasAudioTrack': true,
+          //'videoData.duration': {
+          //  $gte: 10,
+          //  $lt: 300,
+          //},
           apVideoHub: true,
         }),
         ...(obj.name === 'AP video hub archive' && {
-          'videoData.hasAudioTrack': true,
-          'videoData.duration': {
-            $gte: 10,
-            $lt: 300,
-          },
+          //'videoData.hasAudioTrack': true,
+          //'videoData.duration': {
+          //  $gte: 10,
+          //  $lt: 300,
+          //},
           apVideoHubArchive: true,
+          apVideoHub: false,
         }),
-        ...(obj.name !== 'Converted Videos' &&
+        ...(obj.name !== 'Reuters' &&
           obj.name !== 'Main' &&
           obj.name !== 'AP video hub' &&
           obj.name !== 'AP video hub archive' &&
@@ -253,7 +254,7 @@ const refreshMrssFiles = async () => {
                             video.videoData.date
                           ).format(`ddd, D MMM YYYY`)}</media:filmingDate>
                           <guid>${
-                            obj.name === 'Converted Videos' &&
+                            obj.name === 'Reuters' &&
                             +video.videoData.videoId >= 2615 &&
                             +video.videoData.videoId <= 2773
                               ? `${video.videoData.videoId}0000`
@@ -270,7 +271,7 @@ const refreshMrssFiles = async () => {
                             video.bucket.cloudScreenLink
                           }" />
                           <media:content url="${
-                            obj.name === 'Converted Videos'
+                            obj.name === 'Reuters'
                               ? video.bucket.cloudConversionVideoLink
                               : video.bucket.cloudVideoLink
                           }" />
@@ -604,7 +605,7 @@ const readingAndUploadingConvertedVideoToBucket = async (name, userId) => {
           const bucketResByConvertedVideoUpload = await uploadContentOnBucket(
             buffer,
             name,
-            '/reuters-videos'
+            '/converted-videos'
           );
 
           resolve({
@@ -756,8 +757,6 @@ const getAllVideos = async ({
   skip,
   sort,
 }) => {
-  console.log(isApproved, researcher, forLastDays, 87878);
-
   return Video.find(
     {
       ...(typeof vbFormExists === 'boolean' && {

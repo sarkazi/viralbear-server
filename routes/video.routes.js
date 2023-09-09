@@ -9,9 +9,7 @@ const request = require('request');
 const axios = require('axios');
 
 const socketInstance = require('../socket.instance');
-
-const Downloader = require('nodejs-file-downloader');
-
+const AWS = require('aws-sdk');
 const moment = require('moment');
 
 const { v4: createUniqueHash } = require('uuid');
@@ -101,6 +99,7 @@ const {
 } = require('../utils/defineResearchersListForCreatingVideo');
 
 const { getAllSales } = require('../controllers/sales.controller');
+const storageInstance = require('../storage.instance');
 
 const storage = multer.memoryStorage();
 
@@ -250,7 +249,7 @@ router.post(
                 } else {
                   await uploadFileToStorage(
                     video[0].originalname,
-                    'reuters-videos',
+                    'converted-videos',
                     videoId,
                     buffer,
                     video[0].mimetype,
@@ -467,7 +466,7 @@ router.post('/convert', authMiddleware, async (req, res) => {
               } else {
                 await uploadFileToStorage(
                   video.videoData.videoId,
-                  'reuters-videos',
+                  'converted-videos',
                   video.videoData.videoId,
                   buffer,
                   'video/mp4',
@@ -1040,9 +1039,9 @@ router.patch(
         }
 
         const responseAfterConversion = await convertingVideoToHorizontal({
-          buffer: video[0].buffer,
+          buffer: reqVideo[0].buffer,
           userId: req.user.id,
-          filename: video[0].originalname,
+          filename: reqVideo[0].originalname,
         });
 
         const bucketResponseByConvertedVideoUpload = await new Promise(
@@ -1060,7 +1059,7 @@ router.patch(
                 } else {
                   await uploadFileToStorage(
                     reqVideo[0].originalname,
-                    'reuters-videos',
+                    'converted-videos',
                     videoId,
                     buffer,
                     reqVideo[0].mimetype,
@@ -1516,9 +1515,9 @@ router.patch(
         }
 
         const responseAfterConversion = await convertingVideoToHorizontal({
-          buffer: video[0].buffer,
+          buffer: reqVideo[0].buffer,
           userId: req.user.id,
-          filename: video[0].originalname,
+          filename: reqVideo[0].originalname,
         });
 
         const bucketResponseByConvertedVideoUpload = await new Promise(
@@ -1536,7 +1535,7 @@ router.patch(
                 } else {
                   await uploadFileToStorage(
                     reqVideo[0].originalname,
-                    'reuters-videos',
+                    'converted-videos',
                     videoId,
                     buffer,
                     reqVideo[0].mimetype,
@@ -2001,9 +2000,9 @@ router.patch(
         }
 
         const responseAfterConversion = await convertingVideoToHorizontal({
-          buffer: video[0].buffer,
+          buffer: reqVideo[0].buffer,
           userId: req.user.id,
-          filename: video[0].originalname,
+          filename: reqVideo[0].originalname,
         });
 
         const bucketResponseByConvertedVideoUpload = await new Promise(
@@ -2021,7 +2020,7 @@ router.patch(
                 } else {
                   await uploadFileToStorage(
                     reqVideo[0].originalname,
-                    'reuters-videos',
+                    'converted-videos',
                     videoId,
                     buffer,
                     reqVideo[0].mimetype,
@@ -2481,33 +2480,49 @@ router.post(
     },
   ]),
   async (req, res) => {
-    const researchers = await getAllUsers({ roles: ['researcher'] });
-
-    await Promise.all(
-      researchers.map(async (researcher) => {
-        console.log(researcher._id, 88);
-
-        return await mutex.runExclusive(async () => {
-          const hh = await Users.findOne({ shortId: { $exists: true } });
-
-          console.log(!hh, 888);
-
-          if (!hh) {
-            await updateUser({
-              userId: researcher._id,
-              objDBForSet: { shortId: 11 },
-            });
-          } else {
-            const use = await Users.find().sort({ ' shortId ': -1 }).limit(1);
-
-            await updateUser({
-              userId: researcher._id,
-              objDBForSet: { shortId: use.shortId + 1 },
-            });
+    try {
+      storageInstance.listObjectsV2(
+        {
+          //Prefix: 'reuters-videos',
+          Bucket: 'viralbear2',
+        },
+        (err, data) => {
+          if (err) {
+            console.log(err);
           }
-        });
-      })
-    );
+          console.log(data);
+        }
+      );
+      //new AWS.S3({
+      //  endpoint: 'https://storage.yandexcloud.net',
+      //  credentials: {
+      //    accessKeyId: 'YCAJE9VavEEX6lxxxmn5Zf9gf',
+      //    secretAccessKey: 'YCNN8SqgPoEf14LAsSfeVL8hJqC-G6YDL2cwSHrQ',
+      //  },
+      //  region: 'ru-central1',
+      //  httpOptions: {
+      //    timeout: 20000,
+      //    connectTimeout: 20000,
+      //  },
+      //}).listObjectsV2(
+      //  {
+      //    //Prefix: 'reuters-videos',
+      //    Bucket: 'viralbear',
+      //  },
+      //  (err, data) => {
+      //    if(err){
+      //      console.log(err);
+      //    }
+      //    console.log(data);
+      //  }
+      //);
+
+      return res.status(200).json({ text: 'success' });
+    } catch (err) {
+      console.log(err);
+
+      return res.status(400).json({ text: 'error' });
+    }
   }
 );
 

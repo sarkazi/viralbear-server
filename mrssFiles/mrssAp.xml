@@ -10,6 +10,23 @@
               <title>ViralBear videos</title>
               <dfpvideo:version>2</dfpvideo:version>
                 
+                      <item>
+                        <title>павп</title>
+                        <description>авпвап</description>
+                        <media:keywords>авпап</media:keywords>
+                        <pubDate>Fri, 08 Sep 2023 14:03:30 GMT</pubDate>
+                        <guid isPermaLink="false">tag:http://localhost:3000,7777:2969</guid>
+                        <viralbearID>2969</viralbearID>
+                        <slugline>павп</slugline>
+                        <media:content url="https://viralbear2.storage.yandexcloud.net/reuters-videos/2969.mp4" lang="en">
+                          <media:title>павп</media:title>
+                          <media:description>авпвап</media:description>
+                        </media:content>
+                       
+                        <dc:rights>non-exclusive</dc:rights>
+
+                      </item>
+                      
                        </channel>
                     </rss>
                   

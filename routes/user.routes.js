@@ -23,6 +23,7 @@ const {
   getUserBySearchValue,
   findUsersByValueList,
   getUserBy,
+  updateUsersBy,
 } = require('../controllers/user.controller.js');
 
 const { createNewPayment } = require('../controllers/payment.controller');
@@ -646,15 +647,15 @@ router.patch(
         ...(!!body?.role && { role: body.role }),
         ...(!!body?.email && { email: body.email }),
         ...(!!body?.percentage && { percentage: body.percentage }),
-        ...(!!body?.listOfResearchersToShow && {
-          listOfResearchersToShow: body.listOfResearchersToShow,
-        }),
         ...(!!body?.advancePayment && { advancePayment: body.advancePayment }),
         ...(!!body?.country && { country: body.country }),
         ...(!!paymentInfo && paymentInfo),
         ...(!!avatarUrl && { avatarUrl }),
         ...(typeof body?.canBeAssigned === 'boolean' && {
           canBeAssigned: body.canBeAssigned,
+        }),
+        ...(typeof body?.hideForEditor === 'boolean' && {
+          hideForEditor: body.hideForEditor,
         }),
         ...(typeof body?.displayOnTheSite === 'boolean' && {
           displayOnTheSite: body.displayOnTheSite,
@@ -675,6 +676,43 @@ router.patch(
 
       return res.status(200).json({
         message: 'User data has been successfully updated',
+        status: 'success',
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        message: 'Server side error',
+        status: 'error',
+      });
+    }
+  }
+);
+
+router.patch(
+  '/updateMany',
+  authMiddleware,
+
+  async (req, res) => {
+    const { oldUsers, newUsers } = req.body;
+    const { updateBy } = req.query;
+
+    try {
+      if (oldUsers && newUsers) {
+        await Promise.all(
+          [oldUsers, newUsers].map(async (obj) => {
+            console.log(obj.list, obj.objToSet);
+
+            await updateUsersBy({
+              updateBy,
+              userList: obj.list,
+              objDBForSet: obj.objToSet,
+            });
+          })
+        );
+      }
+
+      return res.status(200).json({
+        message: 'Users data has been successfully updated',
         status: 'success',
       });
     } catch (err) {
@@ -1109,12 +1147,6 @@ router.get(
             },
             paymentSubject: definePaymentSubject(),
           };
-        })
-      );
-
-      console.log(
-        employeeStat.map((tt) => {
-          return tt.percentageOfProfitableVideos;
         })
       );
 
