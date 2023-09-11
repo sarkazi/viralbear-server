@@ -94,19 +94,19 @@ const refreshMrssFiles = async () => {
           reuters: true,
         }),
         ...(obj.name === 'AP video hub' && {
-          //'videoData.hasAudioTrack': true,
-          //'videoData.duration': {
-          //  $gte: 10,
-          //  $lt: 300,
-          //},
+          'videoData.hasAudioTrack': true,
+          'videoData.duration': {
+            $gte: 10,
+            $lt: 300,
+          },
           apVideoHub: true,
         }),
         ...(obj.name === 'AP video hub archive' && {
-          //'videoData.hasAudioTrack': true,
-          //'videoData.duration': {
-          //  $gte: 10,
-          //  $lt: 300,
-          //},
+          'videoData.hasAudioTrack': true,
+          'videoData.duration': {
+            $gte: 10,
+            $lt: 300,
+          },
           apVideoHubArchive: true,
           apVideoHub: false,
         }),
@@ -162,7 +162,9 @@ const refreshMrssFiles = async () => {
                             ? video.updatedAt
                             : ''
                         ).toGMTString()}</pubDate>
-                        <guid isPermaLink="false">${`tag:${process.env.CLIENT_URI},7777:${video.videoData.videoId}`}</guid>
+                        <guid isPermaLink="false">${
+                          video.videoData.videoId
+                        }</guid>
                         <viralbearID>${video.videoData.videoId}</viralbearID>
                         <slugline>${video.videoData.title.replace(
                           /&/g,

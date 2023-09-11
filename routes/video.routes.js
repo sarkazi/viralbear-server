@@ -689,13 +689,14 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
             : video.trelloData.trelloCardName,
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
-        ...(video.trelloData.researchers.find(
-          (researcher) => researcher?.main && !!researcher?.avatarUrl
-        ) && {
-          acquirerAvatarUrl: video.trelloData.researchers.find(
+        acquirer: {
+          avatarUrl: video.trelloData.researchers.find(
             (researcher) => researcher.main && !!researcher.avatarUrl
           ).avatarUrl,
-        }),
+          name: video.trelloData.researchers.find(
+            (researcher) => researcher.main && !!researcher.avatarUrl
+          ).name,
+        },
       };
     });
 
@@ -742,13 +743,14 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
             : video.trelloData.trelloCardName,
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
-        ...(video.trelloData.researchers.find(
-          (researcher) => researcher.main && !!researcher.avatarUrl
-        ) && {
-          acquirerAvatarUrl: video.trelloData.researchers.find(
+        acquirer: {
+          avatarUrl: video.trelloData.researchers.find(
             (researcher) => researcher.main && !!researcher.avatarUrl
           ).avatarUrl,
-        }),
+          name: video.trelloData.researchers.find(
+            (researcher) => researcher.main && !!researcher.avatarUrl
+          ).name,
+        },
       };
     });
 
@@ -2481,41 +2483,80 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      storageInstance.listObjectsV2(
-        {
-          //Prefix: 'reuters-videos',
-          Bucket: 'viralbear2',
-        },
-        (err, data) => {
-          if (err) {
-            console.log(err);
-          }
-          console.log(data);
-        }
-      );
-      //new AWS.S3({
-      //  endpoint: 'https://storage.yandexcloud.net',
-      //  credentials: {
-      //    accessKeyId: 'YCAJE9VavEEX6lxxxmn5Zf9gf',
-      //    secretAccessKey: 'YCNN8SqgPoEf14LAsSfeVL8hJqC-G6YDL2cwSHrQ',
-      //  },
-      //  region: 'ru-central1',
-      //  httpOptions: {
-      //    timeout: 20000,
-      //    connectTimeout: 20000,
-      //  },
-      //}).listObjectsV2(
+      //storageInstance.listObjectsV2(
       //  {
       //    //Prefix: 'reuters-videos',
-      //    Bucket: 'viralbear',
+      //    Bucket: 'viralbear2',
       //  },
       //  (err, data) => {
-      //    if(err){
+      //    if (err) {
       //      console.log(err);
       //    }
       //    console.log(data);
       //  }
       //);
+
+      const result = await new Promise((resolve, reject) => {
+        const bucketName = 'viralbear';
+
+        new AWS.S3({
+          endpoint: 'https://storage.yandexcloud.net',
+          credentials: {
+            accessKeyId: 'YCAJE9VavEEX6lxxxmn5Zf9gf',
+            secretAccessKey: 'YCNN8SqgPoEf14LAsSfeVL8hJqC-G6YDL2cwSHrQ',
+          },
+          region: 'ru-central1',
+          httpOptions: {
+            timeout: 20000,
+            connectTimeout: 20000,
+          },
+        }).listObjects(
+          {
+            Prefix: 'reuters-videos',
+            Bucket: bucketName,
+          },
+          async (err, data) => {
+            if (err) {
+              console.log(err);
+            }
+
+            console.log(data?.Contents?.length);
+
+            const copyData = await Promise.all(
+              data.Contents.map(async (obj) => {
+                const filename = obj.Key.split('/')[1];
+
+                console.log(filename, 99);
+
+                //const copyParams = {
+                //  Bucket: bucketName,
+                //  CopySource: `${bucketName}/${obj.Key}`,
+                //  Key: `converted-videos/${filename}`,
+                //};
+
+                //new AWS.S3({
+                //  endpoint: 'https://storage.yandexcloud.net',
+                //  credentials: {
+                //    accessKeyId: 'YCAJE9VavEEX6lxxxmn5Zf9gf',
+                //    secretAccessKey: 'YCNN8SqgPoEf14LAsSfeVL8hJqC-G6YDL2cwSHrQ',
+                //  },
+                //  region: 'ru-central1',
+                //  httpOptions: {
+                //    timeout: 20000,
+                //    connectTimeout: 20000,
+                //  },
+                //}).copyObject(copyParams, (err, data) => {
+                //  if (err) {
+                //    //console.log(err);
+                //  }
+
+                //  console.log(data);
+                //});
+              })
+            );
+          }
+        );
+      });
 
       return res.status(200).json({ text: 'success' });
     } catch (err) {

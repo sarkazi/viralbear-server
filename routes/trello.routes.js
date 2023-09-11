@@ -129,7 +129,7 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
 
       researchersNicknamesHiddenToEditor = researchersHiddenToEditor.map(
         (researcher) => {
-          return researcher.nickname.replace('@', '');
+          return researcher.nickname;
         }
       );
     }
@@ -147,8 +147,6 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
         card.labels.some((label) => label.id === '6243c7bd3718c276cb21e2cb')
       );
     });
-
-    console.log(researchersNicknamesHiddenToEditor, 11);
 
     let summaryData = await Promise.all(
       requiredCards.map(async (card) => {
@@ -170,22 +168,35 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
           });
         }
 
-        const videoMovedToDone = await findTheRecordOfTheCardMovedToDone(
-          card.id
-        );
+        const cardMembers = card.members.map((el) => {
+          return `@${el.username}`;
+        });
 
-        let trelloCardNicknames = null;
+        let acquirer = null;
 
-        if (card.members.length) {
-          trelloCardNicknames = card.members.map((member) => {
-            return member.username;
-          });
+        const researchers = await getAllUsers({
+          fieldsInTheResponse: ['nickname', 'name', 'avatarUrl'],
+          members: {
+            value: cardMembers,
+            searchBy: 'nickname',
+          },
+        });
 
-          if (card.members.length === 1) {
-            researcher = await getUserBy({
-              searchBy: 'nickname',
-              value: `@${card.members[0].username}`,
-            });
+        if (researchers.length === 1) {
+          acquirer = {
+            name: researchers[0].name,
+            avatarUrl: researchers[0].avatarUrl,
+          };
+        } else if (cardMembers.length > 1) {
+          const cardMovedToDone = await findTheRecordOfTheCardMovedToDone(
+            card.id
+          );
+
+          if (!!cardMovedToDone?.researcherId?.nickname) {
+            acquirer = {
+              name: cardMovedToDone.researcherId.name,
+              avatarUrl: cardMovedToDone.researcherId.avatarUrl,
+            };
           }
         }
 
@@ -209,18 +220,8 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
             ? 'approve'
             : 'done',
           url: card.url,
-          ...(trelloCardNicknames && { trelloCardNicknames }),
-          ...((!!videoMovedToDone?.researcherId?.avatarUrl ||
-            researcher?.avatarUrl) && {
-            acquirer: {
-              avatarUrl: !!videoMovedToDone?.researcherId?.avatarUrl
-                ? videoMovedToDone.researcherId.avatarUrl
-                : researcher.avatarUrl,
-              name: !!videoMovedToDone?.researcherId
-                ? videoMovedToDone.researcherId.name
-                : researcher.name,
-            },
-          }),
+          ...(acquirer && { acquirer }),
+          ...(cardMembers && { cardMembers }),
         };
       })
     );
@@ -240,15 +241,13 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
           : !editor.hideForEditor
           ? summaryData.done
           : summaryData.done.filter((doneCard) => {
-              return doneCard.trelloCardNicknames.every(
-                (trelloCardNickname) => {
-                  return researchersNicknamesHiddenToEditor.every(
-                    (researcherNickname) => {
-                      return researcherNickname !== trelloCardNickname;
-                    }
-                  );
-                }
-              );
+              return doneCard.cardMembers.every((trelloCardNickname) => {
+                return researchersNicknamesHiddenToEditor.every(
+                  (researcherNickname) => {
+                    return researcherNickname !== trelloCardNickname;
+                  }
+                );
+              });
             }),
 
       approvedTasks: summaryData.approve
@@ -338,35 +337,34 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       });
     }
 
-    const cardMovedToDone = await findTheRecordOfTheCardMovedToDone(
-      trelloCard.id
-    );
-
-    let nicknames = [];
-
-    trelloCard.members.map((el) => {
-      nicknames.push(`@${el.username}`);
+    const cardMembers = trelloCard.members.map((el) => {
+      return `@${el.username}`;
     });
 
-    if (
-      !nicknames.find(
-        (nickname) => nickname === `@${cardMovedToDone?.researcherId?.nickname}`
-      )
-    ) {
-      nicknames.push(cardMovedToDone?.researcherId?.nickname);
-    }
+    let acquirer = null;
 
-    let researchers = await getAllUsers({
-      me: true,
-      roles: ['researcher'],
-      fieldsInTheResponse: ['nickname', 'name'],
-      nicknames: nicknames,
+    const researchers = await getAllUsers({
+      fieldsInTheResponse: ['nickname', 'name', 'avatarUrl'],
+      members: {
+        value: cardMembers,
+        searchBy: 'nickname',
+      },
     });
 
-    if (researchers.length) {
-      researchers = researchers.map((researcher) => {
-        return researcher.name;
-      });
+    if (researchers.length === 1) {
+      acquirer = {
+        nickname: researchers[0].nickname,
+      };
+    } else if (cardMembers.length > 1) {
+      const cardMovedToDone = await findTheRecordOfTheCardMovedToDone(
+        trelloCard.id
+      );
+
+      if (!!cardMovedToDone?.researcherId?.nickname) {
+        acquirer = {
+          nickname: cardMovedToDone.researcherId.nickname,
+        };
+      }
     }
 
     let vbForm = null;
@@ -403,12 +401,18 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       )
         ? true
         : false,
-      researchers,
-      ...((!!cardMovedToDone?.researcherId ||
-        (!cardMovedToDone?.researcherId && researchers.length === 1)) && {
-        acquirerName: !!cardMovedToDone?.researcherId
-          ? cardMovedToDone.researcherId.name
-          : researchers[0],
+      researchers: researchers.map((researcher) => {
+        if (researcher.nickname === acquirer?.nickname) {
+          return {
+            ...researcher._doc,
+            acquirer: true,
+          };
+        } else {
+          return {
+            ...researcher._doc,
+            acquirer: false,
+          };
+        }
       }),
       exclusivity: !vbForm
         ? false

@@ -17,7 +17,13 @@ const findTheRecordOfTheCardMovedToDone = async (trelloCardId) => {
     trelloCardId,
   }).populate({
     path: 'researcherId',
-    select: { nickname: 1, name: 1, email: 1, avatarUrl: 1 },
+    select: {
+      nickname: 1,
+      name: 1,
+      email: 1,
+      avatarUrl: 1,
+      hiddenForEditor: 1,
+    },
   });
 };
 

@@ -22,7 +22,7 @@ const getAllUsers = async ({
   roles,
   canBeAssigned,
   fieldsInTheResponse,
-  nicknames,
+  members,
   exist,
   displayOnTheSite,
   skip,
@@ -45,7 +45,7 @@ const getAllUsers = async ({
       ...(typeof hiddenForEditor === 'boolean' && {
         hiddenForEditor,
       }),
-      ...(nicknames && { nickname: { $in: nicknames } }),
+      ...(members && { [members.searchBy]: { $in: members.value } }),
     },
     {
       ...(fieldsInTheResponse &&
@@ -242,7 +242,7 @@ const findUsersListByValuesList = async ({
     .filter((value) => value);
 };
 
-const findUsersByValueList = async ({ param, valueList }) => {
+const findUsersByValueList = async ({ param, valueList, roles }) => {
   return await User.find({ [param]: { $in: valueList } });
 };
 
