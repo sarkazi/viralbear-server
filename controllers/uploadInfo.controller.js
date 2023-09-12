@@ -1,5 +1,4 @@
 const UploadInfo = require('../entities/UploadInfo');
-const { renderToFile } = require('@react-pdf/renderer');
 
 const findOne = async (objDB) => {
   const { searchBy, param } = objDB;
@@ -19,6 +18,7 @@ const findOne = async (objDB) => {
         exclusivity: 1,
         trelloCardUrl: 1,
         videoId: 1,
+        paid: 1,
       },
     })
     .populate({

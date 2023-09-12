@@ -1083,15 +1083,15 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
   const directoryForInputVideo = `./videos/${userId}`;
   const directoryForOutputVideo = `./videos/${userId}`;
 
-  if (!!buffer) {
-    await Promise.all(
-      [directoryForInputVideo, directoryForOutputVideo].map((directory) => {
-        if (!fs.existsSync(directory)) {
-          fs.mkdirSync(directory);
-        }
-      })
-    );
+  await Promise.all(
+    [directoryForInputVideo, directoryForOutputVideo].map((directory) => {
+      if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory);
+      }
+    })
+  );
 
+  if (!!buffer) {
     fs.writeFileSync(
       path.resolve(`${directoryForInputVideo}/input-for-conversion.mp4`),
       buffer

@@ -8,6 +8,7 @@ const {
   getAllCardsByListId,
   getAllMembers,
   getCardDataByCardId,
+  getAllCardsFromTrello,
 } = require('../controllers/trello.controller');
 const {
   getUserById,
@@ -30,6 +31,8 @@ const {
 const {
   findTheRecordOfTheCardMovedToDone,
 } = require('../controllers/movedToDoneList.controller');
+
+const { findLinkBy, updateLinkBy } = require('../controllers/links.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
 const { ObjectId } = require('mongodb');
@@ -288,12 +291,15 @@ router.get(
         process.env.TRELLO_LIST_DONE_ID
       );
 
-      const currentWorker = await getUserById(currentUserId);
+      const currentWorker = await getUserBy({
+        searchBy: '_id',
+        value: new ObjectId(currentUserId),
+      });
 
       if (!currentWorker) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: 'User not found',
-          status: 'error',
+          status: 'warning',
         });
       }
 
@@ -323,6 +329,106 @@ router.get(
     }
   }
 );
+
+router.get('/getCardsWithReminder', authMiddleware, async (req, res) => {
+  const reminderCustomFieldId = process.env.TRELLO_CUSTOM_FIELD_REMINDER;
+
+  const userId = new ObjectId(req.user.id);
+
+  const user = await getUserBy({ searchBy: '_id', value: userId });
+
+  try {
+    let cards = await getAllCardsFromTrello();
+
+    cards = cards
+      .filter((card) => {
+        return (
+          card.customFieldItems.find((customFieldItem) => {
+            return customFieldItem.idCustomField === reminderCustomFieldId;
+          }) &&
+          card.members.find((member) => {
+            return member.username === user.nickname.replace('@', '');
+          })
+        );
+      })
+      .map((card) => {
+        return {
+          trelloCardId: card.id,
+          trelloCardUrl: card.shortUrl,
+          customFieldItems: card.customFieldItems,
+          trelloCardName: card.name,
+        };
+      });
+
+    cards = await Promise.all(
+      cards.map(async (card) => {
+        const link = await findLinkBy({
+          searchBy: 'trelloCardId',
+          value: card.trelloCardId,
+        });
+
+        if (!!link && !!link?.reminderDate) {
+          const reminderDate = link.reminderDate;
+
+          hoursSinceUpdateReminder = moment().diff(reminderDate, 'hours');
+
+          const reminderEveryDay = card.customFieldItems.find(
+            (customFieldItem) => {
+              return (
+                customFieldItem.idValue ===
+                process.env.TRELLO_CUSTOM_FIELD_REMINDER_EVERY_DAY_VALUE
+              );
+            }
+          );
+          const reminderEveryWeek = card.customFieldItems.find(
+            (customFieldItem) => {
+              return (
+                customFieldItem.idValue ===
+                process.env.TRELLO_CUSTOM_FIELD_REMINDER_EVERY_WEEK_VALUE
+              );
+            }
+          );
+          const reminderEveryMonth = card.customFieldItems.find(
+            (customFieldItem) => {
+              return (
+                customFieldItem.idValue ===
+                process.env.TRELLO_CUSTOM_FIELD_REMINDER_EVERY_MONTH_VALUE
+              );
+            }
+          );
+
+          if (
+            (!!reminderEveryDay && hoursSinceUpdateReminder > 24) ||
+            (!!reminderEveryWeek && hoursSinceUpdateReminder > 168) ||
+            (!!reminderEveryMonth && hoursSinceUpdateReminder > 744)
+          ) {
+            await updateLinkBy({
+              updateBy: '_id',
+              value: link._id,
+              objForSet: { reminderDate: new Date() },
+            });
+
+            const { customFieldItems, ...data } = card;
+
+            return data;
+          }
+        }
+      })
+    ).then((cards) => cards.filter((card) => card));
+
+    return res.status(200).json({
+      message: 'Expired cards have been received',
+      status: 'success',
+      apiData: cards,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({
+      message: 'Server side error',
+      status: 'error',
+    });
+  }
+});
 
 router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
   try {

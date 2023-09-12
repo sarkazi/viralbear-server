@@ -289,9 +289,22 @@ const inviteMemberOnBoard = async ({ email, nickname }) => {
   return data;
 };
 
+const getAllCardsFromTrello = async () => {
+  const { data } = await trelloInstance.get(
+    `/1/boards/${process.env.TRELLO_WORKSPACE_ID}/cards`,
+    {
+      params: {
+        customFieldItems: true,
+        members: true,
+      },
+    }
+  );
+
+  return data;
+};
+
 module.exports = {
   getAllCommentsByBoard,
-
   getPriorityCardByCardId,
   getCardDataByCardId,
   getTrelloCardsFromMonthlyGoalsList,
@@ -313,4 +326,5 @@ module.exports = {
   getTrelloMemberById,
   inviteMemberOnBoard,
   deleteLabelFromTrelloCard,
+  getAllCardsFromTrello,
 };

@@ -6,11 +6,17 @@ const fs = require('fs');
 const path = require('path');
 const request = require('request');
 
+const { google } = require('googleapis');
+
 const axios = require('axios');
 
 const socketInstance = require('../socket.instance');
+const googleApiOAuth2Instance = require('../googleApiOAuth2.instance');
+
 const AWS = require('aws-sdk');
 const moment = require('moment');
+
+const readline = require('readline');
 
 const { v4: createUniqueHash } = require('uuid');
 
@@ -416,6 +422,12 @@ router.post('/convert', authMiddleware, async (req, res) => {
           message: `Video with id ${+videoId} not found`,
           status: 'warning',
         });
+      }
+
+      const directory = `./videos/${userId}`;
+
+      if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory);
       }
 
       const writer = fs.createWriteStream(
@@ -955,10 +967,7 @@ router.patch(
       });
     }
 
-    if (
-      acquirerName &&
-      !JSON.parse(researchers).find((name) => name === acquirerName)
-    ) {
+    if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
       return res.status(200).json({
         message: 'The acquirer is not added to the list',
         status: 'warning',
@@ -1183,9 +1192,9 @@ router.patch(
         const countryCode = await findTheCountryCodeByName(country);
 
         if (!countryCode) {
-          return res.status(400).json({
+          return res.status(200).json({
             message: 'Error when searching for the country code',
-            status: 'error',
+            status: 'warning',
           });
         }
 
@@ -1229,10 +1238,26 @@ router.patch(
         });
       }
 
+      const researcherWithPaidAdvance = video.trelloData.researchers.find(
+        (researcher) => researcher.advanceHasBeenPaid
+      );
+
+      if (
+        !!researcherWithPaidAdvance &&
+        researcherWithPaidAdvance.id.toString() !== acquirer._id.toString()
+      ) {
+        return res.status(200).json({
+          message: 'You cannot change the acquirer for this video.',
+          status: 'warning',
+        });
+      }
+
       const researchersListForCreatingVideo =
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
+          researcherWithPaidAdvance,
+          ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
       await updateVideoById({
@@ -1258,6 +1283,11 @@ router.patch(
         },
       });
 
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
+
       if (!!acquirerPaidAdvance) {
         if (!acquirerName) {
           return res.status(200).json({
@@ -1265,6 +1295,22 @@ router.patch(
             status: 'warning',
           });
         }
+
+        if (
+          !updatedVideo.trelloData.researchers.find(
+            (researcher) => researcher.id.toString() === acquirer._id.toString()
+          )
+        ) {
+          return res.status(200).json({
+            message:
+              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
+            status: 'warning',
+          });
+        }
+
+        const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
+          (researcher) => researcher.id.toString() === acquirer._id.toString()
+        );
 
         await markResearcherAdvanceForOneVideoAsPaid({
           videoId: +videoId,
@@ -1274,10 +1320,10 @@ router.patch(
         await updateUser({
           userId: acquirer._id,
           objDBForIncrement: {
-            ...(!video.trelloData.researchers.find(
-              (researcher) =>
-                researcher.id.toString() === acquirer._id.toString()
-            ).advanceHasBeenPaid && { balance: -acquirer?.advancePayment }),
+            ...(!!acquirerInTheVideoList &&
+              !acquirerInTheVideoList.advanceHasBeenPaid && {
+                balance: -acquirer?.advancePayment,
+              }),
             note: +acquirerPaidAdvance,
           },
         });
@@ -1297,11 +1343,6 @@ router.patch(
           }
         );
       }
-
-      const updatedVideo = await findVideoByValue({
-        searchBy: 'videoData.videoId',
-        value: +videoId,
-      });
 
       if (updatedVideo.isApproved === true) {
         await refreshMrssFiles();
@@ -1431,10 +1472,7 @@ router.patch(
       });
     }
 
-    if (
-      acquirerName &&
-      !JSON.parse(researchers).find((name) => name === acquirerName)
-    ) {
+    if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
       return res.status(200).json({
         message: 'The acquirer is not added to the list',
         status: 'warning',
@@ -1705,10 +1743,26 @@ router.patch(
         });
       }
 
+      const researcherWithPaidAdvance = video.trelloData.researchers.find(
+        (researcher) => researcher.advanceHasBeenPaid
+      );
+
+      if (
+        !!researcherWithPaidAdvance &&
+        researcherWithPaidAdvance.id.toString() !== acquirer._id.toString()
+      ) {
+        return res.status(200).json({
+          message: 'You cannot change the acquirer for this video.',
+          status: 'warning',
+        });
+      }
+
       const researchersListForCreatingVideo =
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
+          researcherWithPaidAdvance,
+          ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
       await updateVideoById({
@@ -1734,6 +1788,16 @@ router.patch(
         },
       });
 
+      await Video.updateOne(
+        { 'videoData.videoId': +videoId },
+        { $unset: { needToBeFixed: 1 } }
+      );
+
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
+
       if (!!acquirerPaidAdvance) {
         if (!acquirerName) {
           return res.status(200).json({
@@ -1741,6 +1805,22 @@ router.patch(
             status: 'warning',
           });
         }
+
+        if (
+          !updatedVideo.trelloData.researchers.find(
+            (researcher) => researcher.id.toString() === acquirer._id.toString()
+          )
+        ) {
+          return res.status(200).json({
+            message:
+              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
+            status: 'warning',
+          });
+        }
+
+        const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
+          (researcher) => researcher.id.toString() === acquirer._id.toString()
+        );
 
         await markResearcherAdvanceForOneVideoAsPaid({
           videoId: +videoId,
@@ -1750,19 +1830,14 @@ router.patch(
         await updateUser({
           userId: acquirer._id,
           objDBForIncrement: {
-            ...(!video.trelloData.researchers.find(
-              (researcher) =>
-                researcher.id.toString() === acquirer._id.toString()
-            ).advanceHasBeenPaid && { balance: -acquirer?.advancePayment }),
+            ...(!!acquirerInTheVideoList &&
+              !acquirerInTheVideoList.advanceHasBeenPaid && {
+                balance: -acquirer?.advancePayment,
+              }),
             note: +acquirerPaidAdvance,
           },
         });
       }
-
-      await Video.updateOne(
-        { 'videoData.videoId': +videoId },
-        { $unset: { needToBeFixed: 1 } }
-      );
 
       if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
         //меняем кастомное поле "brand safe" в карточке trello
@@ -1776,11 +1851,6 @@ router.patch(
           }
         );
       }
-
-      const updatedVideo = await findVideoByValue({
-        searchBy: 'videoData.videoId',
-        value: +videoId,
-      });
 
       if (updatedVideo.isApproved === true) {
         await refreshMrssFiles();
@@ -1902,10 +1972,7 @@ router.patch(
       });
     }
 
-    if (
-      acquirerName &&
-      !JSON.parse(researchers).find((name) => name === acquirerName)
-    ) {
+    if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
       return res.status(200).json({
         message: 'The acquirer is not added to the list',
         status: 'warning',
@@ -2193,10 +2260,26 @@ router.patch(
         });
       }
 
+      const researcherWithPaidAdvance = video.trelloData.researchers.find(
+        (researcher) => researcher.advanceHasBeenPaid
+      );
+
+      if (
+        !!researcherWithPaidAdvance &&
+        researcherWithPaidAdvance.id.toString() !== acquirer._id.toString()
+      ) {
+        return res.status(200).json({
+          message: 'You cannot change the acquirer for this video.',
+          status: 'warning',
+        });
+      }
+
       const researchersListForCreatingVideo =
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
+          researcherWithPaidAdvance,
+          ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
       await updateVideoById({
@@ -2222,6 +2305,11 @@ router.patch(
         },
       });
 
+      const updatedVideo = await findVideoByValue({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
+
       if (!!acquirerPaidAdvance) {
         if (!acquirerName) {
           return res.status(200).json({
@@ -2229,6 +2317,22 @@ router.patch(
             status: 'warning',
           });
         }
+
+        if (
+          !updatedVideo.trelloData.researchers.find(
+            (researcher) => researcher.id.toString() === acquirer._id.toString()
+          )
+        ) {
+          return res.status(200).json({
+            message:
+              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
+            status: 'warning',
+          });
+        }
+
+        const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
+          (researcher) => researcher.id.toString() === acquirer._id.toString()
+        );
 
         await markResearcherAdvanceForOneVideoAsPaid({
           videoId: +videoId,
@@ -2238,19 +2342,14 @@ router.patch(
         await updateUser({
           userId: acquirer._id,
           objDBForIncrement: {
-            ...(!video.trelloData.researchers.find(
-              (researcher) =>
-                researcher.id.toString() === acquirer._id.toString()
-            ).advanceHasBeenPaid && { balance: -acquirer?.advancePayment }),
+            ...(!!acquirerInTheVideoList &&
+              !acquirerInTheVideoList.advanceHasBeenPaid && {
+                balance: -acquirer?.advancePayment,
+              }),
             note: +acquirerPaidAdvance,
           },
         });
       }
-
-      const updatedVideo = await findVideoByValue({
-        searchBy: 'videoData.videoId',
-        value: +videoId,
-      });
 
       await refreshMrssFiles();
 
@@ -2483,80 +2582,64 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      //storageInstance.listObjectsV2(
-      //  {
-      //    //Prefix: 'reuters-videos',
-      //    Bucket: 'viralbear2',
-      //  },
-      //  (err, data) => {
-      //    if (err) {
-      //      console.log(err);
-      //    }
-      //    console.log(data);
-      //  }
+      //const scopes = ['https://www.googleapis.com/auth/youtube.upload'];
+
+      //const url = googleApiOAuth2Instance.generateAuthUrl({
+      //  access_type: 'offline',
+      //  scope: scopes,
+      //});
+
+      //console.log(url, 88);
+
+      //const { tokens } = await googleApiOAuth2Instance.getToken(
+      //  '4/0Adeu5BWBUa7qSmmLKfzjsVYmfIV9pM--hl4w0IGGrcgteUSV88pM4kkou7f-jOynGmA0QQ'
       //);
 
-      const result = await new Promise((resolve, reject) => {
-        const bucketName = 'viralbear';
+      //console.log(tokens, 8888);
 
-        new AWS.S3({
-          endpoint: 'https://storage.yandexcloud.net',
-          credentials: {
-            accessKeyId: 'YCAJE9VavEEX6lxxxmn5Zf9gf',
-            secretAccessKey: 'YCNN8SqgPoEf14LAsSfeVL8hJqC-G6YDL2cwSHrQ',
+      //googleApiOAuth2Instance.setCredentials(tokens);
+
+      //googleApiOAuth2Instance.on('tokens', (tokens) => {
+      //  if (tokens.refresh_token) {
+      //    console.log(tokens.refresh_token);
+      //  }
+      //  console.log(tokens.access_token);
+      //  console.log(tokens);
+      //});
+
+      //googleApiOAuth2Instance.setCredentials({
+      //  access_token:
+      //    'ya29.a0AfB_byDZWODWwmFyFRCf0bBug7zOGgHGZiU_pMA_iznvfjACuJRyzdBi46NNxluN6W2In6Qz3xw8tKdTYDBLnPQRmyusZ87i8F0CDqgUPKoR5p_9WiNkTGY0ioG-Wu5Pc0JkQN7kUZScgjlYz49HIsSdN_0yopGmLgaCgYKAWISARMSFQGOcNnC-aej1CMZIY1yb-0eoK3Juw0169',
+      //  refresh_token: `1//0ck8bN7dxDyIfCgYIARAAGAwSNwF-L9IrcIkqJXNdd9ARRvmYHD9-RSNoFyGmqL4-w_fc9H2QjQS_G5c5F4Xhy_G_esCiNCVpy-8`,
+      //});
+
+      google.youtube('v3').videos.insert(
+        {
+          access_token:
+            'ya29.a0AfB_byDZWODWwmFyFRCf0bBug7zOGgHGZiU_pMA_iznvfjACuJRyzdBi46NNxluN6W2In6Qz3xw8tKdTYDBLnPQRmyusZ87i8F0CDqgUPKoR5p_9WiNkTGY0ioG-Wu5Pc0JkQN7kUZScgjlYz49HIsSdN_0yopGmLgaCgYKAWISARMSFQGOcNnC-aej1CMZIY1yb-0eoK3Juw0169',
+          part: 'snippet,contentDetails,status',
+          resource: {
+            snippet: {
+              title: 'My title',
+              description: 'My description',
+            },
+
+            status: {
+              privacyStatus: 'public',
+            },
           },
-          region: 'ru-central1',
-          httpOptions: {
-            timeout: 20000,
-            connectTimeout: 20000,
+
+          media: {
+            body: fs.createReadStream('./sample-15s.mp4'),
           },
-        }).listObjects(
-          {
-            Prefix: 'reuters-videos',
-            Bucket: bucketName,
-          },
-          async (err, data) => {
-            if (err) {
-              console.log(err);
-            }
-
-            console.log(data?.Contents?.length);
-
-            const copyData = await Promise.all(
-              data.Contents.map(async (obj) => {
-                const filename = obj.Key.split('/')[1];
-
-                console.log(filename, 99);
-
-                //const copyParams = {
-                //  Bucket: bucketName,
-                //  CopySource: `${bucketName}/${obj.Key}`,
-                //  Key: `converted-videos/${filename}`,
-                //};
-
-                //new AWS.S3({
-                //  endpoint: 'https://storage.yandexcloud.net',
-                //  credentials: {
-                //    accessKeyId: 'YCAJE9VavEEX6lxxxmn5Zf9gf',
-                //    secretAccessKey: 'YCNN8SqgPoEf14LAsSfeVL8hJqC-G6YDL2cwSHrQ',
-                //  },
-                //  region: 'ru-central1',
-                //  httpOptions: {
-                //    timeout: 20000,
-                //    connectTimeout: 20000,
-                //  },
-                //}).copyObject(copyParams, (err, data) => {
-                //  if (err) {
-                //    //console.log(err);
-                //  }
-
-                //  console.log(data);
-                //});
-              })
-            );
+        },
+        (error, data) => {
+          if (error) {
+            console.log(error, 77);
           }
-        );
-      });
+          console.log('https://www.youtube.com/watch?v=' + data.data.id, 22);
+        }
+      );
 
       return res.status(200).json({ text: 'success' });
     } catch (err) {

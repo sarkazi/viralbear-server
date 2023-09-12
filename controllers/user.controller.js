@@ -68,12 +68,9 @@ const getUserByEmail = async (email) => {
 };
 
 const findUsersByEmails = async (emails) => {
-  return await User.find(
-    {
-      email: { $in: emails },
-    }
-    //{ name: 1, _id: 0 }
-  );
+  return await User.find({
+    email: { $in: emails },
+  });
 };
 
 const deleteUser = async (userId) => {

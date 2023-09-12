@@ -181,10 +181,14 @@ router.post(
         });
       }
 
-      const authorLinkWithThisHash = await findOneRefFormByParam({
-        searchBy: 'formHash',
-        value: formHash,
-      });
+      let authorLinkWithThisHash = null;
+
+      if (!!formHash) {
+        authorLinkWithThisHash = await findOneRefFormByParam({
+          searchBy: 'formHash',
+          value: formHash,
+        });
+      }
 
       if (formHash && !authorLinkWithThisHash) {
         return res.status(200).json({
@@ -293,6 +297,12 @@ router.post(
           });
         }
       }
+
+      console.log(
+        authorLinkWithThisHash,
+        authorLinkForConnectWithResearcher,
+        888775767
+      );
 
       const objDB = {
         sender: author._id,
@@ -497,25 +507,51 @@ router.post(
 
       const accountActivationLink = `${process.env.CLIENT_URI}/login/?auth_hash=${vbForm._id}`;
 
+      const isPaidForm =
+        !!vbForm?.refFormId?.advancePayment || !!vbForm?.refFormId?.percentage;
+
+      const isNoPaidForm =
+        (!!vbForm?.refFormId && !vbForm?.refFormId?.paid) ||
+        (!!vbForm?.refFormId &&
+          !vbForm?.refFormId?.advancePayment &&
+          !vbForm?.refFormId?.percentage);
+
+      const isRefForm = !!vbForm?.refFormId;
+
+      const sendLinkToActivateYourAccount =
+        !!vbForm?.refFormId?.researcher?.email &&
+        !vbForm.sender?.activatedTheAccount &&
+        isPaidForm;
+
+      console.log(
+        !isRefForm,
+        isRefForm && !vbForm?.refFormId?.paid,
+        isRefForm,
+        vbForm?.refFormId?.paid,
+        isRefForm &&
+          !vbForm?.refFormId?.advancePayment &&
+          !vbForm?.refFormId?.percentage,
+        888
+      );
+
       const TextOfMailForAuthor =
-        !vbForm.refFormId ||
-        (!vbForm.refFormId?.advancePayment && !vbForm.refFormId?.percentage)
+        !isRefForm || isNoPaidForm
           ? `
       Hello ${vbForm.sender.name}.<br/>
-      Thank you for uploading the video to our platform. The agreement file is in the attachment of this letter.<br/>
+      Thank you for uploading the video to our platform. The agreement file is in the attachment of this email.<br/>
       Have a nice day!
       `
           : !vbForm.sender?.activatedTheAccount
           ? `
         Hello ${vbForm.sender.name}.<br/>
         Thank you for uploading the video to our platform.<br/>
-        Follow the links and set the password for the viralbear.media personal account: ${accountActivationLink}. The agreement file is in the attachment of this letter.<br/>
+        Follow the links and set the password for the viralbear.media personal account: ${accountActivationLink}. The agreement file is in the attachment of this email.<br/>
         Have a nice day!
         `
           : `
         Hello ${vbForm.sender.name}.<br/>
         Thank you for uploading the video to our platform.<br/>
-        Log in to viralbear.media with your details: ${process.env.CLIENT_URI}. The agreement file is in the attachment of this letter.<br/>
+        Log in to viralbear.media with your details: ${process.env.CLIENT_URI}. The agreement file is in the attachment of this email.<br/>
         Have a nice day!
         `;
 
@@ -541,28 +577,12 @@ router.post(
         createdAt: vbForm.createdAt,
         agreementLink: agreementLink,
         formId: vbForm.formId,
-        refForm: !!vbForm.refFormId ? true : false,
-        ...(!!vbForm?.refFormId?.trelloCardUrl && {
-          trelloCardUrl: vbForm.refFormId.trelloCardUrl,
+        ...(isRefForm && {
+          refForm: vbForm.refFormId,
         }),
-        ...(!!vbForm?.refFormId?.advancePayment && {
-          advancePayment: vbForm.refFormId.advancePayment,
+        ...(sendLinkToActivateYourAccount && {
+          accountActivationLink,
         }),
-        ...(!!vbForm?.refFormId?.percentage && {
-          percentage: vbForm.refFormId.percentage,
-        }),
-        ...(!!vbForm?.refFormId?.researcher && {
-          researcherEmail: vbForm?.refFormId?.researcher?.email,
-        }),
-        ...(!!vbForm?.refFormId?.researcher?.email &&
-          !vbForm.sender?.activatedTheAccount &&
-          (!!vbForm?.refFormId?.advancePayment ||
-            !!vbForm?.refFormId?.percentage) && {
-            authorData: {
-              name: vbForm?.sender?.name,
-              accountActivationLink,
-            },
-          }),
       };
 
       const dataForSendingAgreement = {

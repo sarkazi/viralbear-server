@@ -1014,7 +1014,7 @@ router.get(
           const definePaymentSubject = () => {
             if (advance > percentage) {
               return {
-                tooltip: `Advance payment for ${videosCountWithUnpaidAdvance}`,
+                tooltip: `Advance payment for ${videosCountWithUnpaidAdvance} videos`,
               };
             } else if (
               advance < percentage ||
@@ -1142,7 +1142,8 @@ router.get(
                 (advance === percentage && advance > 0 && percentage > 0)) && {
                 percentage,
               }),
-              ...(!!user?.note && { note: user.note }),
+              note: !!user?.note ? user.note : 0,
+
               total: calcAmountToBePaid(),
             },
             paymentSubject: definePaymentSubject(),
@@ -1831,14 +1832,14 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
 
 router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
   try {
-    const { userId, amountToBePaid, extraPayment } = req.body;
+    const { userId, amountToBePaid, extraPayment, notePayment } = req.body;
 
     if (
       !userId ||
       (!amountToBePaid.percentage &&
         !amountToBePaid.advance &&
-        !amountToBePaid.note &&
-        !extraPayment)
+        !extraPayment &&
+        !notePayment)
     ) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
@@ -1930,8 +1931,8 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       finalSum += extraPayment;
     }
 
-    if (!!amountToBePaid?.note) {
-      finalSum += amountToBePaid.note;
+    if (!!notePayment) {
+      finalSum += notePayment;
     }
 
     objDBForSet = {
@@ -1944,7 +1945,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     };
 
     objDBForUnset = {
-      ...(!!amountToBePaid.note && { note: 1 }),
+      ...(!!notePayment && { note: 1 }),
     };
 
     await updateUser({
@@ -1959,18 +1960,18 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       purpose: [
         ...(!!amountToBePaid?.advance ? ['advance'] : []),
         ...(!!amountToBePaid?.percentage ? ['percent'] : []),
-        ...(!!amountToBePaid?.note ? ['note'] : []),
+        ...(!!notePayment ? ['note'] : []),
         ...(!!extraPayment ? ['extra'] : []),
       ],
       amount: {
         ...(!!amountToBePaid?.advance && {
           advance: amountToBePaid.advance,
         }),
-        ...(!!amountToBePaid?.percent && {
+        ...(!!amountToBePaid?.percentage && {
           percentage: amountToBePaid.percentage,
         }),
-        ...(!!amountToBePaid?.note && {
-          note: amountToBePaid.note,
+        ...(!!notePayment && {
+          note: notePayment,
         }),
         ...(!!extraPayment && {
           extra: extraPayment,
@@ -2460,7 +2461,6 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-
         objDBForSet,
         objDBForIncrement,
       });

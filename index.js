@@ -32,6 +32,7 @@ const locationRouter = require('./routes/location.routes');
 const webhookRouter = require('./routes/webhook.routes');
 const publicUsersRouter = require('./routes/public.users.routes');
 const publicVideosRouter = require('./routes/public.videos.routes');
+const commonRouter = require('./routes/common.routes');
 
 const socketServer = require('http').createServer(app);
 
@@ -50,6 +51,7 @@ socketServer.listen(9999, () => {
 
 app.use(cookieParser());
 
+app.use('/', commonRouter);
 app.use('/video', videoRouter);
 app.use('/uploadInfo', uploadInfoRouter);
 app.use('/sendEmail', sendMailRouter);

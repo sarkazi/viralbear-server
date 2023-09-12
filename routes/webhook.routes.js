@@ -192,8 +192,6 @@ router.post('/trello/allBoard', async (req, res) => {
     ) {
       console.log(`webhook "${changedData.webhook.description}" сработал`);
 
-      console.log(changedData, 77);
-
       //проверяем, существует ли уже запись в базе с этой карточкой
       const recordInTheDatabaseAboutTheMovedCard =
         await findTheRecordOfTheCardMovedToDone(

@@ -1,23 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const moment = require('moment');
+
+const mongoose = require('mongoose');
+
+const ObjectId = mongoose.Types.ObjectId;
 
 const authMiddleware = require('../middleware/auth.middleware');
 
-const socketInstance = require('../socket.instance');
-
 const {
   findBaseUrl,
-  pullIdFromUrl,
-  findLinkByVideoId,
+
   createNewLink,
   conversionIncorrectLinks,
+  findLinkBy,
 } = require('../controllers/links.controller');
 
 const {
-  getUserById,
-  updateUserByIncrement,
-  getAllUsers,
+  getUserBy,
+  findUsersByValueList,
 } = require('../controllers/user.controller');
 
 const {
@@ -26,11 +26,7 @@ const {
   getCardDataByCardId,
   updateCustomFieldByTrelloCard,
   definingValueOfCustomFieldReminderInTrello,
-  calculatingTimeUntilNextReminder,
-  updateTrelloCard,
 } = require('../controllers/trello.controller');
-
-const { findWorkersForCard } = require('../controllers/user.controller');
 
 router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
   const { list, workers, reminders, title, authorNickname, link, priority } =
@@ -39,25 +35,11 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
   const convertedLink = conversionIncorrectLinks(link);
 
   try {
-    //const videoLink = await findBaseUrl(convertedLink);
+    const videoLink = await findBaseUrl(convertedLink);
 
-    //if (!videoLink) {
-    //  return res
-    //    .status(400)
-    //    .json({ message: 'Link is invalid', status: 'error' });
-    //}
+    const linkInfo = await findLinkBy({ searchBy: 'link', value: videoLink });
 
-    const videoId = await pullIdFromUrl(convertedLink);
-
-    if (!videoId) {
-      return res
-        .status(200)
-        .json({ message: 'Link is invalid', status: 'warning' });
-    }
-
-    const linkInfo = await findLinkByVideoId(videoId);
-
-    if (linkInfo) {
+    if (!!linkInfo) {
       const trelloCardData = await getCardDataByCardId(linkInfo.trelloCardId);
 
       return res.status(200).json({
@@ -69,7 +51,10 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       });
     }
 
-    const selfWorker = await getUserById(req.user.id);
+    const selfWorker = await getUserBy({
+      searchBy: '_id',
+      value: new ObjectId(req.user.id),
+    });
 
     if (!selfWorker) {
       return res
@@ -77,9 +62,10 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
         .json({ message: 'Worker not found', status: 'warning' });
     }
 
-    const foundWorkers = await findWorkersForCard(workers, selfWorker.name);
-
-    console.log(foundWorkers, 9789);
+    const foundWorkers = await findUsersByValueList({
+      param: 'name',
+      valueList: [...workers, selfWorker.name],
+    });
 
     if (!foundWorkers.length) {
       return res.status(200).json({
@@ -89,8 +75,6 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
     }
 
     const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
-
-    console.log(foundWorkersTrelloIds, 9789);
 
     if (!foundWorkersTrelloIds.length) {
       return res.status(200).json({
@@ -102,7 +86,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
     const trelloResponseAfterCreatingCard = await createCardInTrello(
       authorNickname,
       title,
-      convertedLink,
+      videoLink,
       list,
       foundWorkersTrelloIds
     );
@@ -130,27 +114,17 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
         process.env.TRELLO_CUSTOM_FIELD_REMINDER,
         { idValue: reminderCustomFieldValue.id }
       );
-
-      //const dateMlscUntilNextReminder = await calculatingTimeUntilNextReminder(
-      //  reminderCustomFieldValue
-      //);
-
-      //const currentTime = moment().valueOf();
-
-      //await updateTrelloCard(trelloResponseAfterCreatingCard.id, {
-      //  due: +dateMlscUntilNextReminder + +currentTime,
-      //});
     }
 
     const bodyForCreateLink = {
       researcher: selfWorker._id,
       authorsNick: authorNickname,
       title,
-      link: convertedLink,
-      unixid: videoId,
+      link: videoLink,
       trelloCardUrl: trelloResponseAfterCreatingCard.url,
       trelloCardId: trelloResponseAfterCreatingCard.id,
       listInTrello: list,
+      ...(!!reminders && { reminderDate: new Date() }),
     };
 
     await createNewLink({ bodyForCreateLink });
@@ -162,7 +136,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
   } catch (err) {
     console.log(err);
     return res
-      .status(500)
+      .status(400)
       .json({ status: 'error', message: 'Server side error' });
   }
 });

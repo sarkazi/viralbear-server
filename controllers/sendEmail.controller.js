@@ -14,14 +14,10 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
     didNotGiveRights,
     ip,
     createdAt,
-    advancePayment,
-    percentage,
-    researcherEmail,
     agreementLink,
     formId,
     refForm,
-    trelloCardUrl,
-    authorData,
+    accountActivationLink,
   } = dataForSendingMessage;
 
   const linkMarkup = videoLinks
@@ -38,10 +34,9 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
 
   await mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
-    to:
-      refForm && !!researcherEmail
-        ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
-        : process.env.SERVICE_LICENSING_EMAIL,
+    to: !!refForm?.researcher?.email
+      ? [process.env.SERVICE_INFO_EMAIL, refForm.researcher.email]
+      : process.env.SERVICE_LICENSING_EMAIL,
     subject: `New video was submitted! VB code: ${+formId.replace('VB', '')}`,
     html: `
 
@@ -85,17 +80,33 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
    }</b><br>
-   <b>Advance payment: ${advancePayment ? advancePayment : '-'}</b><br>
-   <b>Percentage: ${percentage ? percentage : '-'}</b><br>
-   <b>Researcher email: ${researcherEmail ? researcherEmail : '-'}</b><br>
-   <b>Trello card URL: ${trelloCardUrl ? trelloCardUrl : '-'}</b><br>
+   ${
+     !!refForm?.advancePayment
+       ? `<b>Advance payment: ${refForm.advancePayment}</b><br></br>`
+       : ''
+   }
+   ${
+     !!refForm?.percentage
+       ? `<b>Advance payment: ${refForm.percentage}</b><br></br>`
+       : ''
+   }
+   ${
+     !!refForm?.researcher?.email
+       ? `<b>Researcher email: ${refForm.researcher.email}</b><br>`
+       : ''
+   }
+   ${
+     !!refForm?.trelloCardUrl
+       ? `<b>Trello card URL: ${refForm.trelloCardUrl}</b><br>`
+       : ''
+   }
    <b>IP: ${ip}</b><br>
    <b>Submitted date: ${createdAt}</b><br>
    <b>Contract: ${agreementLink}</b><br>
    <b>Form VB code: ${formId.replace('VB', '')}</b><br>
    ${
-     authorData
-       ? `<b>Link to the personal account of the author ${authorData.name}: ${authorData.accountActivationLink}</b>`
+     !!accountActivationLink
+       ? `<b>Link to the personal account of the author ${name}: ${accountActivationLink}</b>`
        : ''
    }
    `,
@@ -137,7 +148,7 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
       !!refForm && !!researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
         : process.env.SERVICE_LICENSING_EMAIL,
-    subject: `information from the survey (form «${formId}»)`,
+    subject: `Information from the survey! VB code: ${formId}`,
     html: `
          <b>Where was this video filmed (city): ${
            whereFilmed ? whereFilmed : '-'

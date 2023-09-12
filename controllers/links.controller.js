@@ -2,8 +2,15 @@ const Links = require('../entities/Links');
 const fetch = require('node-fetch');
 
 const moment = require('moment');
+const request = require('request');
 
 const urlParser = require('js-video-url-parser');
+
+const axios = require('axios');
+
+const { URL } = require('url');
+
+const https = require('https');
 
 const getCountLinks = async ({ researcherId, listInTrello, forLastDays }) => {
   return await Links.find({
@@ -18,11 +25,24 @@ const getCountLinks = async ({ researcherId, listInTrello, forLastDays }) => {
 };
 
 const findBaseUrl = async (link) => {
-  const videoLink = await fetch(link, { redirect: 'follow' }).then((res) => {
-    return res.url;
+  return new Promise((resolve, reject) => {
+    request(
+      { method: 'HEAD', url: link, followAllRedirects: true },
+      (error, response) => {
+        if (!!response) {
+          if (response?.request?.href?.includes('?')) {
+            resolve(response?.request?.href?.split('?')[0]);
+          } else {
+            resolve(response?.request?.href);
+          }
+        }
+        if (error) {
+          console.log(error);
+          reject('Request error');
+        }
+      }
+    );
   });
-
-  return videoLink;
 };
 
 const pullIdFromUrl = async (videoLink) => {
@@ -182,6 +202,13 @@ const findLinkBy = async ({ searchBy, value }) => {
   });
 };
 
+const updateLinkBy = async ({ updateBy, value, objForSet }) => {
+  return Links.updateOne(
+    { [updateBy]: value },
+    { ...(objForSet && { $set: objForSet }) }
+  );
+};
+
 module.exports = {
   findBaseUrl,
   pullIdFromUrl,
@@ -191,4 +218,5 @@ module.exports = {
   getCountLinksBy,
   findLinkBy,
   getCountLinks,
+  updateLinkBy,
 };

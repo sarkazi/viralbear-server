@@ -18,10 +18,7 @@ const schema = new Schema(
       type: String,
       required: true,
     },
-    unixid: {
-      type: String,
-      required: true,
-    },
+
     listInTrello: {
       type: String,
       required: true,
@@ -33,6 +30,10 @@ const schema = new Schema(
     trelloCardId: {
       type: String,
       required: true,
+    },
+    reminderDate: {
+      type: Date,
+      required: false,
     },
   },
   { timestamps: true }
