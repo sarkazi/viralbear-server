@@ -148,7 +148,10 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
       !!refForm && !!researcherEmail
         ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
         : process.env.SERVICE_LICENSING_EMAIL,
-    subject: `Information from the survey! VB code: ${formId}`,
+    subject: `Information from the survey! VB code: ${formId.replace(
+      'VB',
+      ''
+    )}`,
     html: `
          <b>Where was this video filmed (city): ${
            whereFilmed ? whereFilmed : '-'

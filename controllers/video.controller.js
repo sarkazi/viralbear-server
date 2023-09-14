@@ -1223,6 +1223,10 @@ const markResearcherAdvanceForOneVideoAsPaid = async ({
   );
 };
 
+const findVideoBy = async ({ searchBy, value }) => {
+  return Video.findOne({ [searchBy]: value });
+};
+
 module.exports = {
   findLastVideo,
   findByIsBrandSafe,
@@ -1252,4 +1256,5 @@ module.exports = {
   markVideoEmployeeAsHavingReceivedAnAdvance,
   updateVideoBy,
   markResearcherAdvanceForOneVideoAsPaid,
+  findVideoBy,
 };

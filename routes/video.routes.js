@@ -2582,66 +2582,94 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      //const scopes = ['https://www.googleapis.com/auth/youtube.upload'];
+      const scopes = ['https://www.googleapis.com/auth/youtube'];
 
-      //const url = googleApiOAuth2Instance.generateAuthUrl({
-      //  access_type: 'offline',
-      //  scope: scopes,
-      //});
-
-      //console.log(url, 88);
+      const url = googleApiOAuth2Instance.generateAuthUrl({
+        access_type: 'online',
+        scope: scopes,
+      });
 
       //const { tokens } = await googleApiOAuth2Instance.getToken(
-      //  '4/0Adeu5BWBUa7qSmmLKfzjsVYmfIV9pM--hl4w0IGGrcgteUSV88pM4kkou7f-jOynGmA0QQ'
+      //  '4/0Adeu5BUUANgI1X-fZA70Ly8zIOV3ljUyGVCBHDxA79lDYVuVFTOaTFIG7C59RcLDRSAcRQ'
       //);
 
-      //console.log(tokens, 8888);
+      //console.log(tokens, 88);
 
-      //googleApiOAuth2Instance.setCredentials(tokens);
+      //oauth2Client.setCredentials({
+      //  refresh_token:
+      //    '1//0c_2NaRnTZYkaCgYIARAAGAwSNwF-L9IroHCFGx1mE4LME_TCeEKQ-9X_bRCk9A27QKLeVC7Qbeq7LZemQZxQ_vCBKqS6AvrkWeY',
+      //  access_token:
+      //    'ya29.a0AfB_byDZvsa7FL1r-JZGwr-wz-yvR8RzurAZtW1GvTl3pRGn3uDykam6iOOv1wkeYpH9gqAfNLquJmVndP2SG_ft1v7CvkQnLJOMeDLJzwfOlzcjE_qWnKa9Ov90RM4twgs9dJHEV3_Df69LdYCY03_QmrKffI_NAAaCgYKAcMSARMSFQGOcNnCaQWLODwoYNyP_zZ4ExS2Fw0169',
+      //});
+
+      //oauth2Client.getAccessToken((err, data) => {
+      //  if (err) {
+      //    console.log(err);
+      //  }
+      //  console.log(data, 88);
+      //});
 
       //googleApiOAuth2Instance.on('tokens', (tokens) => {
-      //  if (tokens.refresh_token) {
-      //    console.log(tokens.refresh_token);
+      //  console.log(tokens, 33);
+      //});
+
+      //googleApiOAuth2Instance.refreshAccessToken((err, data) => {
+      //  if (err) {
+      //    console.log(err);
       //  }
-      //  console.log(tokens.access_token);
-      //  console.log(tokens);
+      //  console.log(data);
       //});
 
-      //googleApiOAuth2Instance.setCredentials({
-      //  access_token:
-      //    'ya29.a0AfB_byDZWODWwmFyFRCf0bBug7zOGgHGZiU_pMA_iznvfjACuJRyzdBi46NNxluN6W2In6Qz3xw8tKdTYDBLnPQRmyusZ87i8F0CDqgUPKoR5p_9WiNkTGY0ioG-Wu5Pc0JkQN7kUZScgjlYz49HIsSdN_0yopGmLgaCgYKAWISARMSFQGOcNnC-aej1CMZIY1yb-0eoK3Juw0169',
-      //  refresh_token: `1//0ck8bN7dxDyIfCgYIARAAGAwSNwF-L9IrcIkqJXNdd9ARRvmYHD9-RSNoFyGmqL4-w_fc9H2QjQS_G5c5F4Xhy_G_esCiNCVpy-8`,
-      //});
+      //console.log(data, 88);
 
-      google.youtube('v3').videos.insert(
-        {
-          access_token:
-            'ya29.a0AfB_byDZWODWwmFyFRCf0bBug7zOGgHGZiU_pMA_iznvfjACuJRyzdBi46NNxluN6W2In6Qz3xw8tKdTYDBLnPQRmyusZ87i8F0CDqgUPKoR5p_9WiNkTGY0ioG-Wu5Pc0JkQN7kUZScgjlYz49HIsSdN_0yopGmLgaCgYKAWISARMSFQGOcNnC-aej1CMZIY1yb-0eoK3Juw0169',
-          part: 'snippet,contentDetails,status',
-          resource: {
-            snippet: {
-              title: 'My title',
-              description: 'My description',
-            },
+      //google.youtube({ version: 'v3' }).videos.insert(
+      //  {
+      //    access_token:
+      //      'ya29.a0AfB_byCOs0A40uZ3nozZj45lyy3AwDUtsN9cz2p5N0zGfcw0hg0Gk2ftt4oZ97mtyorNaF_a2Bs91DVqUA2Tnc6ybHJFBYUbF3zEgrEsHRpmHqXA2nJGGLy2zROOR78H__B_0beAZlAjjkON9FajVLFdMmmSwPR_AgaCgYKAY4SARMSFQGOcNnCRIJw-8-yR6YwzzAR7Lc1bA0169',
 
-            status: {
-              privacyStatus: 'public',
-            },
-          },
+      //    part: 'snippet,contentDetails,status',
 
-          media: {
-            body: fs.createReadStream('./sample-15s.mp4'),
-          },
-        },
-        (error, data) => {
-          if (error) {
-            console.log(error, 77);
-          }
-          console.log('https://www.youtube.com/watch?v=' + data.data.id, 22);
-        }
-      );
+      //    resource: {
+      //      snippet: {
+      //        title: 'test',
+      //        description: 'testov',
+      //      },
 
-      return res.status(200).json({ text: 'success' });
+      //      status: {
+      //        privacyStatus: 'private',
+      //      },
+      //    },
+
+      //    media: {
+      //      body: fs.createReadStream('./sample-5s.mp4'),
+      //    },
+      //  },
+      //  (error, data) => {
+      //    if (error) {
+      //      console.log(error);
+      //    }
+      //    console.log('https://www.youtube.com/watch?v=' + data.data.id);
+      //  }
+      //);
+
+      //google.youtube('v3').channels.list(
+      //  {
+      //    //part: 'snippet,contentDetails,status',
+      //    //chart: 'mostPopular',
+      //    access_token:
+      //      'ya29.a0AfB_byCmp5XQVkjGabYrA1lnHGZSQtCU5KouN_Op6F1EedjGsmrU1ogK-hKrB7FFn5LxbSqtlJBod0errNoyzfcKGejHKq7RD8MR0sTw3wBGORSprewPRQOM6dUjsMeiZNeVdfir4Oy8mAtRAbcrAgtO_zoIDfk3jQaCgYKARMSARMSFQGOcNnCr5M6KTw4VtZXSRtkb6Q6TA0169',
+      //  },
+      //  (error, data) => {
+      //    if (error) {
+      //      console.log(error);
+      //    }
+      //    console.log(data.data.items);
+      //  }
+      //);
+
+      //EAAD88S70UJUBO9GPuYMl3pT2LCUDelGGgwBWfJtm3Oob6OPDpBHEaersNpfGp0FJOAYVdRiMUjFFWnZAjiQi383f6YjbsEciZCp1I2lyyDcXW2H2prM9lwT1SN2ohmqult9Eq2IArjSBylJmcovzrN1hZBeQ33Nk1nlNuUMZBnnLlZA8ydlHqD6O39mX5zt21
+
+      return res.status(200).json({ text: 'success', apiData: url });
     } catch (err) {
       console.log(err);
 
