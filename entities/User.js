@@ -82,22 +82,22 @@ const schema = new Schema({
     required: true,
     default: 0,
   },
-  toBePaid: {
-    type: Object,
-    required: false,
-    note: {
-      type: Number,
-      default: 0,
-    },
-    advancePayment: {
-      type: Number,
-      default: 0,
-    },
-    percentage: {
-      type: Number,
-      default: 0,
-    },
-  },
+  //toBePaid: {
+  //  type: Object,
+  //  required: false,
+  //  note: {
+  //    type: Number,
+  //    default: 0,
+  //  },
+  //  advancePayment: {
+  //    type: Number,
+  //    default: 0,
+  //  },
+  //  percentage: {
+  //    type: Number,
+  //    default: 0,
+  //  },
+  //},
   hiddenForEditor: {
     type: Boolean,
     default: false,

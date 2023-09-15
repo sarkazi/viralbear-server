@@ -14,7 +14,7 @@ const schema = new Schema(
   {
     videoId: {
       type: Number,
-      required: true,
+      required: false,
     },
     vbFormInfo: {
       uid: {
@@ -33,10 +33,9 @@ const schema = new Schema(
     },
     company: {
       type: String,
-      required: true,
+      required: false,
       enum: partners,
     },
-
     researchers: [
       {
         id: {
@@ -55,15 +54,15 @@ const schema = new Schema(
     ],
     videoTitle: {
       type: String,
-      required: true,
+      required: false,
     },
     amount: {
       type: Number,
-      required: true,
+      required: false,
     },
     report: {
       type: String,
-      required: true,
+      required: false,
     },
     date: {
       type: String,
@@ -75,7 +74,7 @@ const schema = new Schema(
     },
     manual: {
       type: Boolean,
-      required: true,
+      required: false,
     },
     amountToResearcher: {
       type: Number,

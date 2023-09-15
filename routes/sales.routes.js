@@ -6,6 +6,8 @@ const xlsx = require('xlsx');
 
 const mongoose = require('mongoose');
 
+const { ObjectId } = mongoose.Types;
+
 var Mutex = require('async-mutex').Mutex;
 const mutex = new Mutex();
 
@@ -22,6 +24,8 @@ const {
   updateUserByIncrement,
   getUserBy,
   findUsersByValueList,
+  updateUser,
+  updateUserBy,
 } = require('../controllers/user.controller');
 
 const { findOne } = require('../controllers/uploadInfo.controller');
@@ -236,7 +240,9 @@ router.post(
       });
 
       // массив для определения актуального баланса видео
-      let temporaryStorage = [];
+      let videoBalanceStorage = [];
+      // массив для определения актуального баланса работника
+      let userBalanceStorage = [];
 
       let newReport = await Promise.all(
         processingData.data.map(async (obj, index) => {
@@ -265,15 +271,32 @@ router.post(
                   let amount = 0;
 
                   //ресечеры видео
-                  const videoResearchers = videoDb.trelloData.researchers;
+                  let videoResearchers = videoDb.trelloData.researchers;
+
+                  if (videoResearchers.length) {
+                    videoResearchers = await Promise.all(
+                      videoResearchers.map(async (dataResearcherInVideoDB) => {
+                        return await getUserBy({
+                          searchBy: 'email',
+                          value: dataResearcherInVideoDB.email,
+                          fieldsInTheResponse: [
+                            'balance',
+                            'nickname',
+                            'name',
+                            'email',
+                          ],
+                        });
+                      })
+                    );
+                  }
 
                   //если массив для баланса содержит это видео
                   if (
-                    temporaryStorage.find(
+                    videoBalanceStorage.find(
                       (videoInfo) => videoInfo.videoId === obj.videoId
                     )
                   ) {
-                    temporaryStorage.map((videoInfo, index) => {
+                    videoBalanceStorage.map((videoInfo, index) => {
                       //если это текущее видео
                       if (videoInfo.videoId === obj.videoId) {
                         //если баланс меньше нуля, но текущая сумма продажи выбивает его в положительно число...
@@ -296,32 +319,35 @@ router.post(
 
                     //иначе добавляем запись о текущем видео
                   } else {
-                    temporaryStorage.push({
+                    videoBalanceStorage.push({
                       videoId: obj.videoId,
                       videoBalance: videoDb.balance + obj.amount,
-                      left: 0,
+                      left:
+                        videoDb.balance + obj.amount > 0 && videoDb.balance < 0
+                          ? videoDb.balance + obj.amount
+                          : 0,
                     });
                   }
 
                   //положительный ли баланс во временном массиве
                   const thereIsPositiveBalanceInArray =
-                    temporaryStorage.find(
+                    videoBalanceStorage.find(
                       (videoInfo) => videoInfo.videoId === obj.videoId
                     )?.videoBalance > 0;
 
                   //содержит ли остаток
                   const containsRemainderInArray =
-                    temporaryStorage.find(
+                    videoBalanceStorage.find(
                       (videoInfo) => videoInfo.videoId === obj.videoId
                     )?.left > 0;
 
                   //остаток
-                  const remainderInArray = temporaryStorage.find(
+                  const remainderInArray = videoBalanceStorage.find(
                     (videoInfo) => videoInfo.videoId === obj.videoId
                   )?.left;
 
                   //баланс текущего видео
-                  const videoBalanceInArray = temporaryStorage.find(
+                  const videoBalanceInArray = videoBalanceStorage.find(
                     (videoInfo) => videoInfo.videoId === obj.videoId
                   )?.videoBalance;
 
@@ -394,12 +420,80 @@ router.post(
                     }
                   }
 
+                  if (videoResearchers.length) {
+                    videoResearchers.map((researcherData) => {
+                      const researcherInUserBalanceStorage =
+                        userBalanceStorage.find((userBalanceObj) => {
+                          return (
+                            userBalanceObj.nickname === researcherData.nickname
+                          );
+                        });
+
+                      if (!!researcherInUserBalanceStorage) {
+                        const currentUserBalance =
+                          researcherInUserBalanceStorage.balance +
+                          amountToResearcher;
+
+                        if (currentUserBalance <= 0) {
+                          researcherInUserBalanceStorage.balance +=
+                            amountToResearcher;
+                        } else {
+                          if (researcherInUserBalanceStorage.balance < 0) {
+                            researcherInUserBalanceStorage.left =
+                              currentUserBalance;
+                            researcherInUserBalanceStorage.balance = 0;
+                          } else {
+                            researcherInUserBalanceStorage.balance +=
+                              amountToResearcher;
+                          }
+                        }
+                      } else {
+                        userBalanceStorage.push({
+                          nickname: researcherData.nickname,
+                          id: researcherData._id,
+                          balance:
+                            researcherData.balance + amountToResearcher > 0 &&
+                            researcherData.balance < 0
+                              ? 0
+                              : +(
+                                  researcherData.balance + amountToResearcher
+                                ).toFixed(2),
+
+                          name: researcherData.name,
+                          left:
+                            researcherData.balance + amountToResearcher > 0 &&
+                            researcherData.balance < 0
+                              ? +(
+                                  researcherData.balance + amountToResearcher
+                                ).toFixed(2)
+                              : 0,
+                        });
+                      }
+                    });
+                  }
+
                   return {
                     researchers: videoResearchers.length
                       ? videoResearchers.map((researcher) => {
+                          const researcherInUserBalanceStorage =
+                            userBalanceStorage.find((userBalanceObj) => {
+                              return (
+                                userBalanceObj.nickname === researcher.nickname
+                              );
+                            });
+
                           return {
+                            id: researcher._id,
                             email: researcher.email,
                             name: researcher.name,
+                            paidFor:
+                              researcherInUserBalanceStorage.balance <= 0
+                                ? true
+                                : false,
+                            ...(researcherInUserBalanceStorage.left > 0 && {
+                              leftAmountValue:
+                                researcherInUserBalanceStorage.left,
+                            }),
                           };
                         })
                       : [],
@@ -468,14 +562,33 @@ router.post(
                 } else {
                   let amountToResearcher = 0;
                   let amount = 0;
-                  const videoResearchers = videoDb.trelloData.researchers;
+
+                  //ресечеры видео
+                  let videoResearchers = videoDb.trelloData.researchers;
+
+                  if (videoResearchers.length) {
+                    videoResearchers = await Promise.all(
+                      videoResearchers.map(async (dataResearcherInVideoDB) => {
+                        return await getUserBy({
+                          searchBy: 'email',
+                          value: dataResearcherInVideoDB.email,
+                          fieldsInTheResponse: [
+                            'balance',
+                            'nickname',
+                            'name',
+                            'email',
+                          ],
+                        });
+                      })
+                    );
+                  }
 
                   if (
-                    temporaryStorage.find(
+                    videoBalanceStorage.find(
                       (videoInfo) => videoInfo.videoTitle === obj.title
                     )
                   ) {
-                    temporaryStorage.map((videoInfo, index) => {
+                    videoBalanceStorage.map((videoInfo, index) => {
                       if (videoInfo.videoTitle === obj.title) {
                         if (
                           videoInfo.videoBalance < 0 &&
@@ -492,32 +605,35 @@ router.post(
                       }
                     });
                   } else {
-                    temporaryStorage.push({
+                    videoBalanceStorage.push({
                       videoTitle: obj.title,
                       videoBalance: videoDb.balance + obj.amount,
-                      left: 0,
+                      left:
+                        videoDb.balance + obj.amount > 0 && videoDb.balance < 0
+                          ? videoDb.balance + obj.amount
+                          : 0,
                     });
                   }
 
                   //положительный ли баланс во временном массиве
                   const thereIsPositiveBalanceInArray =
-                    temporaryStorage.find(
+                    videoBalanceStorage.find(
                       (videoInfo) => videoInfo.videoTitle === obj.title
                     )?.videoBalance > 0;
 
                   //содержит ли остаток
                   const containsRemainderInArray =
-                    temporaryStorage.find(
+                    videoBalanceStorage.find(
                       (videoInfo) => videoInfo.videoTitle === obj.title
                     )?.left > 0;
 
                   //остаток
-                  const remainderInArray = temporaryStorage.find(
+                  const remainderInArray = videoBalanceStorage.find(
                     (videoInfo) => videoInfo.videoTitle === obj.title
                   )?.left;
 
                   //баланс текущего видео
-                  const videoBalanceInArray = temporaryStorage.find(
+                  const videoBalanceInArray = videoBalanceStorage.find(
                     (videoInfo) => videoInfo.videoTitle === obj.title
                   )?.videoBalance;
 
@@ -590,12 +706,82 @@ router.post(
                     }
                   }
 
+                  if (videoResearchers.length) {
+                    videoResearchers.map((researcherData) => {
+                      const researcherInUserBalanceStorage =
+                        userBalanceStorage.find((userBalanceObj) => {
+                          return (
+                            userBalanceObj.nickname === researcherData.nickname
+                          );
+                        });
+
+                      if (!!researcherInUserBalanceStorage) {
+                        const currentUserBalance =
+                          researcherInUserBalanceStorage.balance +
+                          amountToResearcher;
+
+                        if (currentUserBalance <= 0) {
+                          researcherInUserBalanceStorage.balance +=
+                            amountToResearcher;
+                        } else {
+                          if (researcherInUserBalanceStorage.balance < 0) {
+                            researcherInUserBalanceStorage.left =
+                              currentUserBalance;
+                            researcherInUserBalanceStorage.balance = 0;
+                          } else {
+                            researcherInUserBalanceStorage.balance +=
+                              amountToResearcher;
+                          }
+                        }
+                      } else {
+                        userBalanceStorage.push({
+                          nickname: researcherData.nickname,
+                          id: researcherData._id,
+                          balance:
+                            researcherData.balance + amountToResearcher > 0 &&
+                            researcherData.balance < 0
+                              ? 0
+                              : +(
+                                  researcherData.balance + amountToResearcher
+                                ).toFixed(2),
+
+                          name: researcherData.name,
+                          left:
+                            researcherData.balance + amountToResearcher > 0 &&
+                            researcherData.balance < 0
+                              ? +(
+                                  researcherData.balance + amountToResearcher
+                                ).toFixed(2)
+                              : 0,
+                        });
+                      }
+                    });
+                  }
+
                   return {
                     researchers: videoResearchers.length
                       ? videoResearchers.map((researcher) => {
+                          const researcherInUserBalanceStorage =
+                            userBalanceStorage.find((userBalanceObj) => {
+                              return (
+                                userBalanceObj.nickname === researcher.nickname
+                              );
+                            });
+
+                          console.log(researcherInUserBalanceStorage, 88);
+
                           return {
+                            id: researcher._id,
                             email: researcher.email,
                             name: researcher.name,
+                            paidFor:
+                              researcherInUserBalanceStorage.balance <= 0
+                                ? true
+                                : false,
+                            ...(researcherInUserBalanceStorage.left > 0 && {
+                              leftAmountValue:
+                                researcherInUserBalanceStorage.left,
+                            }),
                           };
                         })
                       : [],
@@ -648,6 +834,19 @@ router.post(
         })
       );
 
+      console.log(
+        newReport.map((el) => {
+          return {
+            gg: el.repaymentOfNegativeBalance,
+            jj: el.researchers.map((el) => {
+              return el.paidFor;
+            }),
+          };
+        })
+      );
+
+      console.log(videoBalanceStorage, userBalanceStorage);
+
       newReport = newReport.reduce(
         (res, item) => {
           res[
@@ -668,6 +867,10 @@ router.post(
         suitable: newReport.suitable,
         notFounded: newReport.notFounded.length,
         type: 'file',
+        storageInfo: {
+          videoBalanceStorage,
+          userBalanceStorage,
+        },
       };
 
       return res.status(200).json({
@@ -688,30 +891,24 @@ router.post(
 
 router.post('/ingestInSystem', authMiddleware, async (req, res) => {
   try {
-    const body = req.body;
+    const { suitable, storageInfo } = req.body;
 
     const promiseAfterIngestInSystem = await Promise.all(
-      body.map(async (obj) => {
-        const users = obj.researchers.length
-          ? await findUsersByValueList({
-              param: 'email',
-              valueList: obj.researchers.map((researcher) => {
-                return researcher.email;
-              }),
-            })
-          : [];
-
+      suitable.map(async (obj) => {
         const amount = +obj.amount.consideringTheBalance;
         const amountToResearcher = obj.amountToResearcher;
 
         const objDB = {
-          researchers: users.length
-            ? users.map((el) => {
+          researchers: obj.researchers.length
+            ? obj.researchers.map((researcher) => {
                 return {
-                  id: el._id,
-                  name: el.name,
-                  paidFor:
-                    obj.repaymentOfNegativeBalance === 'fully' ? true : false,
+                  id: new ObjectId(researcher.id),
+                  name: researcher.name,
+                  paidFor: researcher.paidFor
+                    ? true
+                    : obj.repaymentOfNegativeBalance === 'fully'
+                    ? true
+                    : false,
                 };
               })
             : [],
@@ -762,6 +959,30 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
           searchValue: +key,
           dataToUpdate: { balance: +value },
         });
+      })
+    );
+
+    await Promise.all(
+      storageInfo.userBalanceStorage.map(async (userBalanceInfo) => {
+        await updateUser({
+          userId: userBalanceInfo.id,
+          objDBForSet: { balance: userBalanceInfo.balance },
+        });
+
+        if (userBalanceInfo.left > 0) {
+          await createNewSale({
+            amountToResearcher: userBalanceInfo.left,
+            amount: 0,
+            date: moment().format('ll'),
+            researchers: [
+              {
+                id: new ObjectId(userBalanceInfo.id),
+                name: userBalanceInfo.name,
+                paidFor: false,
+              },
+            ],
+          });
+        }
       })
     );
 
@@ -1008,8 +1229,6 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
     });
   }
 });
-
-
 
 router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
   const { saleId } = req.params;

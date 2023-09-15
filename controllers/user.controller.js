@@ -243,6 +243,25 @@ const findUsersByValueList = async ({ param, valueList, roles }) => {
   return await User.find({ [param]: { $in: valueList } });
 };
 
+const updateUserBy = async ({
+  updateBy,
+  value,
+  objDBForSet,
+  objDBForIncrement,
+  objDBForUnset,
+}) => {
+  console.log(updateBy, value, objDBForSet);
+
+  return await User.find(
+    { [updateBy]: value },
+    {
+      ...(objDBForSet && { $set: objDBForSet }),
+      ...(objDBForUnset && { $unset: objDBForUnset }),
+      ...(objDBForIncrement && { $inc: objDBForIncrement }),
+    }
+  );
+};
+
 module.exports = {
   getAllUsers,
   deleteUser,
@@ -260,4 +279,5 @@ module.exports = {
   updateUsersBy,
   findUsersByValueList,
   findUsersListByValuesList,
+  updateUserBy,
 };
