@@ -76,6 +76,10 @@ const schema = new Schema(
       type: Boolean,
       required: false,
     },
+    toOverlapTheRemainder: {
+      type: Boolean,
+      default: false,
+    },
     amountToResearcher: {
       type: Number,
       required: true,

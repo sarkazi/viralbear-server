@@ -834,18 +834,6 @@ router.post(
         })
       );
 
-      console.log(
-        newReport.map((el) => {
-          return {
-            gg: el.repaymentOfNegativeBalance,
-            jj: el.researchers.map((el) => {
-              return el.paidFor;
-            }),
-          };
-        })
-      );
-
-      console.log(videoBalanceStorage, userBalanceStorage);
 
       newReport = newReport.reduce(
         (res, item) => {
@@ -974,6 +962,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
             amountToResearcher: userBalanceInfo.left,
             amount: 0,
             date: moment().format('ll'),
+            toOverlapTheRemainder: true,
             researchers: [
               {
                 id: new ObjectId(userBalanceInfo.id),

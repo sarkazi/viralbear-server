@@ -13,6 +13,10 @@ const aws = require('aws-sdk');
 mongoose.set('strictQuery', false);
 
 const { findVideoBy } = require('./controllers/video.controller');
+const { getAllUsers } = require('./controllers/user.controller');
+const {
+  markEmployeeOnSalesHavingReceivePercentage,
+} = require('./controllers/sales.controller');
 
 app.use(cors());
 
@@ -120,6 +124,30 @@ app.post('/fbTest', async (req, res) => {
     console.log(err);
 
     return res.status(400).json({ text: 'error' });
+  }
+});
+
+app.post('/test', async (req, res) => {
+  try {
+    const researchers = await getAllUsers({ roles: ['researcher'] });
+
+    await Promise.all(
+      researchers.map(async (researcher) => {
+        await markEmployeeOnSalesHavingReceivePercentage({
+          researcherId: researcher._id,
+        });
+      })
+    );
+
+    return res.status(200).json({
+      message: 'success',
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(400).json({
+      message: 'error',
+    });
   }
 });
 
