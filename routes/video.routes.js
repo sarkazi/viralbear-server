@@ -100,6 +100,8 @@ const {
   findTheRecordOfTheCardMovedToDone,
 } = require('../controllers/movedToDoneList.controller');
 
+const { updateVbFormBy } = require('../controllers/uploadInfo.controller');
+
 const {
   defineResearchersListForCreatingVideo,
 } = require('../utils/defineResearchersListForCreatingVideo');
@@ -1418,21 +1420,23 @@ router.patch(
       });
 
       if (!!acquirerPaidAdvance) {
-        if (!acquirerName) {
+        if (!updatedVideo?.vbForm?.sender) {
           return res.status(200).json({
-            message: 'No acquirer found to record a note',
+            message: 'This video has no author',
             status: 'warning',
           });
         }
 
-        if (
-          !updatedVideo.trelloData.researchers.find(
-            (obj) => obj.researcher._id.toString() === acquirer._id.toString()
-          )
-        ) {
+        if (!!updatedVideo?.vbForm?.advancePaymentReceived) {
           return res.status(200).json({
-            message:
-              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
+            message: 'The author has already been paid an advance',
+            status: 'warning',
+          });
+        }
+
+        if (!acquirerName) {
+          return res.status(200).json({
+            message: 'No acquirer found to record a note',
             status: 'warning',
           });
         }
@@ -1441,22 +1445,31 @@ router.patch(
           (obj) => obj.researcher._id.toString() === acquirer._id.toString()
         );
 
-        console.log(acquirerInTheVideoList, 88);
-
-        await markResearcherAdvanceForOneVideoAsPaid({
-          videoId: +videoId,
-          researcherId: acquirer._id,
-        });
+        if (!acquirerInTheVideoList) {
+          return res.status(200).json({
+            message:
+              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
+            status: 'warning',
+          });
+        }
 
         await updateUser({
           userId: acquirer._id,
           objDBForIncrement: {
-            ...(!!acquirerInTheVideoList &&
-              !acquirerInTheVideoList.advanceHasBeenPaid && {
-                balance: -acquirer?.advancePayment,
-              }),
             note: +acquirerPaidAdvance,
           },
+        });
+
+        await updateVbFormBy({
+          updateBy: '_id',
+          value: updatedVideo.vbForm._id,
+          dataForUpdate: { advancePaymentReceived: true },
+        });
+
+        await updateVideoBy({
+          searchBy: '_id',
+          searchValue: updatedVideo._id,
+          dataToInc: { balance: -acquirerPaidAdvance },
         });
       }
 
@@ -1582,7 +1595,6 @@ router.patch(
       apVideoHub,
       commentToAdmin,
       acquirerName,
-      acquirerPaidAdvance,
     } = req.body;
 
     if (
@@ -1931,47 +1943,6 @@ router.patch(
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
-
-      if (!!acquirerPaidAdvance) {
-        if (!acquirerName) {
-          return res.status(200).json({
-            message: 'No acquirer found to record a note',
-            status: 'warning',
-          });
-        }
-
-        if (
-          !updatedVideo.trelloData.researchers.find(
-            (obj) => obj.researcher._id.toString() === acquirer._id.toString()
-          )
-        ) {
-          return res.status(200).json({
-            message:
-              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
-            status: 'warning',
-          });
-        }
-
-        const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
-          (obj) => obj.researcher._id.toString() === acquirer._id.toString()
-        );
-
-        await markResearcherAdvanceForOneVideoAsPaid({
-          videoId: +videoId,
-          researcherId: acquirer._id,
-        });
-
-        await updateUser({
-          userId: acquirer._id,
-          objDBForIncrement: {
-            ...(!!acquirerInTheVideoList &&
-              !acquirerInTheVideoList.advanceHasBeenPaid && {
-                balance: -acquirer?.advancePayment,
-              }),
-            note: +acquirerPaidAdvance,
-          },
-        });
-      }
 
       if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
         //меняем кастомное поле "brand safe" в карточке trello
@@ -2448,22 +2419,23 @@ router.patch(
       });
 
       if (!!acquirerPaidAdvance) {
-        if (!acquirerName) {
+        if (!updatedVideo?.vbForm?.sender) {
           return res.status(200).json({
-            message: 'No acquirer found to record a note',
+            message: 'This video has no author',
             status: 'warning',
           });
         }
 
-        if (
-          !updatedVideo.trelloData.researchers.find(
-            (researcher) =>
-              researcher.researcher._id.toString() === acquirer._id.toString()
-          )
-        ) {
+        if (!!updatedVideo?.vbForm?.advancePaymentReceived) {
           return res.status(200).json({
-            message:
-              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
+            message: 'The author has already been paid an advance',
+            status: 'warning',
+          });
+        }
+
+        if (!acquirerName) {
+          return res.status(200).json({
+            message: 'No acquirer found to record a note',
             status: 'warning',
           });
         }
@@ -2472,20 +2444,31 @@ router.patch(
           (obj) => obj.researcher._id.toString() === acquirer._id.toString()
         );
 
-        await markResearcherAdvanceForOneVideoAsPaid({
-          videoId: +videoId,
-          researcherId: acquirer._id,
-        });
+        if (!acquirerInTheVideoList) {
+          return res.status(200).json({
+            message:
+              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
+            status: 'warning',
+          });
+        }
 
         await updateUser({
           userId: acquirer._id,
           objDBForIncrement: {
-            ...(!!acquirerInTheVideoList &&
-              !acquirerInTheVideoList.advanceHasBeenPaid && {
-                balance: -acquirer?.advancePayment,
-              }),
             note: +acquirerPaidAdvance,
           },
+        });
+
+        await updateVbFormBy({
+          updateBy: '_id',
+          value: updatedVideo.vbForm._id,
+          dataForUpdate: { advancePaymentReceived: true },
+        });
+
+        await updateVideoBy({
+          searchBy: '_id',
+          searchValue: updatedVideo._id,
+          dataToInc: { balance: -acquirerPaidAdvance },
         });
       }
 

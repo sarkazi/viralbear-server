@@ -2297,8 +2297,6 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
     const { videoId, amountToTopUp } = req.body;
     const { paymentFor } = req.query;
 
-    console.log(paymentFor, amountToTopUp);
-
     if (!paymentFor) {
       return res.status(200).json({
         message: 'missing parameter "paymentFor"',
