@@ -187,9 +187,7 @@ const refreshMrssFiles = async () => {
                     }</media:description>
                         </media:content>
                        
-                        <dc:rights>${
-                          video.exclusivity ? 'exclusive' : 'non-exclusive'
-                        }</dc:rights>
+                       
 
                       </item>
                       `;
@@ -421,46 +419,6 @@ const updateVideoBy = async ({
       ...(dataToInc && { $inc: dataToInc }),
     }
   );
-};
-
-const findLastVideo = async (req, res) => {
-  try {
-    const lastAddedVideo = await Video.findOne({ isApproved: false })
-      .sort({ createdAt: -1 })
-      .limit(1)
-      .populate({
-        path: 'vbForm',
-        populate: {
-          path: 'sender refFormId',
-          select: {
-            email: 1,
-            advancePayment: 1,
-            percentage: 1,
-            exclusivity: 1,
-          },
-        },
-      });
-
-    if (!lastAddedVideo) {
-      return res.status(200).json({ message: 'No data found!' });
-    }
-    res.status(200).json({
-      apiData: {
-        ...lastAddedVideo._doc,
-        ...(lastAddedVideo.trelloData.researchers.find(
-          (researcher) => researcher.main
-        ) && {
-          acquirerName: lastAddedVideo.trelloData.researchers.find(
-            (researcher) => researcher.main
-          ).name,
-        }),
-      },
-      status: 'success',
-    });
-  } catch (err) {
-    console.log(err);
-    throw Error('Database error!');
-  }
 };
 
 const findNextVideoInFeed = async (req, res) => {
@@ -828,6 +786,15 @@ const getAllVideos = async ({
         select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
       },
     })
+    .populate({
+      path: 'trelloData.researchers.researcher',
+      model: 'User',
+      select: {
+        name: 1,
+        email: 1,
+        avatarUrl: 1,
+      },
+    })
 
     .collation({ locale: 'en', strength: 2 })
     .sort(sort ? sort : null)
@@ -1132,8 +1099,8 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
           .size(heightVideo <= 720 ? '1280x720' : '1920x1080')
           .aspect('16:9')
           .autopad('black')
-          .videoBitrate('10000', true)
-          //.fps(60)
+          .videoBitrate('15000', false)
+          .fps(25)
           .toFormat('mp4')
           .on('start', () => {
             console.log(
@@ -1144,8 +1111,6 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
             //console.log(progress, `видео ${video.originalname}`);
 
             const loaded = Math.round((progress.percent * 100) / 100);
-
-            console.log(userId, 8989);
 
             socketInstance
               .io()
@@ -1185,16 +1150,6 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
   return response;
 };
 
-const findVideoByValue = async ({ searchBy, value }) => {
-  return Video.findOne({ [searchBy]: value }).populate({
-    path: 'vbForm',
-    populate: {
-      path: 'sender refFormId',
-      select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
-    },
-  });
-};
-
 const updateVideosBy = async ({ updateBy, value, objForSet }) => {
   return Video.updateMany(
     { [updateBy]: value },
@@ -1202,13 +1157,11 @@ const updateVideosBy = async ({ updateBy, value, objForSet }) => {
   );
 };
 
-const markVideoEmployeeAsHavingReceivedAnAdvance = async ({
-  researcherEmail,
-}) => {
+const markVideoEmployeeAsHavingReceivedAnAdvance = async ({ researcherId }) => {
   return Video.updateMany(
-    { 'trelloData.researchers': { $elemMatch: { email: researcherEmail } } },
+    { 'trelloData.researchers': { $elemMatch: { researcher: researcherId } } },
     { $set: { 'trelloData.researchers.$[field].advanceHasBeenPaid': true } },
-    { arrayFilters: [{ 'field.email': researcherEmail }] }
+    { arrayFilters: [{ 'field.researcher': researcherId }] }
   );
 };
 
@@ -1219,16 +1172,49 @@ const markResearcherAdvanceForOneVideoAsPaid = async ({
   return Video.updateOne(
     { 'videoData.videoId': videoId },
     { $set: { 'trelloData.researchers.$[field].advanceHasBeenPaid': true } },
-    { arrayFilters: [{ 'field.id': researcherId }] }
+    { arrayFilters: [{ 'field.researcher': researcherId }] }
   );
 };
 
-const findVideoBy = async ({ searchBy, value }) => {
-  return Video.findOne({ [searchBy]: value });
+const findVideoBy = async ({
+  searchBy,
+  value,
+  fieldsInTheResponse,
+  lastAdded,
+}) => {
+  return Video.findOne(
+    { [searchBy]: value, ...(lastAdded && { isApproved: false }) },
+    {
+      ...(fieldsInTheResponse &&
+        fieldsInTheResponse.reduce((a, v) => ({ ...a, [v]: 1 }), {})),
+    }
+  )
+    .populate({
+      path: 'trelloData.researchers.researcher',
+      model: 'User',
+      select: {
+        name: 1,
+        avatarUrl: 1,
+        email: 1,
+      },
+    })
+    .populate({
+      path: 'vbForm',
+      populate: {
+        path: 'sender refFormId',
+        select: {
+          email: 1,
+          advancePayment: 1,
+          percentage: 1,
+          exclusivity: 1,
+        },
+      },
+    })
+    .sort(lastAdded ? { createdAt: -1 } : null)
+    .limit(lastAdded ? 1 : null);
 };
 
 module.exports = {
-  findLastVideo,
   findByIsBrandSafe,
   findByFixed,
   findById,
@@ -1250,7 +1236,7 @@ module.exports = {
   deleteVideoById,
   findByNotApproved,
   getAllVideos,
-  findVideoByValue,
+
   getCountVideosBy,
   updateVideosBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,

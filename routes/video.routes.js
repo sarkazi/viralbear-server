@@ -49,7 +49,7 @@ const mutex = new Mutex();
 const {
   refreshMrssFiles,
   findByIsBrandSafe,
-  findLastVideo,
+
   findByFixed,
   findById,
   addCommentForFixed,
@@ -72,7 +72,7 @@ const {
   deleteVideoById,
   writingFileToDisk,
   getAllVideos,
-  findVideoByValue,
+  findVideoBy,
   markResearcherAdvanceForOneVideoAsPaid,
   updateVideosBy,
 } = require('../controllers/video.controller');
@@ -205,7 +205,7 @@ router.post(
             });
           }
 
-          const videoWithVBForm = await findVideoByValue({
+          const videoWithVBForm = await findVideoBy({
             searchBy: 'vbForm',
             value: vbForm._id,
           });
@@ -412,7 +412,7 @@ router.post('/convert', authMiddleware, async (req, res) => {
           .json({ message: 'Missing videoId', status: 'warning' });
       }
 
-      const video = await findVideoByValue({
+      const video = await findVideoBy({
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
@@ -516,7 +516,7 @@ router.post('/convert', authMiddleware, async (req, res) => {
         },
       });
 
-      const updatedVideo = await findVideoByValue({
+      const updatedVideo = await findVideoBy({
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
@@ -539,22 +539,17 @@ router.post('/convert', authMiddleware, async (req, res) => {
 
 router.post('/generateExcelFile', authMiddleware, generateExcelFile);
 
-router.get('/findOne', authMiddleware, findLastVideo);
-
 router.get('/findOneBy', async (req, res) => {
   try {
-    const { searchBy, searchValue } = req.query;
+    const { searchBy, searchValue, lastAdded } = req.query;
 
-    if (!searchBy || !searchValue) {
-      return res.status(200).json({
-        status: 'warning',
-        message: 'Missing parameters for video search',
-      });
-    }
-
-    const apiData = await findVideoByValue({
-      searchBy,
-      value: searchBy === 'videoData.videoId' ? +searchValue : searchValue,
+    const apiData = await findVideoBy({
+      ...(searchBy && { searchBy }),
+      ...(searchValue && {
+        value: searchBy === 'videoData.videoId' ? +searchValue : searchValue,
+      }),
+      ...(lastAdded &&
+        JSON.parse(lastAdded) === true && { lastAdded: JSON.parse(lastAdded) }),
     });
 
     if (!apiData) {
@@ -572,7 +567,7 @@ router.get('/findOneBy', async (req, res) => {
         ) && {
           acquirerName: apiData.trelloData.researchers.find(
             (researcher) => researcher.main
-          ).name,
+          ).researcher.name,
         }),
       },
       status: 'success',
@@ -582,6 +577,136 @@ router.get('/findOneBy', async (req, res) => {
     console.log(err);
 
     return res.status(500).json({
+      status: 'error',
+      message: 'Server side error',
+    });
+  }
+});
+
+router.get('/findCountByGroups', async (req, res) => {
+  try {
+    const brandSafeVideosCount30Days = await Video.aggregate([
+      {
+        $match: {
+          isApproved: true,
+          brandSafe: true,
+          pubDate: {
+            $exists: true,
+            $gte: new Date(
+              moment().subtract(30, 'd').startOf('d').toISOString()
+            ),
+          },
+        },
+      },
+      {
+        $count: 'brandSafeVideosCount',
+      },
+    ]);
+
+    const socialMediaVideosCount30Days = await Video.aggregate([
+      {
+        $match: {
+          isApproved: true,
+          socialMedia: true,
+          pubDate: {
+            $exists: true,
+            $gte: new Date(
+              moment().subtract(30, 'd').startOf('d').toISOString()
+            ),
+          },
+        },
+      },
+
+      {
+        $count: 'socialMediaVideosCount',
+      },
+    ]);
+
+    const reutersVideosCount30Days = await Video.aggregate([
+      {
+        $match: {
+          isApproved: true,
+          reuters: true,
+          pubDate: {
+            $exists: true,
+            $gte: new Date(
+              moment().subtract(30, 'd').startOf('d').toISOString()
+            ),
+          },
+        },
+      },
+      {
+        $count: 'reutersVideosCount',
+      },
+    ]);
+
+    const apVideoHubVideosCount30Days = await Video.aggregate([
+      {
+        $match: {
+          isApproved: true,
+          apVideoHub: true,
+          pubDate: {
+            $exists: true,
+            $gte: new Date(
+              moment().subtract(30, 'd').startOf('d').toISOString()
+            ),
+          },
+        },
+      },
+      {
+        $count: 'apVideoHubVideosCount30Days',
+      },
+    ]);
+
+    const apVideoHubVideosCount24Hours = await Video.aggregate([
+      {
+        $match: {
+          isApproved: true,
+          apVideoHub: true,
+          pubDate: {
+            $exists: true,
+            $gte: new Date(
+              moment().subtract(24, 'h').startOf('d').toISOString()
+            ),
+          },
+        },
+      },
+      {
+        $count: 'apVideoHubVideosCount24Hours',
+      },
+    ]);
+
+    const apiData = {
+      brandSafeVideosCount: !!brandSafeVideosCount30Days[0]
+        ?.brandSafeVideosCount
+        ? brandSafeVideosCount30Days[0].brandSafeVideosCount
+        : 0,
+      socialMediaVideosCount: !!socialMediaVideosCount30Days[0]
+        ?.socialMediaVideosCount
+        ? socialMediaVideosCount30Days[0].socialMediaVideosCount
+        : 0,
+      reutersVideosCount: !!reutersVideosCount30Days[0]?.reutersVideosCount
+        ? reutersVideosCount30Days[0].reutersVideosCount
+        : 0,
+      apVideoHubVideosCount30Days: !!apVideoHubVideosCount30Days[0]
+        ?.apVideoHubVideosCount30Days
+        ? apVideoHubVideosCount30Days[0].apVideoHubVideosCount30Days
+        : 0,
+      apVideoHubVideosCount24Hours: !!apVideoHubVideosCount24Hours[0]
+        ?.apVideoHubVideosCount24Hours
+        ? apVideoHubVideosCount24Hours[0].apVideoHubVideosCount24Hours
+        : 0,
+    };
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Count videos successfully received',
+      apiData,
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(400).json({
       status: 'error',
       message: 'Server side error',
     });
@@ -692,6 +817,8 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
     const videosReadyForPublication = await findReadyForPublication();
 
     const apiData = videosReadyForPublication.map((video) => {
+      const acquirerData = video.trelloData.researchers.find((obj) => obj.main);
+
       return {
         _id: video._id,
         videoId: video.videoData.videoId,
@@ -702,12 +829,8 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
         acquirer: {
-          avatarUrl: video.trelloData.researchers.find(
-            (researcher) => researcher.main && !!researcher.avatarUrl
-          ).avatarUrl,
-          name: video.trelloData.researchers.find(
-            (researcher) => researcher.main && !!researcher.avatarUrl
-          ).name,
+          avatarUrl: acquirerData.researcher.avatarUrl,
+          name: acquirerData.researcher.name,
         },
       };
     });
@@ -746,6 +869,8 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
     const videoPendingChanges = await findByFixed();
 
     const apiData = videoPendingChanges.map((video) => {
+      const acquirerData = video.trelloData.researchers.find((obj) => obj.main);
+
       return {
         _id: video._id,
         videoId: video.videoData.videoId,
@@ -756,12 +881,8 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
         acquirer: {
-          avatarUrl: video.trelloData.researchers.find(
-            (researcher) => researcher.main && !!researcher.avatarUrl
-          ).avatarUrl,
-          name: video.trelloData.researchers.find(
-            (researcher) => researcher.main && !!researcher.avatarUrl
-          ).name,
+          avatarUrl: acquirerData.researcher.avatarUrl,
+          name: acquirerData.researcher.name,
         },
       };
     });
@@ -805,6 +926,8 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
       ],
     });
 
+    console.log(videosWithVbCode, 5566);
+
     let videos = await Promise.all(
       videosWithVbCode.map(async (video) => {
         if (video?.vbForm?.sender?._id.toString() === userId.toString()) {
@@ -831,6 +954,9 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
             revenue: +revenue.toFixed(2),
             percentage: video?.vbForm?.refFormId?.percentage
               ? video.vbForm.refFormId.percentage
+              : 0,
+            advancePayment: video?.vbForm?.refFormId?.advancePayment
+              ? video.vbForm.refFormId.advancePayment
               : 0,
           };
         } else {
@@ -871,7 +997,7 @@ router.get('/findOneById/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params;
 
-    const video = await findVideoByValue({
+    const video = await findVideoBy({
       searchBy: 'videoData.videoId',
       value: +videoId,
     });
@@ -977,7 +1103,10 @@ router.patch(
     const { video: reqVideo, screen: reqScreen } = req.files;
 
     try {
-      const video = await findVideoById(+videoId);
+      const video = await findVideoBy({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
 
       if (!video) {
         return res.status(200).json({
@@ -1013,7 +1142,7 @@ router.patch(
           });
         }
 
-        const videoWithVBForm = await findVideoByValue({
+        const videoWithVBForm = await findVideoBy({
           searchBy: 'vbForm',
           value: vbForm._id,
         });
@@ -1244,7 +1373,8 @@ router.patch(
 
       if (
         !!researcherWithPaidAdvance &&
-        researcherWithPaidAdvance.id.toString() !== acquirer._id.toString()
+        researcherWithPaidAdvance.researcher._id.toString() !==
+          acquirer._id.toString()
       ) {
         return res.status(200).json({
           message: 'You cannot change the acquirer for this video.',
@@ -1256,7 +1386,6 @@ router.patch(
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
-          researcherWithPaidAdvance,
           ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
@@ -1283,7 +1412,7 @@ router.patch(
         },
       });
 
-      const updatedVideo = await findVideoByValue({
+      const updatedVideo = await findVideoBy({
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
@@ -1298,7 +1427,7 @@ router.patch(
 
         if (
           !updatedVideo.trelloData.researchers.find(
-            (researcher) => researcher.id.toString() === acquirer._id.toString()
+            (obj) => obj.researcher._id.toString() === acquirer._id.toString()
           )
         ) {
           return res.status(200).json({
@@ -1309,8 +1438,10 @@ router.patch(
         }
 
         const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
-          (researcher) => researcher.id.toString() === acquirer._id.toString()
+          (obj) => obj.researcher._id.toString() === acquirer._id.toString()
         );
+
+        console.log(acquirerInTheVideoList, 88);
 
         await markResearcherAdvanceForOneVideoAsPaid({
           videoId: +videoId,
@@ -1360,7 +1491,7 @@ router.patch(
           ) && {
             acquirerName: data.trelloData.researchers.find(
               (researcher) => researcher.main
-            ).name,
+            ).researcher.name,
           }),
         },
       });
@@ -1482,7 +1613,10 @@ router.patch(
     const { video: reqVideo, screen: reqScreen } = req.files;
 
     try {
-      const video = await findVideoById(+videoId);
+      const video = await findVideoBy({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
 
       if (!video) {
         return res.status(200).json({
@@ -1518,7 +1652,7 @@ router.patch(
           });
         }
 
-        const videoWithVBForm = await findVideoByValue({
+        const videoWithVBForm = await findVideoBy({
           searchBy: 'vbForm',
           value: vbForm._id,
         });
@@ -1749,7 +1883,8 @@ router.patch(
 
       if (
         !!researcherWithPaidAdvance &&
-        researcherWithPaidAdvance.id.toString() !== acquirer._id.toString()
+        researcherWithPaidAdvance.researcher._id.toString() !==
+          acquirer._id.toString()
       ) {
         return res.status(200).json({
           message: 'You cannot change the acquirer for this video.',
@@ -1761,7 +1896,6 @@ router.patch(
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
-          researcherWithPaidAdvance,
           ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
@@ -1793,7 +1927,7 @@ router.patch(
         { $unset: { needToBeFixed: 1 } }
       );
 
-      const updatedVideo = await findVideoByValue({
+      const updatedVideo = await findVideoBy({
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
@@ -1808,7 +1942,7 @@ router.patch(
 
         if (
           !updatedVideo.trelloData.researchers.find(
-            (researcher) => researcher.id.toString() === acquirer._id.toString()
+            (obj) => obj.researcher._id.toString() === acquirer._id.toString()
           )
         ) {
           return res.status(200).json({
@@ -1819,7 +1953,7 @@ router.patch(
         }
 
         const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
-          (researcher) => researcher.id.toString() === acquirer._id.toString()
+          (obj) => obj.researcher._id.toString() === acquirer._id.toString()
         );
 
         await markResearcherAdvanceForOneVideoAsPaid({
@@ -1868,7 +2002,7 @@ router.patch(
           ) && {
             acquirerName: data.trelloData.researchers.find(
               (researcher) => researcher.main
-            ).name,
+            ).researcher.name,
           }),
         },
       });
@@ -1883,7 +2017,7 @@ router.patch('/addCommentForFixed', authMiddleware, async (req, res) => {
   try {
     const { comment, videoId } = req.body;
 
-    const video = await findVideoByValue({
+    const video = await findVideoBy({
       searchBy: 'videoData.videoId',
       value: videoId,
     });
@@ -1982,7 +2116,10 @@ router.patch(
     const { video: reqVideo, screen: reqScreen } = req.files;
 
     try {
-      const video = await findVideoById(+videoId);
+      const video = await findVideoBy({
+        searchBy: 'videoData.videoId',
+        value: +videoId,
+      });
 
       if (!video) {
         return res.status(404).json({
@@ -2032,7 +2169,7 @@ router.patch(
           });
         }
 
-        const videoWithVBForm = await findVideoByValue({
+        const videoWithVBForm = await findVideoBy({
           searchBy: 'vbForm',
           value: vbForm._id,
         });
@@ -2266,7 +2403,8 @@ router.patch(
 
       if (
         !!researcherWithPaidAdvance &&
-        researcherWithPaidAdvance.id.toString() !== acquirer._id.toString()
+        researcherWithPaidAdvance.researcher._id.toString() !==
+          acquirer._id.toString()
       ) {
         return res.status(200).json({
           message: 'You cannot change the acquirer for this video.',
@@ -2278,7 +2416,6 @@ router.patch(
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
-          researcherWithPaidAdvance,
           ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
@@ -2305,7 +2442,7 @@ router.patch(
         },
       });
 
-      const updatedVideo = await findVideoByValue({
+      const updatedVideo = await findVideoBy({
         searchBy: 'videoData.videoId',
         value: +videoId,
       });
@@ -2320,7 +2457,8 @@ router.patch(
 
         if (
           !updatedVideo.trelloData.researchers.find(
-            (researcher) => researcher.id.toString() === acquirer._id.toString()
+            (researcher) =>
+              researcher.researcher._id.toString() === acquirer._id.toString()
           )
         ) {
           return res.status(200).json({
@@ -2331,7 +2469,7 @@ router.patch(
         }
 
         const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
-          (researcher) => researcher.id.toString() === acquirer._id.toString()
+          (obj) => obj.researcher._id.toString() === acquirer._id.toString()
         );
 
         await markResearcherAdvanceForOneVideoAsPaid({
@@ -2404,7 +2542,10 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   const { id: videoId } = req.params;
 
   try {
-    const video = await findVideoById(+videoId);
+    const video = await findVideoBy({
+      searchBy: 'videoData.videoId',
+      value: +videoId,
+    });
 
     if (!video) {
       return res.status(404).json({
@@ -2459,7 +2600,7 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
   const { videoId } = req.params;
 
   try {
-    const video = await findVideoByValue({
+    const video = await findVideoBy({
       searchBy: 'videoData.videoId',
       value: +videoId,
     });
@@ -2677,5 +2818,20 @@ router.post(
     }
   }
 );
+
+router.get('/uu', async (req, res) => {
+  try {
+    const video = await findVideoBy({
+      searchBy: 'videoData.videoId',
+      value: 3046,
+    });
+
+    return res.status(200).json({
+      apiData: video,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 module.exports = router;

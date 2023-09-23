@@ -76,30 +76,23 @@ const schema = new Schema(
         required: true,
       },
       researchers: {
-        id: {
-          type: Schema.Types.ObjectId,
-          ref: 'User',
-          required: true,
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-        advanceHasBeenPaid: {
-          type: Boolean,
-          required: true,
-          default: false,
-        },
-        main: {
-          type: Boolean,
-          required: true,
-        },
-        avatarUrl: {
-          type: String,
-          required: false,
-        },
-        type: Object,
-        required: true,
+        type: Map,
+        of: new Schema({
+          researcher: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+          },
+          advanceHasBeenPaid: {
+            type: Boolean,
+            required: true,
+            default: false,
+          },
+          main: {
+            type: Boolean,
+            required: true,
+          },
+        }),
       },
 
       priority: {
@@ -166,7 +159,7 @@ const schema = new Schema(
     },
     apVideoHub: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     apVideoHubArchive: {
       type: Boolean,

@@ -800,9 +800,9 @@ router.get(
             forLastDays: 30,
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: true,
-              searchBy: 'email',
+              searchBy: 'researcher',
             },
           });
 
@@ -811,9 +811,9 @@ router.get(
               forLastDays: 30,
               isApproved: true,
               user: {
-                value: user.email,
+                value: user._id,
                 purchased: false,
-                searchBy: 'email',
+                searchBy: 'researcher',
               },
             });
 
@@ -821,9 +821,9 @@ router.get(
             forLastDays: 7,
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: true,
-              searchBy: 'email',
+              searchBy: 'researcher',
             },
           });
 
@@ -832,9 +832,9 @@ router.get(
               forLastDays: 7,
               isApproved: true,
               user: {
-                value: user.email,
+                value: user._id,
                 purchased: false,
-                searchBy: 'email',
+                searchBy: 'researcher',
               },
             }
           );
@@ -842,9 +842,9 @@ router.get(
           const acquiredVideosCountMainRole = await getCountVideosBy({
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: true,
-              searchBy: 'email',
+              searchBy: 'researcher',
             },
           });
 
@@ -863,8 +863,8 @@ router.get(
               isApproved: true,
               exclusivity: true,
               user: {
-                value: user.email,
-                searchBy: 'email',
+                value: user._id,
+                searchBy: 'researcher',
                 purchased: true,
               },
             });
@@ -874,8 +874,8 @@ router.get(
               isApproved: true,
               exclusivity: false,
               user: {
-                value: user.email,
-                searchBy: 'email',
+                value: user._id,
+                searchBy: 'researcher',
                 purchased: true,
               },
             });
@@ -884,8 +884,8 @@ router.get(
             isApproved: true,
             exclusivity: true,
             user: {
-              value: user.email,
-              searchBy: 'email',
+              value: user._id,
+              searchBy: 'researcher',
               purchased: true,
             },
           });
@@ -894,8 +894,8 @@ router.get(
             isApproved: true,
             exclusivity: false,
             user: {
-              value: user.email,
-              searchBy: 'email',
+              value: user._id,
+              searchBy: 'researcher',
               purchased: true,
             },
           });
@@ -987,9 +987,9 @@ router.get(
           const videosCountWithUnpaidAdvance = await getCountVideosBy({
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: true,
-              searchBy: 'email',
+              searchBy: 'researcher',
               advanceHasBeenPaid: false,
             },
           });
@@ -1360,9 +1360,9 @@ router.get(
             forLastDays: 30,
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: true,
-              searchBy: 'email',
+              searchBy: 'researcher',
             },
           });
 
@@ -1370,18 +1370,18 @@ router.get(
             forLastDays: 7,
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: true,
-              searchBy: 'email',
+              searchBy: 'researcher',
             },
           });
 
           const acquiredVideosCount = await getCountVideosBy({
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: true,
-              searchBy: 'email',
+              searchBy: 'researcher',
             },
           });
 
@@ -1392,8 +1392,8 @@ router.get(
           const acquiredVideosMainRole = await getAllVideos({
             isApproved: true,
             researcher: {
-              searchBy: 'email',
-              value: user.email,
+              searchBy: 'researcher',
+              value: user._id,
               isAcquirer: true,
             },
           });
@@ -1531,9 +1531,9 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       forLastDays: 30,
       isApproved: true,
       user: {
-        value: user.email,
+        value: user._id,
         purchased: true,
-        searchBy: 'email',
+        searchBy: 'researcher',
       },
     });
 
@@ -1541,27 +1541,27 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       forLastDays: 30,
       isApproved: true,
       user: {
-        value: user.email,
+        value: user._id,
         purchased: false,
-        searchBy: 'email',
+        searchBy: 'researcher',
       },
     });
 
     const acquiredVideosCountMainRole = await getCountVideosBy({
       isApproved: true,
       user: {
-        value: user.email,
+        value: user._id,
         purchased: true,
-        searchBy: 'email',
+        searchBy: 'researcher',
       },
     });
 
     const acquiredVideosCountNoMainRole = await getCountVideosBy({
       isApproved: true,
       user: {
-        value: user.email,
+        value: user._id,
         purchased: false,
-        searchBy: 'email',
+        searchBy: 'researcher',
       },
     });
 
@@ -1570,8 +1570,8 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       isApproved: true,
       exclusivity: true,
       user: {
-        value: user.email,
-        searchBy: 'email',
+        value: user._id,
+        searchBy: 'researcher',
         purchased: true,
       },
     });
@@ -1581,8 +1581,8 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       isApproved: true,
       exclusivity: false,
       user: {
-        value: user.email,
-        searchBy: 'email',
+        value: user._id,
+        searchBy: 'researcher',
         purchased: true,
       },
     });
@@ -1590,8 +1590,8 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       isApproved: true,
       exclusivity: true,
       user: {
-        value: user.email,
-        searchBy: 'email',
+        value: user._id,
+        searchBy: 'researcher',
         purchased: true,
       },
     });
@@ -1600,8 +1600,8 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       isApproved: true,
       exclusivity: false,
       user: {
-        value: user.email,
-        searchBy: 'email',
+        value: user._id,
+        searchBy: 'researcher',
         purchased: true,
       },
     });
@@ -1669,9 +1669,9 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       videosCountWithUnpaidAdvance = await getCountVideosBy({
         isApproved: true,
         user: {
-          value: user.email,
+          value: user._id,
           purchased: true,
-          searchBy: 'email',
+          searchBy: 'researcher',
           advanceHasBeenPaid: false,
         },
       });
@@ -1864,9 +1864,9 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       const videosCountWithUnpaidAdvance = await getCountVideosBy({
         isApproved: true,
         user: {
-          value: user.email,
+          value: user._id,
           purchased: true,
-          searchBy: 'email',
+          searchBy: 'researcher',
           advanceHasBeenPaid: false,
         },
       });
@@ -1885,7 +1885,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       }
 
       await markVideoEmployeeAsHavingReceivedAnAdvance({
-        researcherEmail: user.email,
+        researcherId: user._id,
       });
 
       balance = -amountToBePaid.advance;
@@ -2111,8 +2111,8 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                   vbFormUid: vbForm.formId,
                   researchers: video.trelloData?.researchers?.length
                     ? video.trelloData?.researchers
-                        .map((researcher) => {
-                          return researcher.name;
+                        .map((obj) => {
+                          return obj.researcher.name;
                         })
                         .join(', ')
                     : null,
@@ -2139,8 +2139,8 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                   vbFormUid: vbForm.formId,
                   researchers: video.trelloData?.researchers?.length
                     ? video.trelloData?.researchers
-                        .map((researcher) => {
-                          return researcher.name;
+                        .map((obj) => {
+                          return obj.researcher.name;
                         })
                         .join(', ')
                     : null,
@@ -2168,8 +2168,8 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                 vbFormUid: vbForm.formId,
                 researchers: video.trelloData?.researchers?.length
                   ? video.trelloData?.researchers
-                      .map((researcher) => {
-                        return researcher.name;
+                      .map((obj) => {
+                        return obj.researcher.name;
                       })
                       .join(', ')
                   : null,
@@ -2197,8 +2197,8 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
               vbFormUid: null,
               researchers: video.trelloData?.researchers?.length
                 ? video.trelloData?.researchers
-                    .map((researcher) => {
-                      return researcher.name;
+                    .map((obj) => {
+                      return obj.researcher.name;
                     })
                     .join(', ')
                 : null,

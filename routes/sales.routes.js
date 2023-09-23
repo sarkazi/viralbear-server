@@ -30,8 +30,6 @@ const {
 
 const { findOne } = require('../controllers/uploadInfo.controller');
 
-const { updateVideoBy } = require('../controllers/video.controller');
-
 const pullOutProcessingDataFromPairedReport = require('../utils/pullOutProcessingDataFromPairedReport');
 const definitionThePartnerCompanyByFileHeader = require('../utils/definitionThePartnerCompanyByFileHeader');
 const removeValuesWithoutKeyFieldInPairedReport = require('../utils/removeValuesWithoutKeyFieldInPairedReport');
@@ -40,8 +38,8 @@ const storage = multer.memoryStorage();
 
 const {
   findById,
-
-  findVideoByValue,
+  updateVideoBy,
+  findVideoBy,
 } = require('../controllers/video.controller');
 
 const moment = require('moment');
@@ -51,69 +49,207 @@ const Sales = require('../entities/Sales');
 
 router.post('/manualAddition', authMiddleware, async (req, res) => {
   try {
-    const { company, videoId, amount, usage } = req.body;
+    const { company, videoId, amount: reqAmount, usage } = req.body;
 
-    if (!company || !videoId || !amount || !usage) {
+    if (!company || !videoId || !reqAmount || !usage) {
       return res.status(200).json({
         status: 'warning',
         message: 'Missing parameter',
       });
     }
 
-    const videoDb = await findById(videoId);
-
-    const researchers = videoDb.trelloData.researchers;
+    const videoDb = await findVideoBy({
+      searchBy: 'videoData.videoId',
+      value: videoId,
+    });
 
     if (!videoDb) {
       return res.status(200).json({
         status: 'warning',
-        message: `Video with id "${videoId}" not found`,
+        message: 'Video not found',
       });
     }
 
-    let author = null;
+    // массив для определения актуального баланса работника
+    let userBalanceStorage = [];
+    // массив для определения актуального баланса видео
+    let videoBalanceStorage = [];
 
-    if (videoDb.vbForm) {
-      const vbForm = await findOne({
-        searchBy: '_id',
-        param: videoDb.vbForm,
-      });
+    videoBalanceStorage.push({
+      videoId: videoDb.videoData.videoId,
+      videoBalance: videoDb.balance + reqAmount,
+      left:
+        videoDb.balance + reqAmount > 0 && videoDb.balance < 0
+          ? videoDb.balance + reqAmount
+          : 0,
+    });
 
-      if (vbForm && vbForm.sender) {
-        author = await getUserBy({ searchBy: '_id', value: vbForm.sender });
+    let amountToResearcher = 0;
+    let amountToAuthor = 0;
+    let amount = 0;
+
+    let videoResearchers = videoDb.trelloData.researchers;
+
+    if (videoResearchers.length) {
+      videoResearchers = await Promise.all(
+        videoResearchers.map(async (dataResearcherInVideoDB) => {
+          return await getUserBy({
+            searchBy: 'email',
+            value: dataResearcherInVideoDB.researcher.email,
+            fieldsInTheResponse: ['balance', 'nickname', 'name', 'email'],
+          });
+        })
+      );
+    }
+
+    const remainder =
+      videoDb.balance < 0 && videoDb.balance + reqAmount > 0
+        ? videoDb.balance + reqAmount
+        : 0;
+
+    if (videoDb.balance + reqAmount > 0) {
+      amount = remainder ? +remainder.toFixed(2) : +(+reqAmount).toFixed(2);
+
+      //процент автора
+      const percentToAuthor = !!videoDb?.vbForm?.refFormId?.percentage
+        ? (amount * videoDb?.vbForm?.refFormId?.percentage) / 100
+        : 0;
+
+      amountToAuthor = percentToAuthor;
+
+      //предусмотрена ли выплата процента автора с данного видео
+      const percentageProvidedToAuthor =
+        !!videoDb?.vbForm?.refFormId?.percentage;
+
+      //если нет ресечеров у видео
+      if (!videoResearchers.length) {
+        amountToResearcher = 0;
+
+        //если список ресечеров у видео более 1
+      } else if (videoResearchers.length > 1) {
+        const percentToResearcher = amount * (0.4 / videoResearchers.length);
+
+        amountToResearcher = percentageProvidedToAuthor
+          ? +(
+              (amount - percentToAuthor) *
+              (0.4 / videoResearchers.length)
+            ).toFixed(2)
+          : +percentToResearcher.toFixed(2);
+
+        //если список ресечеров у видео равно 1
+      } else {
+        const researcher = await getUserBy({
+          searchBy: 'email',
+          value: videoResearchers[0].email,
+        });
+
+        if (!researcher) {
+          amountToResearcher = 0;
+        } else {
+          //если ресечеру предусмотрен процент
+          if (researcher.percentage) {
+            //сумма для ресечера
+            const percentToResearcher = (amount * researcher.percentage) / 100;
+
+            amountToResearcher = percentageProvidedToAuthor
+              ? +(
+                  ((amount - percentToAuthor) * researcher.percentage) /
+                  100
+                ).toFixed(2)
+              : +percentToResearcher.toFixed(2);
+            //если ресечеру не предусмотрен процент
+          } else {
+            const percentToResearcher = amount * 0.4;
+
+            amountToResearcher = percentageProvidedToAuthor
+              ? +((amount - percentToAuthor) * 0.4).toFixed(2)
+              : +percentToResearcher.toFixed(2);
+          }
+        }
       }
     }
+
+    userBalanceStorage = videoResearchers.map((researcher) => {
+      return {
+        nickname: researcher.nickname,
+        id: researcher._id,
+        balance:
+          researcher.balance + amountToResearcher > 0 && researcher.balance < 0
+            ? 0
+            : +(researcher.balance + amountToResearcher).toFixed(2),
+
+        name: researcher.name,
+        left:
+          researcher.balance + amountToResearcher > 0 && researcher.balance < 0
+            ? +(researcher.balance + amountToResearcher).toFixed(2)
+            : 0,
+      };
+    });
 
     const apiData = {
       suitable: [
         {
-          ...(researchers.length && {
-            researchers: researchers.map((researcher) => {
-              return {
-                email: researcher.email,
-                name: researcher.name,
-              };
-            }),
-          }),
+          researchers: videoResearchers.length
+            ? videoResearchers.map((researcher) => {
+                const researcherInUserBalanceStorage = userBalanceStorage.find(
+                  (userBalanceObj) => {
+                    return userBalanceObj.nickname === researcher.nickname;
+                  }
+                );
+
+                return {
+                  id: researcher._id,
+                  email: researcher.email,
+                  name: researcher.name,
+                  paidFor:
+                    researcherInUserBalanceStorage.balance <= 0 ? true : false,
+                  ...(researcherInUserBalanceStorage.left > 0 && {
+                    leftAmountValue: researcherInUserBalanceStorage.left,
+                  }),
+                };
+              })
+            : [],
 
           videoId,
+          ...(!!videoDb?.vbForm && {
+            vbForm: videoDb.vbForm._id,
+          }),
           usage,
-          amount,
+          videoBalance: videoDb.balance + reqAmount,
+          amount: {
+            notConsideringTheBalance: reqAmount,
+            consideringTheBalance: +(+amount).toFixed(2),
+          },
           videoTitle: videoDb.videoData.title,
           company,
-          amountToResearcher: researchers.length
-            ? +((amount * 0.4) / researchers.length).toFixed(2)
-            : '-',
+          amountToAuthor,
+          amountToResearcher: amountToResearcher,
           date: moment().toString(),
-          authorEmail: author ? author.email : '-',
-          advance: !author
-            ? '-'
-            : author.advancePayment
-            ? author.advancePayment
-            : 0,
-          percentage: !author ? '-' : author.percentage ? author.percentage : 0,
+          authorEmail: videoDb?.vbForm?.sender?.email
+            ? videoDb.vbForm.sender.email
+            : null,
+          advance: !videoDb?.vbForm?.refFormId
+            ? null
+            : !videoDb.vbForm.refFormId?.advancePayment
+            ? 0
+            : videoDb.vbForm.refFormId.advancePayment,
+          percentage: !videoDb?.vbForm?.refFormId
+            ? null
+            : !videoDb.vbForm.refFormId?.percentage
+            ? 0
+            : videoDb.vbForm.refFormId.percentage,
+          repaymentOfNegativeBalance:
+            videoDb.balance < 0 && videoDb.balance + reqAmount > 0
+              ? 'partially'
+              : videoDb.balance >= 0 && videoDb.balance + reqAmount > 0
+              ? 'none'
+              : 'fully',
         },
       ],
+      storageInfo: {
+        userBalanceStorage,
+        videoBalanceStorage,
+      },
       type: 'manual',
     };
 
@@ -255,7 +391,7 @@ router.post(
                   status: 'lessThen1460',
                 };
               } else {
-                const videoDb = await findVideoByValue({
+                const videoDb = await findVideoBy({
                   searchBy: 'videoData.videoId',
                   value: obj.videoId,
                 });
@@ -273,12 +409,20 @@ router.post(
                   //ресечеры видео
                   let videoResearchers = videoDb.trelloData.researchers;
 
+                  console.log(
+                    videoDb.videoData.videoId,
+                    videoDb.trelloData.researchers,
+                    11
+                  );
+
                   if (videoResearchers.length) {
                     videoResearchers = await Promise.all(
                       videoResearchers.map(async (dataResearcherInVideoDB) => {
+                        //console.log(dataResearcherInVideoDB, 88);
+
                         return await getUserBy({
                           searchBy: 'email',
-                          value: dataResearcherInVideoDB.email,
+                          value: dataResearcherInVideoDB.researcher.email,
                           fieldsInTheResponse: [
                             'balance',
                             'nickname',
@@ -362,8 +506,12 @@ router.post(
                       : +(+obj.amount).toFixed(2);
 
                     //процент автора
-                    const percentToAuthor =
-                      (amount * videoDb?.vbForm?.refFormId?.percentage) / 100;
+                    const percentToAuthor = !!videoDb?.vbForm?.refFormId
+                      ?.percentage
+                      ? (amount * videoDb?.vbForm?.refFormId?.percentage) / 100
+                      : 0;
+
+                    amountToAuthor = percentToAuthor;
 
                     //предусмотрена ли выплата процента автора с данного видео
                     const percentageProvidedToAuthor =
@@ -425,7 +573,7 @@ router.post(
                       const researcherInUserBalanceStorage =
                         userBalanceStorage.find((userBalanceObj) => {
                           return (
-                            userBalanceObj.nickname === researcherData.nickname
+                            userBalanceObj?.nickname === researcherData.nickname
                           );
                         });
 
@@ -508,12 +656,9 @@ router.post(
                       notConsideringTheBalance: +(+obj.amount).toFixed(2),
                       consideringTheBalance: amount,
                     },
+                    amountToAuthor,
                     amountToResearcher: amountToResearcher,
-                    ...(!!videoDb?.vbForm?.refFormId?.percentage && {
-                      amountToAuthor:
-                        (obj.amount * videoDb?.vbForm?.refFormId?.percentage) /
-                        100,
-                    }),
+
                     videoTitle: videoDb.videoData.title,
                     company: processingData.company,
 
@@ -544,7 +689,7 @@ router.post(
               }
               //если это продажи, определенные по videoTitle
             } else {
-              const videoDb = await findVideoByValue({
+              const videoDb = await findVideoBy({
                 searchBy: 'videoData.title',
                 value: obj.title,
               });
@@ -561,6 +706,7 @@ router.post(
                   };
                 } else {
                   let amountToResearcher = 0;
+                  let amountToAuthor = 0;
                   let amount = 0;
 
                   //ресечеры видео
@@ -571,7 +717,7 @@ router.post(
                       videoResearchers.map(async (dataResearcherInVideoDB) => {
                         return await getUserBy({
                           searchBy: 'email',
-                          value: dataResearcherInVideoDB.email,
+                          value: dataResearcherInVideoDB.researcher.email,
                           fieldsInTheResponse: [
                             'balance',
                             'nickname',
@@ -648,8 +794,12 @@ router.post(
                       : +(+obj.amount).toFixed(2);
 
                     //процент автора
-                    const percentToAuthor =
-                      (amount * videoDb?.vbForm?.refFormId?.percentage) / 100;
+                    const percentToAuthor = !!videoDb?.vbForm?.refFormId
+                      ?.percentage
+                      ? (amount * videoDb?.vbForm?.refFormId?.percentage) / 100
+                      : 0;
+
+                    amountToAuthor = percentToAuthor;
 
                     //предусмотрена ли выплата процента автора с данного видео
                     const percentageProvidedToAuthor =
@@ -711,7 +861,7 @@ router.post(
                       const researcherInUserBalanceStorage =
                         userBalanceStorage.find((userBalanceObj) => {
                           return (
-                            userBalanceObj.nickname === researcherData.nickname
+                            userBalanceObj?.nickname === researcherData.nickname
                           );
                         });
 
@@ -768,8 +918,6 @@ router.post(
                               );
                             });
 
-                          console.log(researcherInUserBalanceStorage, 88);
-
                           return {
                             id: researcher._id,
                             email: researcher.email,
@@ -799,12 +947,8 @@ router.post(
                       notConsideringTheBalance: +(+obj.amount).toFixed(2),
                       consideringTheBalance: amount,
                     },
-                    amountToResearcher: amountToResearcher,
-                    ...(!!videoDb?.vbForm?.refFormId?.percentage && {
-                      amountToAuthor:
-                        (obj.amount * videoDb?.vbForm?.refFormId?.percentage) /
-                        100,
-                    }),
+                    amountToResearcher,
+                    amountToAuthor,
                     date: moment().format('ll'),
                     status: 'found',
                     authorEmail: videoDb?.vbForm?.sender?.email
@@ -833,7 +977,6 @@ router.post(
           });
         })
       );
-
 
       newReport = newReport.reduce(
         (res, item) => {
@@ -904,8 +1047,13 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
           ...(obj.vbForm && {
             vbFormInfo: {
               uid: obj.vbForm,
-              paidFor: false,
-              amount: !!obj?.amountToAuthor ? obj.amountToAuthor : 0,
+              paidFor:
+                storageInfo.videoBalanceStorage.find((videoData) => {
+                  return videoData.videoId === obj.videoId;
+                }).balance <= 0
+                  ? true
+                  : false,
+              amount: obj?.amountToAuthor,
             },
           }),
           amount,

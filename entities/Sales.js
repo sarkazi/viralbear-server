@@ -1,14 +1,14 @@
 const { Schema, model } = require('mongoose');
 
-const partners = [
-  'kameraone',
-  'tmb',
-  'aflo',
-  'videoelephant',
-  'newsflare',
-  'reuters',
-  'stringershub',
-];
+//const partners = [
+//  'kameraone',
+//  'tmb',
+//  'aflo',
+//  'videoelephant',
+//  'newsflare',
+//  'reuters',
+//  'stringershub',
+//];
 
 const schema = new Schema(
   {
@@ -34,7 +34,6 @@ const schema = new Schema(
     company: {
       type: String,
       required: false,
-      enum: partners,
     },
     researchers: [
       {

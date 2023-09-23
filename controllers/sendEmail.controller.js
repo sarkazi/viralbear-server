@@ -87,7 +87,7 @@ const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
    }
    ${
      !!refForm?.percentage
-       ? `<b>Advance payment: ${refForm.percentage}</b><br></br>`
+       ? `<b>Percentage: ${refForm.percentage}</b><br></br>`
        : ''
    }
    ${
