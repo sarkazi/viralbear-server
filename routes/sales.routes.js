@@ -1149,8 +1149,6 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       forLastDays,
     } = req.query;
 
-    console.log(company, 788);
-
     if (
       relatedToTheVbForm &&
       typeof JSON.parse(relatedToTheVbForm) === 'boolean' &&

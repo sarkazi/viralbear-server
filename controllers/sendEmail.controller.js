@@ -173,12 +173,23 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
   });
 };
 
-const sendEmail = async ({ emailFrom, emailTo, subject, html }) => {
-  await mailTransporter.sendMail({
-    from: emailFrom,
-    to: emailTo,
-    subject,
-    html,
+const sendEmail = ({ emailFrom, emailTo, subject, html }) => {
+  return new Promise((resolve, reject) => {
+    mailTransporter.sendMail(
+      {
+        from: emailFrom,
+        to: emailTo,
+        subject,
+        html,
+      },
+      (error, info) => {
+        if (error) {
+          resolve({ status: 'error', info: error });
+        } else {
+          resolve({ status: 'success', info });
+        }
+      }
+    );
   });
 };
 

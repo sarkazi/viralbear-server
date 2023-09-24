@@ -42,6 +42,7 @@ const webhookRouter = require('./routes/webhook.routes');
 const publicUsersRouter = require('./routes/public.users.routes');
 const publicVideosRouter = require('./routes/public.videos.routes');
 const commonRouter = require('./routes/common.routes');
+const transactionsRouter = require('./routes/transactions.routes');
 
 const socketServer = require('http').createServer(app);
 
@@ -72,6 +73,7 @@ app.use('/viewedMentions', viewedMentionsRouter);
 app.use('/authorLink', authorLinkRouter);
 app.use('/sales', salesRouter);
 app.use('/location', locationRouter);
+app.use('/transactions', transactionsRouter);
 app.use('/webhook', webhookRouter);
 app.use('/public/users', publicUsersRouter);
 app.use('/public/videos', publicVideosRouter);

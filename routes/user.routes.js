@@ -63,6 +63,7 @@ const {
   updateVideoBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,
   getCountVideos,
+  findVideoBy,
 } = require('../controllers/video.controller');
 
 const {
@@ -1979,6 +1980,19 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       },
     });
 
+    const bodyForEmail = {
+      emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
+      emailTo: user.email,
+      subject: 'Payment of the amount',
+      html: `
+      Hello ${user.name}.<br/>
+      ViralBear just paid your monthly income: ${finalSum}$!<br/>
+      Have a good day!
+      `,
+    };
+
+    sendEmail(bodyForEmail);
+
     return res.status(200).json({
       message: `The employee was paid $${finalSum}`,
       status: 'success',
@@ -2311,7 +2325,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       });
     }
 
-    const video = await findVideoByValue({
+    const video = await findVideoBy({
       searchBy: 'videoData.videoId',
       value: videoId,
     });
@@ -2342,6 +2356,17 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         status: 'warning',
       });
     }
+
+    const bodyForEmail = {
+      emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
+      emailTo: video?.vbForm?.sender?.email,
+      subject: 'Payment of the amount',
+      html: `
+      Hello ${video.vbForm.sender.name}.<br/>
+      ViralBear just paid you: ${amountToTopUp}$!<br/>
+      Have a good day!
+      `,
+    };
 
     if (paymentFor === 'advance') {
       if (
@@ -2395,10 +2420,11 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       await updateUser({
         userId: video.vbForm.sender._id,
-
         objDBForSet,
         objDBForIncrement,
       });
+
+      sendEmail(bodyForEmail);
 
       return res.status(200).json({
         message: `Advance payment of $${advanceAmount} was credited to the author's balance`,
@@ -2462,6 +2488,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         objDBForSet,
         objDBForIncrement,
       });
+
+      sendEmail(bodyForEmail);
 
       return res.status(200).json({
         message: `Percentage of $${percentAmount} was credited to the author's balance`,
@@ -2563,6 +2591,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         dataForUpdate: dataForUpdateSales,
       });
 
+      sendEmail(bodyForEmail);
+
       return res.status(200).json({
         message: `An advance of $${advanceAmount} and a percentage of $${percentAmount} was credited to the author's balance`,
         status: 'success',
@@ -2649,21 +2679,6 @@ router.post('/authors/register', async (req, res) => {
     });
   }
 });
-
-//router.post('/authors/getAnalyticsOnOneVideo/:videoId', async (req, res) => {
-//  try {
-//    return res.status(200).json({
-//      status: 'success',
-//      message: 'Congratulations on registering on the service!',
-//    });
-//  } catch (err) {
-//    console.log(err);
-//    return res.status(500).json({
-//      message: 'Server side error',
-//      status: 'error',
-//    });
-//  }
-//});
 
 router.get(
   '/researchers/collectStatOnAcquiredVideos',

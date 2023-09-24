@@ -1204,6 +1204,7 @@ const findVideoBy = async ({
         path: 'sender refFormId',
         select: {
           email: 1,
+          name: 1,
           advancePayment: 1,
           percentage: 1,
           exclusivity: 1,

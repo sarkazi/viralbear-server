@@ -288,7 +288,7 @@ router.get(
       const currentUserId = req.user.id;
 
       const doneCardsFromTrello = await getAllCardsByListId(
-        process.env.TRELLO_LIST_DONE_ID
+        process.env.TRELLO_LIST_TODO_ID
       );
 
       const currentWorker = await getUserBy({
@@ -318,7 +318,9 @@ router.get(
       return res.status(200).json({
         message: 'Expired cards have been received',
         status: 'success',
-        apiData: overdueCards,
+        apiData: {
+          overdueCardsCount: overdueCards.length,
+        },
       });
     } catch (err) {
       console.log(err);
