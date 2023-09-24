@@ -140,6 +140,7 @@ router.post(
         ip,
         formHash,
         formHashSimple,
+        researcherName,
       } = req?.body;
 
       const { videos } = req.files;
@@ -298,11 +299,23 @@ router.post(
         }
       }
 
-      console.log(
-        authorLinkWithThisHash,
-        authorLinkForConnectWithResearcher,
-        888775767
-      );
+      if (!!researcherName) {
+        const researcher = await getUserBy({
+          searchBy: 'name',
+          value: researcherName,
+        });
+
+        if (!!researcher) {
+          authorLinkForConnectWithResearcher = await createNewAuthorLink({
+            researcher: researcher._id,
+            advancePayment: 0,
+            percentage: 0,
+            exclusivity: true,
+            used: true,
+            paid: false,
+          });
+        }
+      }
 
       const objDB = {
         sender: author._id,

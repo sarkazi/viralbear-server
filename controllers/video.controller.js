@@ -720,7 +720,9 @@ const getAllVideos = async ({
   return Video.find(
     {
       ...(typeof vbFormExists === 'boolean' && {
-        vbForm: { $exists: vbFormExists },
+        vbForm: {
+          $exists: vbFormExists,
+        },
       }),
       ...(typeof isApproved === 'boolean' && { isApproved }),
       ...(typeof wasRemovedFromPublication === 'boolean' && {

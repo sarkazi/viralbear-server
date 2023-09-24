@@ -23,6 +23,7 @@ const { v4: createUniqueHash } = require('uuid');
 const Video = require('../entities/Video');
 const Sales = require('../entities/Sales');
 const Users = require('../entities/User');
+const UploadInfo = require('../entities/UploadInfo');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -107,6 +108,7 @@ const {
 } = require('../utils/defineResearchersListForCreatingVideo');
 
 const { getAllSales } = require('../controllers/sales.controller');
+const { createNewPayment } = require('../controllers/payment.controller');
 const storageInstance = require('../storage.instance');
 
 const storage = multer.memoryStorage();
@@ -1441,6 +1443,15 @@ router.patch(
           });
         }
 
+        if (
+          +acquirerPaidAdvance !== updatedVideo.vbForm.refFormId.advancePayment
+        ) {
+          return res.status(200).json({
+            message: 'The amount does not match the advance for the author',
+            status: 'warning',
+          });
+        }
+
         const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
           (obj) => obj.researcher._id.toString() === acquirer._id.toString()
         );
@@ -1471,6 +1482,27 @@ router.patch(
           searchValue: updatedVideo._id,
           dataToInc: { balance: -acquirerPaidAdvance },
         });
+
+        await createNewPayment({
+          user: updatedVideo.vbForm.sender._id,
+          purpose: ['advance'],
+          amount: {
+            advance: +acquirerPaidAdvance,
+          },
+        });
+
+        const bodyForEmail = {
+          emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
+          emailTo: updatedVideo.vbForm.sender.email,
+          subject: 'Payment of the amount',
+          html: `
+          Hello ${updatedVideo.vbForm.sender.name}.<br/>
+          ViralBear just paid you: ${acquirerPaidAdvance}$!<br/>
+          Have a good day!
+          `,
+        };
+
+        sendEmail(bodyForEmail);
       }
 
       if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
@@ -2440,6 +2472,15 @@ router.patch(
           });
         }
 
+        if (
+          +acquirerPaidAdvance !== updatedVideo.vbForm.refFormId.advancePayment
+        ) {
+          return res.status(200).json({
+            message: 'The amount does not match the advance for the author',
+            status: 'warning',
+          });
+        }
+
         const acquirerInTheVideoList = updatedVideo.trelloData.researchers.find(
           (obj) => obj.researcher._id.toString() === acquirer._id.toString()
         );
@@ -2470,6 +2511,27 @@ router.patch(
           searchValue: updatedVideo._id,
           dataToInc: { balance: -acquirerPaidAdvance },
         });
+
+        await createNewPayment({
+          user: updatedVideo.vbForm.sender._id,
+          purpose: ['advance'],
+          amount: {
+            advance: +acquirerPaidAdvance,
+          },
+        });
+
+        const bodyForEmail = {
+          emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
+          emailTo: updatedVideo.vbForm.sender.email,
+          subject: 'Payment of the amount',
+          html: `
+          Hello ${updatedVideo.vbForm.sender.name}.<br/>
+          ViralBear just paid you: ${acquirerPaidAdvance}$!<br/>
+          Have a good day!
+          `,
+        };
+
+        sendEmail(bodyForEmail);
       }
 
       await refreshMrssFiles();
@@ -2661,17 +2723,47 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       pipelineForFindingUnpaidSales
     );
 
+    const calcTotalAmountOfPayments = () => {
+      let totalPayment = 0;
+
+      if (amountOfPaidSales.length) {
+        totalPayment = amountOfPaidSales[0].amount;
+      }
+
+      if (
+        video?.vbForm?.advancePaymentReceived === true &&
+        !!video?.vbForm?.refFormId?.advancePayment
+      ) {
+        totalPayment += video.vbForm.refFormId.advancePayment;
+      }
+
+      return totalPayment;
+    };
+
+    const calcTotalAmountOfDebt = () => {
+      let currentAccountBalance = 0;
+
+      if (amountOfUnpaidSales.length) {
+        currentAccountBalance = amountOfUnpaidSales[0].amount;
+      }
+
+      if (
+        video?.vbForm?.advancePaymentReceived === false &&
+        !!video?.vbForm?.refFormId?.advancePayment
+      ) {
+        currentAccountBalance += video.vbForm.refFormId.advancePayment;
+      }
+
+      return currentAccountBalance;
+    };
+
     const apiData = {
       sales,
       analytics: {
         totalReceived: !totalOfAllSales.length ? 0 : totalOfAllSales[0].amount,
         shareOfSales,
-        totalPayment: !amountOfPaidSales.length
-          ? 0
-          : amountOfPaidSales[0].amount,
-        currentAccountBalance: !amountOfUnpaidSales.length
-          ? 0
-          : amountOfUnpaidSales[0].amount,
+        totalPayment: calcTotalAmountOfPayments(),
+        currentAccountBalance: calcTotalAmountOfDebt(),
       },
     };
 

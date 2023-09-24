@@ -666,13 +666,13 @@
                           <media:regionCode>CL</media:regionCode>
                           <media:categoryCode>DIS</media:categoryCode>
                           <media:category>News</media:category>
-                          <media:exclusivity>exclusive</media:exclusivity>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
                           <media:filmingDate>Tue, 12 Sep 2023</media:filmingDate>
                           <guid>3029</guid>
                           <pubDate>Thu, 14 Sep 2023 10:18:14 GMT</pubDate>
                           <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/3029.jpg" />
                           <media:content url="https://viralbear.storage.yandexcloud.net/videos/3029.mp4" />
-                          <dfpvideo:lastModifiedDate>Sat, 23 Sep 2023 21:51:11 GMT</dfpvideo:lastModifiedDate>
+                          <dfpvideo:lastModifiedDate/>
                           </item>
                         
                         <item>

@@ -2368,6 +2368,9 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       `,
     };
 
+    let advanceAmount = 0
+    let percentAmount = 0
+
     if (paymentFor === 'advance') {
       if (
         video.vbForm.refFormId.advancePayment &&
@@ -2452,7 +2455,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         });
       }
 
-      const percentAmount = salesWithThisVideoId.reduce(
+      percentAmount = salesWithThisVideoId.reduce(
         (acc, sale) =>
           acc + (sale.amount * video.vbForm.refFormId.percentage) / 100,
         0
@@ -2598,6 +2601,27 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
         status: 'success',
       });
     }
+
+    await createNewPayment({
+      user: video?.vbForm?.sender?._id,
+      purpose: [
+        ...(paymentFor === 'advance' ? ['advance'] : []),
+        ...(paymentFor === 'percent' ? ['percent'] : []),
+        ...(paymentFor === 'mixed' ? ['advance', 'percent'] : []),
+      ],
+      amount: {
+        ...(paymentFor === 'advance' && {
+          advance: advanceAmount,
+        }),
+        ...(paymentFor === 'percent' && {
+          percentage: percentAmount,
+        }),
+        ...(paymentFor === 'mixed' && {
+          advance: advanceAmount,
+          percentage: percentAmount,
+        }),
+      },
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json({

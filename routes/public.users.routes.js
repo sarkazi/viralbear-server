@@ -11,7 +11,7 @@ router.get('/getAll', async (req, res) => {
   try {
     const { roles } = req.query;
 
-    fieldsInTheResponse = ['email'];
+    fieldsInTheResponse = ['email', 'avatarUrl', 'email', 'role', 'name'];
 
     const users = await getAllUsers({
       roles,

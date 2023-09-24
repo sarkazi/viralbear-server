@@ -409,17 +409,9 @@ router.post(
                   //ресечеры видео
                   let videoResearchers = videoDb.trelloData.researchers;
 
-                  console.log(
-                    videoDb.videoData.videoId,
-                    videoDb.trelloData.researchers,
-                    11
-                  );
-
                   if (videoResearchers.length) {
                     videoResearchers = await Promise.all(
                       videoResearchers.map(async (dataResearcherInVideoDB) => {
-                        //console.log(dataResearcherInVideoDB, 88);
-
                         return await getUserBy({
                           searchBy: 'email',
                           value: dataResearcherInVideoDB.researcher.email,
@@ -1024,6 +1016,8 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
   try {
     const { suitable, storageInfo } = req.body;
 
+    console.log(storageInfo);
+
     const promiseAfterIngestInSystem = await Promise.all(
       suitable.map(async (obj) => {
         const amount = +obj.amount.consideringTheBalance;
@@ -1048,11 +1042,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
             vbFormInfo: {
               uid: obj.vbForm,
               paidFor:
-                storageInfo.videoBalanceStorage.find((videoData) => {
-                  return videoData.videoId === obj.videoId;
-                }).balance <= 0
-                  ? true
-                  : false,
+                obj.repaymentOfNegativeBalance === 'fully' ? true : false,
               amount: obj?.amountToAuthor,
             },
           }),
