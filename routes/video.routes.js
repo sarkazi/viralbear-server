@@ -3355,6 +3355,12 @@ router.post(
         //}
       }
 
+      await updateVideoBy({
+        searchBy: '_id',
+        searchValue: video._id,
+        dataToUpdate: { socialMedia: true },
+      });
+
       return res.status(200).json({
         status: 'success',
         message: 'The video was successfully uploaded to social networks',
