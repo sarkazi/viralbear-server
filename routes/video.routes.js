@@ -8,22 +8,21 @@ const request = require('request');
 
 const { google } = require('googleapis');
 
+const mongoose = require('mongoose');
+
 const axios = require('axios');
+
+const streamifier = require('streamifier');
 
 const socketInstance = require('../socket.instance');
 const googleApiOAuth2Instance = require('../googleApiOAuth2.instance');
 
-const AWS = require('aws-sdk');
 const moment = require('moment');
-
-const readline = require('readline');
-
-const { v4: createUniqueHash } = require('uuid');
 
 const Video = require('../entities/Video');
 const Sales = require('../entities/Sales');
-const Users = require('../entities/User');
-const UploadInfo = require('../entities/UploadInfo');
+
+const fbUpload = require('facebook-api-video-upload');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -83,6 +82,7 @@ const {
   getUserBy,
   updateUser,
   getAllUsers,
+  updateUserBy,
 } = require('../controllers/user.controller');
 
 const { sendEmail } = require('../controllers/sendEmail.controller');
@@ -110,6 +110,7 @@ const {
 const { getAllSales } = require('../controllers/sales.controller');
 const { createNewPayment } = require('../controllers/payment.controller');
 const storageInstance = require('../storage.instance');
+const { resolveCname } = require('dns');
 
 const storage = multer.memoryStorage();
 
@@ -150,6 +151,8 @@ router.post(
         videoId: reqVideoId,
         commentToAdmin,
         acquirerName,
+        checkPaymentToTheAuthor,
+        acquirerPaidAdvance,
       } = req.body;
 
       const { video, screen } = req.files;
@@ -192,6 +195,17 @@ router.post(
       if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
         return res.status(200).json({
           message: 'The acquirer is not added to the list',
+          status: 'warning',
+        });
+      }
+
+      if (
+        !!JSON.parse(checkPaymentToTheAuthor) &&
+        !JSON.parse(acquirerPaidAdvance)
+      ) {
+        return res.status(200).json({
+          message:
+            'The video cannot be added without confirmation of the advance payment by the employee to the author',
           status: 'warning',
         });
       }
@@ -252,7 +266,7 @@ router.post(
               async (err, buffer) => {
                 if (err) {
                   console.log(err);
-                  reject({
+                  resolve({
                     status: 'error',
                     message: 'Error when reading a file from disk',
                   });
@@ -276,6 +290,13 @@ router.post(
           }
         );
 
+        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByConvertedVideoUpload.message,
+            status: 'warning',
+          });
+        }
+
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage(
@@ -295,6 +316,13 @@ router.post(
           }
         );
 
+        if (bucketResponseByVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByVideoUpload.message,
+            status: 'warning',
+          });
+        }
+
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage(
@@ -313,6 +341,13 @@ router.post(
             );
           }
         );
+
+        if (bucketResponseByScreenUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByScreenUpload.message,
+            status: 'warning',
+          });
+        }
 
         socketInstance
           .io()
@@ -381,6 +416,69 @@ router.post(
         };
 
         const newVideo = await createNewVideo(bodyForNewVideo);
+
+        if (!!JSON.parse(checkPaymentToTheAuthor)) {
+          if (!vbForm?.sender) {
+            return res.status(200).json({
+              message: 'This video has no author',
+              status: 'warning',
+            });
+          }
+
+          if (!!vbForm?.advancePaymentReceived) {
+            return res.status(200).json({
+              message: 'The author has already been paid an advance',
+              status: 'warning',
+            });
+          }
+
+          if (!acquirerName) {
+            return res.status(200).json({
+              message: 'No acquirer found to record a note',
+              status: 'warning',
+            });
+          }
+
+          await updateUser({
+            userId: acquirer._id,
+            objDBForIncrement: {
+              note: +vbForm.refFormId.advancePayment,
+            },
+          });
+
+          await updateVbFormBy({
+            updateBy: '_id',
+            value: vbForm._id,
+            dataForUpdate: { advancePaymentReceived: true },
+          });
+
+          await updateVideoBy({
+            searchBy: '_id',
+            searchValue: newVideo._id,
+            dataToInc: { balance: -vbForm.refFormId.advancePayment },
+          });
+
+          await createNewPayment({
+            user: vbForm.sender._id,
+            purpose: ['advance'],
+            amount: {
+              advance: +vbForm.refFormId.advancePayment,
+            },
+          });
+
+          const bodyForEmail = {
+            emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
+            emailTo: vbForm.sender.email,
+            subject: 'Payment of the amount',
+            html: `
+            Hello ${vbForm.sender.name}.<br/>
+            ViralBear just paid you: ${vbForm.refFormId.advancePayment}$!<br/>
+            Have a good day!
+            `,
+          };
+
+          sendEmail(bodyForEmail);
+        }
 
         socketInstance.io().emit('triggerForAnUpdateInPublishing', {
           event: 'ready for publication',
@@ -475,7 +573,7 @@ router.post('/convert', authMiddleware, async (req, res) => {
             async (err, buffer) => {
               if (err) {
                 console.log(err);
-                reject({
+                resolve({
                   status: 'error',
                   message: 'Error when reading a file from disk',
                 });
@@ -498,6 +596,13 @@ router.post('/convert', authMiddleware, async (req, res) => {
           );
         }
       );
+
+      if (bucketResponseByConvertedVideoUpload.status === 'error') {
+        return res.status(200).json({
+          message: bucketResponseByConvertedVideoUpload.message,
+          status: 'warning',
+        });
+      }
 
       socketInstance
         .io()
@@ -891,8 +996,6 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
       };
     });
 
-    console.log(apiData);
-
     return res.status(200).json({
       status: 'success',
       message: 'The list of videos awaiting editing has been received',
@@ -929,8 +1032,6 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
         'bucket.cloudScreenLink',
       ],
     });
-
-    console.log(videosWithVbCode, 5566);
 
     let videos = await Promise.all(
       videosWithVbCode.map(async (video) => {
@@ -1196,7 +1297,7 @@ router.patch(
               async (err, buffer) => {
                 if (err) {
                   console.log(err);
-                  reject({
+                  resolve({
                     status: 'error',
                     message: 'Error when reading a file from disk',
                   });
@@ -1220,6 +1321,13 @@ router.patch(
           }
         );
 
+        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByConvertedVideoUpload.message,
+            status: 'warning',
+          });
+        }
+
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage(
@@ -1237,6 +1345,13 @@ router.patch(
             );
           }
         );
+
+        if (bucketResponseByVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByVideoUpload.message,
+            status: 'warning',
+          });
+        }
 
         const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
 
@@ -1282,6 +1397,13 @@ router.patch(
             );
           }
         );
+
+        if (bucketResponseByScreenUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByScreenUpload.message,
+            status: 'warning',
+          });
+        }
 
         await updateVideoById({
           videoId: +videoId,
@@ -1746,7 +1868,7 @@ router.patch(
               async (err, buffer) => {
                 if (err) {
                   console.log(err);
-                  reject({
+                  resolve({
                     status: 'error',
                     message: 'Error when reading a file from disk',
                   });
@@ -1770,6 +1892,13 @@ router.patch(
           }
         );
 
+        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByConvertedVideoUpload.message,
+            status: 'warning',
+          });
+        }
+
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage(
@@ -1787,6 +1916,13 @@ router.patch(
             );
           }
         );
+
+        if (bucketResponseByVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByVideoUpload.message,
+            status: 'warning',
+          });
+        }
 
         const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
 
@@ -1832,6 +1968,13 @@ router.patch(
             );
           }
         );
+
+        if (bucketResponseByScreenUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByScreenUpload.message,
+            status: 'warning',
+          });
+        }
 
         await updateVideoById({
           videoId: +videoId,
@@ -2070,6 +2213,8 @@ router.patch(
   async (req, res) => {
     const { id: videoId } = req.params;
 
+    const { code } = req.query;
+
     const {
       originalLink,
       vbCode,
@@ -2118,7 +2263,14 @@ router.patch(
 
     const { video: reqVideo, screen: reqScreen } = req.files;
 
+    const userId = req.user.id;
+
     try {
+      const authUser = await getUserBy({
+        searchBy: '_id',
+        value: mongoose.Types.ObjectId(userId),
+      });
+
       const video = await findVideoBy({
         searchBy: 'videoData.videoId',
         value: +videoId,
@@ -2143,6 +2295,325 @@ router.patch(
           message: `Before publishing, you need to make edits!`,
           status: 'warning',
         });
+      }
+
+      if (
+        !!JSON.parse(socialMedia) &&
+        (!video?.uploadedToFb || !video?.uploadedToYoutube)
+      ) {
+        //await new Promise(async (resolve, reject) => {
+        //  const directory = `./videos/${userId}`;
+        //  if (!fs.existsSync(directory)) {
+        //    fs.mkdirSync(directory);
+        //  }
+        //  if (reqVideo) {
+        //    fs.writeFile(
+        //      `./videos/${userId}/for-publication.mp4`,
+        //      reqVideo[0].buffer,
+        //      (err) => {
+        //        if (err) {
+        //          console.log(err);
+        //          return res.status(200).json({
+        //            message: 'Error when uploading a video file to the server',
+        //            status: 'warning',
+        //          });
+        //        } else {
+        //          resolve({ status: 'success' });
+        //        }
+        //      }
+        //    );
+        //  } else {
+        //    const writer = fs.createWriteStream(
+        //      `./videos/${userId}/for-publication.mp4`
+        //    );
+        //    const { data: stream } = await axios.get(
+        //      video.bucket.cloudVideoLink,
+        //      {
+        //        responseType: 'stream',
+        //      }
+        //    );
+        //    stream.pipe(writer);
+        //    writer.on('error', (err) => {
+        //      writer.close();
+        //      console.log(err);
+        //      return res.status(200).json({
+        //        message: 'Error when uploading a video file to the server',
+        //        status: 'warning',
+        //      });
+        //    });
+        //    writer.on('close', () => {
+        //      resolve({ status: 'success' });
+        //    });
+        //  }
+        //});
+
+        let stream = null;
+
+        if (!!reqVideo) {
+          stream = streamifier.createReadStream(reqVideo[0].buffer);
+        } else {
+          const resBucket = await new Promise((resolve, reject) => {
+            storageInstance.getObject(
+              {
+                Bucket: process.env.YANDEX_CLOUD_BUCKET_NAME,
+                Key: video.bucket.cloudVideoPath,
+              },
+              (err, data) => {
+                if (err) {
+                  console.log(err);
+                  reject(err);
+                }
+                resolve({ length: data.ContentLength, buffer: data.Body });
+              }
+            );
+          });
+          stream = streamifier.createReadStream(resBucket.buffer);
+        }
+
+        if (!video?.uploadedToYoutube) {
+          const SCOPES = ['https://www.googleapis.com/auth/youtube'];
+
+          const responseAfterUploadOnYoutube = await new Promise(
+            (resolve, reject) => {
+              if (!authUser.rt) {
+                if (!code) {
+                  const authUrl = googleApiOAuth2Instance.generateAuthUrl({
+                    access_type: 'offline',
+                    prompt: 'consent',
+                    scope: SCOPES,
+                  });
+
+                  return res.status(200).json({
+                    status: 'redirect',
+                    apiData: authUrl,
+                    method: 'publishingInFeeds',
+                  });
+                } else {
+                  socketInstance
+                    .io()
+                    .sockets.in(req.user.id)
+                    .emit('progressOfRequestInPublishing', {
+                      event: 'Uploading video to youtube',
+                      file: null,
+                    });
+
+                  googleApiOAuth2Instance.getToken(code, async (err, token) => {
+                    if (err) {
+                      console.log(
+                        err?.response?.data?.error,
+                        err?.response?.data?.error_description
+                      );
+                      //resolve({
+                      //  status: 'error',
+                      //  message: err?.response?.data?.error,
+                      //});
+
+                      return res.status(200).json({
+                        status: 'warning',
+                        message: `${err?.response?.data?.error} (Youtube API)`,
+                      });
+                    }
+                    if (!!token) {
+                      googleApiOAuth2Instance.credentials = token;
+
+                      await updateUserBy({
+                        updateBy: '_id',
+                        value: mongoose.Types.ObjectId(userId),
+                        objDBForSet: {
+                          rt: token.refresh_token,
+                        },
+                      });
+
+                      google.youtube('v3').videos.insert(
+                        {
+                          access_token: token.access_token,
+                          part: 'snippet,status',
+                          requestBody: {
+                            snippet: {
+                              title: video.videoData.title,
+                              description: video.videoData.description,
+                              tags: video.videoData.tags,
+                              //categoryId: 28,
+                              defaultLanguage: 'en',
+                              defaultAudioLanguage: 'en',
+                            },
+                            status: {
+                              privacyStatus: 'public',
+                            },
+                          },
+                          media: {
+                            body: stream,
+                          },
+                        },
+                        (err, response) => {
+                          if (err) {
+                            console.log(err);
+                            console.log(err?.response?.data?.error);
+                            //resolve({
+                            //  status: 'error',
+                            //  message: err?.response?.data?.error?.message,
+                            //});
+
+                            return res.status(200).json({
+                              status: 'warning',
+                              message: `${err?.response?.data?.error?.message} (Youtube API)`,
+                            });
+                          }
+                          if (response) {
+                            resolve({
+                              message: `Video uploaded to youtube successfully`,
+                              status: 'success',
+                              apiData: response.data,
+                            });
+                          }
+                        }
+                      );
+                    }
+                  });
+                }
+              } else {
+                socketInstance
+                  .io()
+                  .sockets.in(req.user.id)
+                  .emit('progressOfRequestInPublishing', {
+                    event: 'Uploading video to youtube',
+                    file: null,
+                  });
+
+                const refreshToken = authUser.rt;
+
+                googleApiOAuth2Instance.credentials = {
+                  refresh_token: refreshToken,
+                };
+
+                googleApiOAuth2Instance.refreshAccessToken((err, token) => {
+                  if (err) {
+                    console.log(err);
+
+                    //resolve({
+                    //  status: 'error',
+                    //  message: err?.response?.data?.error,
+                    //});
+
+                    return res.status(200).json({
+                      status: 'warning',
+
+                      message: `${err?.response?.data?.error} (Youtube API)`,
+                    });
+                  }
+                  if (token) {
+                    google.youtube('v3').videos.insert(
+                      {
+                        access_token: token.access_token,
+                        part: 'snippet,status',
+                        requestBody: {
+                          snippet: {
+                            title: video.videoData.title,
+                            description: video.videoData.description,
+                            tags: video.videoData.tags,
+                            //categoryId: 28,
+                            defaultLanguage: 'en',
+                            defaultAudioLanguage: 'en',
+                          },
+                          status: {
+                            privacyStatus: 'public',
+                          },
+                        },
+                        media: {
+                          body: stream,
+                        },
+                      },
+                      (err, response) => {
+                        if (err) {
+                          console.log(err);
+                          console.log(err?.response?.data?.error);
+                          //resolve({
+                          //  status: 'error',
+                          //  message: err?.response?.data?.error?.message,
+                          //});
+
+                          return res.status(200).json({
+                            status: 'warning',
+
+                            message: `${err?.response?.data?.error?.message} (Youtube API)`,
+                          });
+                        }
+                        if (response) {
+                          resolve({
+                            message: `Video uploaded to youtube successfully`,
+                            status: 'success',
+                            apiData: response.data,
+                          });
+                        }
+                      }
+                    );
+                  }
+                });
+              }
+            }
+          );
+
+          if (responseAfterUploadOnYoutube.status === 'success') {
+            await updateVideoBy({
+              searchBy: '_id',
+              searchValue: video._id,
+              dataToUpdate: { uploadedToYoutube: true },
+            });
+          }
+        }
+
+        if (!video?.uploadedToFb) {
+          //socketInstance
+          //  .io()
+          //  .sockets.in(req.user.id)
+          //  .emit('progressOfRequestInPublishing', {
+          //    event: 'Uploading video to facebook',
+          //    file: null,
+          //  });
+          //const { data: pagesResData } = await axios.get(
+          //  `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
+          //  {
+          //    params: {
+          //      fields: 'name,access_token',
+          //      access_token: process.env.FACEBOOK_API_TOKEN,
+          //    },
+          //  }
+          //);
+          //const pageToken = pagesResData.data.find(
+          //  (page) => page.id === process.env.FACEBOOK_PAGE_ID
+          //).access_token;
+          //console.log(pageToken);
+          //const responseAfterUploadOnFacebook = await new Promise(
+          //  async (resolve, reject) => {
+          //    fbUpload({
+          //      token: pageToken,
+          //      id: process.env.FACEBOOK_PAGE_ID,
+          //      stream,
+          //      title: video.videoData.title,
+          //      description: video.videoData.description,
+          //    })
+          //      .then((res) => {
+          //        resolve({
+          //          status: 'success',
+          //          message: 'Video successfully uploaded on facebook',
+          //        });
+          //      })
+          //      .catch((err) => {
+          //        resolve({
+          //          status: 'error',
+          //          message: err?.response?.data?.message,
+          //        });
+          //      });
+          //  }
+          //);
+          //if (responseAfterUploadOnFacebook.status === 'success') {
+          //  await updateVideoBy({
+          //    searchBy: '_id',
+          //    searchValue: video._id,
+          //    dataToUpdate: { uploadedToFb: true },
+          //  });
+          //}
+        }
       }
 
       if (!vbCode && !!video.vbForm) {
@@ -2222,7 +2693,7 @@ router.patch(
               async (err, buffer) => {
                 if (err) {
                   console.log(err);
-                  reject({
+                  resolve({
                     status: 'error',
                     message: 'Error when reading a file from disk',
                   });
@@ -2246,6 +2717,13 @@ router.patch(
           }
         );
 
+        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByConvertedVideoUpload.message,
+            status: 'warning',
+          });
+        }
+
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage(
@@ -2263,6 +2741,13 @@ router.patch(
             );
           }
         );
+
+        if (bucketResponseByVideoUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByVideoUpload.message,
+            status: 'warning',
+          });
+        }
 
         const duration = Math.floor(getDurationFromBuffer(reqVideo[0].buffer));
 
@@ -2285,7 +2770,7 @@ router.patch(
 
       if (reqScreen) {
         if (path.extname(reqScreen[0].originalname) !== '.jpg') {
-          return res.status(400).json({
+          return res.status(200).json({
             message: `Incorrect screen extension`,
             status: 'warning',
           });
@@ -2308,6 +2793,13 @@ router.patch(
             );
           }
         );
+
+        if (bucketResponseByScreenUpload.status === 'error') {
+          return res.status(200).json({
+            message: bucketResponseByScreenUpload.message,
+            status: 'warning',
+          });
+        }
 
         await updateVideoById({
           videoId: +videoId,
@@ -2547,17 +3039,6 @@ router.patch(
         }
       );
 
-      //меняем кастомное поле "brand safe" в карточке trello
-      await updateCustomFieldByTrelloCard(
-        updatedVideo.trelloData.trelloCardId,
-        process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
-        {
-          idValue: updatedVideo.brandSafe
-            ? '6363888c65a44802954d88e5'
-            : '6363888c65a44802954d88e4',
-        }
-      );
-
       //убираем наклейку "not published" в карточке trello
       await deleteLabelFromTrelloCard(
         updatedVideo.trelloData.trelloCardId,
@@ -2570,17 +3051,325 @@ router.patch(
       });
     } catch (err) {
       console.log(err);
+
+      console.log(err?.response?.data?.error);
+
       return res
-        .status(500)
+        .status(400)
         .json({ message: 'Server side error', status: 'error' });
     }
   }
 );
 
-router.patch(
-  '/publishingInSocialMedia/:id',
+router.post(
+  '/publishingInSocialMedia/:videoId',
   authMiddleware,
-  publishingVideoInSocialMedia
+  async (req, res) => {
+    const { videoId } = req.params;
+    const { code } = req.query;
+
+    const video = await findVideoBy({
+      searchBy: 'videoData.videoId',
+      value: +videoId,
+    });
+
+    if (!video) {
+      return res.status(200).json({
+        message: `video with id "${videoId}" not found`,
+        status: 'warning',
+      });
+    }
+
+    if (!!video?.uploadedToFb && !!video?.uploadedToYoutube) {
+      return res.status(200).json({
+        message: `This video has already been posted on social networks`,
+        status: 'warning',
+      });
+    }
+
+    const userId = req.user.id;
+
+    try {
+      const authUser = await getUserBy({
+        searchBy: '_id',
+        value: mongoose.Types.ObjectId(userId),
+      });
+
+      const resBucket = await new Promise((resolve, reject) => {
+        storageInstance.getObject(
+          {
+            Bucket: process.env.YANDEX_CLOUD_BUCKET_NAME,
+            Key: video.bucket.cloudVideoPath,
+          },
+          (err, data) => {
+            if (err) {
+              console.log(err);
+              resolve({ status: 'error' });
+            }
+
+            resolve({
+              length: data.ContentLength,
+              buffer: data.Body,
+              status: 'success',
+            });
+          }
+        );
+      });
+
+      if (resBucket.status === 'error') {
+        return res.status(200).json({
+          message: `Error when receiving a video from a bucket`,
+          status: 'warning',
+        });
+      }
+
+      const stream = streamifier.createReadStream(resBucket.buffer);
+
+      if (!video?.uploadedToYoutube) {
+        const SCOPES = ['https://www.googleapis.com/auth/youtube'];
+
+        const responseAfterUploadOnYoutube = await new Promise(
+          (resolve, reject) => {
+            if (!authUser.rt) {
+              if (!code) {
+                const authUrl = googleApiOAuth2Instance.generateAuthUrl({
+                  access_type: 'offline',
+                  prompt: 'consent',
+                  scope: SCOPES,
+                });
+
+                return res.status(200).json({
+                  status: 'redirect',
+                  apiData: authUrl,
+                  method: 'publishingInSocialMedia',
+                });
+              } else {
+                socketInstance
+                  .io()
+                  .sockets.in(req.user.id)
+                  .emit('progressOfRequestInPublishing', {
+                    event: 'Uploading video to youtube',
+                    file: null,
+                  });
+
+                googleApiOAuth2Instance.getToken(code, async (err, token) => {
+                  console.log(token, 88);
+
+                  if (err) {
+                    console.log(
+                      err?.response?.data?.error,
+                      err?.response?.data?.error_description
+                    );
+
+                    return res.status(200).json({
+                      status: 'warning',
+                      message: `${err?.response?.data?.error} (Youtube API)`,
+                    });
+                  }
+                  if (!!token) {
+                    googleApiOAuth2Instance.credentials = token;
+
+                    await updateUserBy({
+                      updateBy: '_id',
+                      value: mongoose.Types.ObjectId(userId),
+                      objDBForSet: {
+                        rt: token.refresh_token,
+                      },
+                    });
+
+                    google.youtube('v3').videos.insert(
+                      {
+                        access_token: token.access_token,
+                        part: 'snippet,status',
+                        requestBody: {
+                          snippet: {
+                            title: video.videoData.title,
+                            description: video.videoData.description,
+                            tags: video.videoData.tags,
+                            //categoryId: 28,
+                            defaultLanguage: 'en',
+                            defaultAudioLanguage: 'en',
+                          },
+                          status: {
+                            privacyStatus: 'public',
+                          },
+                        },
+                        media: {
+                          body: stream,
+                        },
+                      },
+                      (err, response) => {
+                        if (err) {
+                          console.log(err);
+                          console.log(err?.response?.data?.error);
+
+                          return res.status(200).json({
+                            status: 'warning',
+                            message: `${err?.response?.data?.error?.message} (Youtube API)`,
+                          });
+                        }
+                        if (response) {
+                          resolve({
+                            message: `Video uploaded to youtube successfully`,
+                            status: 'success',
+                            apiData: response.data,
+                          });
+                        }
+                      }
+                    );
+                  }
+                });
+              }
+            } else {
+              socketInstance
+                .io()
+                .sockets.in(req.user.id)
+                .emit('progressOfRequestInPublishing', {
+                  event: 'Uploading video to youtube',
+                  file: null,
+                });
+
+              const refreshToken = authUser.rt;
+
+              googleApiOAuth2Instance.credentials = {
+                refresh_token: refreshToken,
+              };
+
+              googleApiOAuth2Instance.refreshAccessToken((err, token) => {
+                if (err) {
+                  console.log(err);
+
+                  return res.status(200).json({
+                    status: 'warning',
+
+                    message: `${err?.response?.data?.error} (Youtube API)`,
+                  });
+                }
+                if (token) {
+                  google.youtube('v3').videos.insert(
+                    {
+                      access_token: token.access_token,
+                      part: 'snippet,status',
+                      requestBody: {
+                        snippet: {
+                          title: video.videoData.title,
+                          description: video.videoData.description,
+                          tags: video.videoData.tags,
+                          //categoryId: 28,
+                          defaultLanguage: 'en',
+                          defaultAudioLanguage: 'en',
+                        },
+                        status: {
+                          privacyStatus: 'public',
+                        },
+                      },
+                      media: {
+                        body: stream,
+                      },
+                    },
+                    (err, response) => {
+                      if (err) {
+                        console.log(err);
+                        console.log(err?.response?.data?.error);
+
+                        return res.status(200).json({
+                          status: 'warning',
+
+                          message: `${err?.response?.data?.error?.message} (Youtube API)`,
+                        });
+                      }
+                      if (response) {
+                        resolve({
+                          message: `Video uploaded to youtube successfully`,
+                          status: 'success',
+                          apiData: response.data,
+                        });
+                      }
+                    }
+                  );
+                }
+              });
+            }
+          }
+        );
+
+        if (responseAfterUploadOnYoutube.status === 'success') {
+          await updateVideoBy({
+            searchBy: '_id',
+            searchValue: video._id,
+            dataToUpdate: { uploadedToYoutube: true },
+          });
+        }
+      }
+
+      if (!video?.uploadedToFb) {
+        //socketInstance
+        //  .io()
+        //  .sockets.in(req.user.id)
+        //  .emit('progressOfRequestInPublishing', {
+        //    event: 'Uploading video to facebook',
+        //    file: null,
+        //  });
+        //const { data: pagesResData } = await axios.get(
+        //  `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
+        //  {
+        //    params: {
+        //      fields: 'name,access_token',
+        //      access_token: process.env.FACEBOOK_API_TOKEN,
+        //    },
+        //  }
+        //);
+        //const pageToken = pagesResData.data.find(
+        //  (page) => page.id === process.env.FACEBOOK_PAGE_ID
+        //).access_token;
+        //console.log(pageToken);
+        //const responseAfterUploadOnFacebook = await new Promise(
+        //  async (resolve, reject) => {
+        //    fbUpload({
+        //      token: pageToken,
+        //      id: process.env.FACEBOOK_PAGE_ID,
+        //      stream,
+        //      title: video.videoData.title,
+        //      description: video.videoData.description,
+        //    })
+        //      .then((res) => {
+        //        resolve({
+        //          status: 'success',
+        //          message: 'Video successfully uploaded on facebook',
+        //        });
+        //      })
+        //      .catch((err) => {
+        //        resolve({
+        //          status: 'error',
+        //          message: err?.response?.data?.message,
+        //        });
+        //      });
+        //  }
+        //);
+        //if (responseAfterUploadOnFacebook.status === 'success') {
+        //  await updateVideoBy({
+        //    searchBy: '_id',
+        //    searchValue: video._id,
+        //    dataToUpdate: { uploadedToFb: true },
+        //  });
+        //}
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'The video was successfully uploaded to social networks',
+      });
+    } catch (err) {
+      console.log(err);
+
+      return res.status(400).json({
+        status: 'error',
+        message: err?.response?.data?.message
+          ? err.response.data.message
+          : 'Server side error',
+      });
+    }
+  }
 );
 
 router.delete('/:id', authMiddleware, async (req, res) => {
@@ -2778,134 +3567,6 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       message: 'Server side error',
       status: 'error',
     });
-  }
-});
-
-//----------------------------------------------------------------
-
-router.post(
-  '/test',
-
-  multer({ storage: storage }).fields([
-    {
-      name: 'video',
-      maxCount: 1,
-    },
-    {
-      name: 'screen',
-      maxCount: 1,
-    },
-  ]),
-  async (req, res) => {
-    try {
-      const scopes = ['https://www.googleapis.com/auth/youtube'];
-
-      const url = googleApiOAuth2Instance.generateAuthUrl({
-        access_type: 'online',
-        scope: scopes,
-      });
-
-      //const { tokens } = await googleApiOAuth2Instance.getToken(
-      //  '4/0Adeu5BUUANgI1X-fZA70Ly8zIOV3ljUyGVCBHDxA79lDYVuVFTOaTFIG7C59RcLDRSAcRQ'
-      //);
-
-      //console.log(tokens, 88);
-
-      //oauth2Client.setCredentials({
-      //  refresh_token:
-      //    '1//0c_2NaRnTZYkaCgYIARAAGAwSNwF-L9IroHCFGx1mE4LME_TCeEKQ-9X_bRCk9A27QKLeVC7Qbeq7LZemQZxQ_vCBKqS6AvrkWeY',
-      //  access_token:
-      //    'ya29.a0AfB_byDZvsa7FL1r-JZGwr-wz-yvR8RzurAZtW1GvTl3pRGn3uDykam6iOOv1wkeYpH9gqAfNLquJmVndP2SG_ft1v7CvkQnLJOMeDLJzwfOlzcjE_qWnKa9Ov90RM4twgs9dJHEV3_Df69LdYCY03_QmrKffI_NAAaCgYKAcMSARMSFQGOcNnCaQWLODwoYNyP_zZ4ExS2Fw0169',
-      //});
-
-      //oauth2Client.getAccessToken((err, data) => {
-      //  if (err) {
-      //    console.log(err);
-      //  }
-      //  console.log(data, 88);
-      //});
-
-      //googleApiOAuth2Instance.on('tokens', (tokens) => {
-      //  console.log(tokens, 33);
-      //});
-
-      //googleApiOAuth2Instance.refreshAccessToken((err, data) => {
-      //  if (err) {
-      //    console.log(err);
-      //  }
-      //  console.log(data);
-      //});
-
-      //console.log(data, 88);
-
-      //google.youtube({ version: 'v3' }).videos.insert(
-      //  {
-      //    access_token:
-      //      'ya29.a0AfB_byCOs0A40uZ3nozZj45lyy3AwDUtsN9cz2p5N0zGfcw0hg0Gk2ftt4oZ97mtyorNaF_a2Bs91DVqUA2Tnc6ybHJFBYUbF3zEgrEsHRpmHqXA2nJGGLy2zROOR78H__B_0beAZlAjjkON9FajVLFdMmmSwPR_AgaCgYKAY4SARMSFQGOcNnCRIJw-8-yR6YwzzAR7Lc1bA0169',
-
-      //    part: 'snippet,contentDetails,status',
-
-      //    resource: {
-      //      snippet: {
-      //        title: 'test',
-      //        description: 'testov',
-      //      },
-
-      //      status: {
-      //        privacyStatus: 'private',
-      //      },
-      //    },
-
-      //    media: {
-      //      body: fs.createReadStream('./sample-5s.mp4'),
-      //    },
-      //  },
-      //  (error, data) => {
-      //    if (error) {
-      //      console.log(error);
-      //    }
-      //    console.log('https://www.youtube.com/watch?v=' + data.data.id);
-      //  }
-      //);
-
-      //google.youtube('v3').channels.list(
-      //  {
-      //    //part: 'snippet,contentDetails,status',
-      //    //chart: 'mostPopular',
-      //    access_token:
-      //      'ya29.a0AfB_byCmp5XQVkjGabYrA1lnHGZSQtCU5KouN_Op6F1EedjGsmrU1ogK-hKrB7FFn5LxbSqtlJBod0errNoyzfcKGejHKq7RD8MR0sTw3wBGORSprewPRQOM6dUjsMeiZNeVdfir4Oy8mAtRAbcrAgtO_zoIDfk3jQaCgYKARMSARMSFQGOcNnCr5M6KTw4VtZXSRtkb6Q6TA0169',
-      //  },
-      //  (error, data) => {
-      //    if (error) {
-      //      console.log(error);
-      //    }
-      //    console.log(data.data.items);
-      //  }
-      //);
-
-      //EAAD88S70UJUBO9GPuYMl3pT2LCUDelGGgwBWfJtm3Oob6OPDpBHEaersNpfGp0FJOAYVdRiMUjFFWnZAjiQi383f6YjbsEciZCp1I2lyyDcXW2H2prM9lwT1SN2ohmqult9Eq2IArjSBylJmcovzrN1hZBeQ33Nk1nlNuUMZBnnLlZA8ydlHqD6O39mX5zt21
-
-      return res.status(200).json({ text: 'success', apiData: url });
-    } catch (err) {
-      console.log(err);
-
-      return res.status(400).json({ text: 'error' });
-    }
-  }
-);
-
-router.get('/uu', async (req, res) => {
-  try {
-    const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
-      value: 3046,
-    });
-
-    return res.status(200).json({
-      apiData: video,
-    });
-  } catch (err) {
-    console.log(err);
   }
 });
 

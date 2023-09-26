@@ -27,7 +27,7 @@ const uploadFileToStorage = async (
       (err, data) => {
         if (err) {
           console.log(err);
-          reject({
+          resolve({
             message: 'Error during file upload to storage',
             status: 'error',
           });
@@ -67,7 +67,7 @@ const removeFileFromStorage = (path, resolve, reject) => {
     (err, data) => {
       if (err) {
         console.log(err);
-        reject({
+        resolve({
           message: 'Error deleting a file from storage',
           status: 'error',
         });

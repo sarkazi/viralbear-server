@@ -509,6 +509,12 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       )
         ? true
         : false,
+      checkPaymentToTheAuthor:
+        trelloCard.customFieldItems.find(
+          (el) => el.idValue === '651026f4df5a55197865fad2'
+        ) && !!vbForm?.refFormId?.advancePayment
+          ? true
+          : false,
       researchers: researchers.map((researcher) => {
         if (researcher.nickname === acquirer?.nickname) {
           return {

@@ -6,17 +6,8 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv').config();
 const cookieParser = require('cookie-parser');
 const socketInstance = require('./socket.instance');
-const axios = require('axios');
-const storageInstance = require('./storage.instance');
-const aws = require('aws-sdk');
 
 mongoose.set('strictQuery', false);
-
-const { findVideoBy } = require('./controllers/video.controller');
-const { getAllUsers } = require('./controllers/user.controller');
-const {
-  markEmployeeOnSalesHavingReceivePercentage,
-} = require('./controllers/sales.controller');
 
 app.use(cors());
 
@@ -78,87 +69,13 @@ app.use('/webhook', webhookRouter);
 app.use('/public/users', publicUsersRouter);
 app.use('/public/videos', publicVideosRouter);
 
-app.post('/fbTest', async (req, res) => {
-  try {
-    const streamifier = require('streamifier');
-
-    const { videoDbId } = req.body;
-
-    const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
-      value: videoDbId,
-    });
-
-    console.log(video, 88);
-
-    const params = {
-      Bucket: 'viralbear',
-      Key: video.bucket.cloudVideoPath,
-    };
-
-    const resBucket = await new Promise((resolve, reject) => {
-      new aws.S3({
-        endpoint: 'https://storage.yandexcloud.net',
-        credentials: {
-          accessKeyId: 'YCAJE9VavEEX6lxxxmn5Zf9gf',
-          secretAccessKey: 'YCNN8SqgPoEf14LAsSfeVL8hJqC-G6YDL2cwSHrQ',
-        },
-        region: 'ru-central1',
-        httpOptions: {
-          timeout: 20000,
-          connectTimeout: 20000,
-        },
-      }).getObject(params, (err, data) => {
-        if (err) {
-          reject(err);
-        }
-
-        resolve({ length: data.ContentLength, buffer: data.Body });
-      });
-    });
-
-    const stream = streamifier.createReadStream(resBucket.buffer);
-
-    console.log(stream, 812);
-
-    return res.status(200).json({ text: 'success' });
-  } catch (err) {
-    console.log(err);
-
-    return res.status(400).json({ text: 'error' });
-  }
-});
-
-app.post('/test', async (req, res) => {
-  try {
-    const researchers = await getAllUsers({ roles: ['researcher'] });
-
-    await Promise.all(
-      researchers.map(async (researcher) => {
-        await markEmployeeOnSalesHavingReceivePercentage({
-          researcherId: researcher._id,
-        });
-      })
-    );
-
-    return res.status(200).json({
-      message: 'success',
-    });
-  } catch (err) {
-    console.log(err);
-
-    return res.status(400).json({
-      message: 'error',
-    });
-  }
-});
-
 let PORT = process.env.PORT || 8888;
 
 (async () => {
   try {
     await mongoose.connect(
       `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}`,
+
       {}
     );
     app.listen(PORT, () => {

@@ -701,8 +701,6 @@ router.patch(
       if (oldUsers && newUsers) {
         await Promise.all(
           [oldUsers, newUsers].map(async (obj) => {
-            console.log(obj.list, obj.objToSet);
-
             await updateUsersBy({
               updateBy,
               userList: obj.list,
@@ -852,9 +850,9 @@ router.get(
           const acquiredVideosCountNoMainRole = await getCountVideosBy({
             isApproved: true,
             user: {
-              value: user.email,
+              value: user._id,
               purchased: false,
-              searchBy: 'email',
+              searchBy: 'researcher',
             },
           });
 
@@ -2368,8 +2366,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       `,
     };
 
-    let advanceAmount = 0
-    let percentAmount = 0
+    let advanceAmount = 0;
+    let percentAmount = 0;
 
     if (paymentFor === 'advance') {
       if (

@@ -6,6 +6,8 @@ const moment = require('moment');
 
 const Stream = require('stream');
 
+const calcTheRequiredFpsForVideo = require('../utils/calcTheRequiredFpsForVideo');
+
 const path = require('path');
 const fs = require('fs');
 
@@ -593,6 +595,14 @@ const findByNotApproved = async () => {
       path: 'refFormId',
       select: { advancePayment: 1 },
     },
+  }).populate({
+    path: 'trelloData.researchers.researcher',
+    model: 'User',
+    select: {
+      name: 1,
+      email: 1,
+      avatarUrl: 1,
+    },
   });
 
   return videos;
@@ -679,6 +689,14 @@ const findByFixed = async () => {
     populate: {
       path: 'refFormId',
       select: { advancePayment: 1 },
+    },
+  }).populate({
+    path: 'trelloData.researchers.researcher',
+    model: 'User',
+    select: {
+      name: 1,
+      email: 1,
+      avatarUrl: 1,
     },
   });
 
@@ -1089,11 +1107,27 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
           });
         }
 
+        const stringVideoFps = info.streams.find(
+          (stream) => stream.codec_type === 'video'
+        ).r_frame_rate;
+
+        if (!stringVideoFps) {
+          reject({
+            message: 'Error in determining the fps of the video',
+            status: 'error',
+          });
+        }
+
+        videoFps =
+          +stringVideoFps.split('/')[0] / +stringVideoFps.split('/')[1];
+
         const hasAudioTrack = info.streams.find(
           (stream) => stream.codec_type === 'audio'
         )
           ? true
           : false;
+
+        console.log(calcTheRequiredFpsForVideo({ videoFps }), 88);
 
         ffmpeg(`${directoryForInputVideo}/input-for-conversion.mp4`)
           .withVideoCodec('libx264')
@@ -1102,7 +1136,7 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
           .aspect('16:9')
           .autopad('black')
           .videoBitrate('15000', false)
-          .fps(25)
+          .fps(calcTheRequiredFpsForVideo({ videoFps }))
           .toFormat('mp4')
           .on('start', () => {
             console.log(

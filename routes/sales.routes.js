@@ -1016,8 +1016,6 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
   try {
     const { suitable, storageInfo } = req.body;
 
-    console.log(storageInfo);
-
     const promiseAfterIngestInSystem = await Promise.all(
       suitable.map(async (obj) => {
         const amount = +obj.amount.consideringTheBalance;
@@ -1359,8 +1357,6 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
   const { saleId } = req.params;
 
   const { count, company, date, videoId, researcher } = req.query;
-
-  console.log(saleId, videoId);
 
   if (!saleId) {
     return res.status(200).json({

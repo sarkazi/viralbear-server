@@ -250,9 +250,7 @@ const updateUserBy = async ({
   objDBForIncrement,
   objDBForUnset,
 }) => {
-  console.log(updateBy, value, objDBForSet);
-
-  return await User.find(
+  return await User.updateOne(
     { [updateBy]: value },
     {
       ...(objDBForSet && { $set: objDBForSet }),

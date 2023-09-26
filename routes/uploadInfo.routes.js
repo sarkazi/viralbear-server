@@ -299,7 +299,7 @@ router.post(
         }
       }
 
-      if (!!researcherName) {
+      if (!!researcherName && researcherName !== 'No') {
         const researcher = await getUserBy({
           searchBy: 'name',
           value: researcherName,
@@ -535,17 +535,6 @@ router.post(
         !!vbForm?.refFormId?.researcher?.email &&
         !vbForm.sender?.activatedTheAccount &&
         isPaidForm;
-
-      console.log(
-        !isRefForm,
-        isRefForm && !vbForm?.refFormId?.paid,
-        isRefForm,
-        vbForm?.refFormId?.paid,
-        isRefForm &&
-          !vbForm?.refFormId?.advancePayment &&
-          !vbForm?.refFormId?.percentage,
-        888
-      );
 
       const TextOfMailForAuthor =
         !isRefForm || isNoPaidForm

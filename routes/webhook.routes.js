@@ -21,8 +21,8 @@ const {
 } = require('../controllers/trello.controller');
 
 const {
-  findVideoByValue,
   deleteVideoById,
+  findVideoBy,
 } = require('../controllers/video.controller');
 
 const { findLinkBy } = require('../controllers/links.controller');
@@ -158,7 +158,7 @@ router.post('/trello/reviewList', async (req, res) => {
           cardCreatorId = addedTrelloCard.researcher._id;
         } else {
           const researcher = await getUserBy({
-            param: 'nickname',
+            searchBy: 'nickname',
             value: `@${changedData.action.memberCreator.username}`,
           });
 
@@ -243,7 +243,7 @@ router.post('/trello/allBoard', async (req, res) => {
 
       const trelloCardId = changedData.action.data.card.id;
 
-      const video = await findVideoByValue({
+      const video = await findVideoBy({
         searchBy: 'trelloData.trelloCardId',
         value: trelloCardId,
       });

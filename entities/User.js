@@ -53,6 +53,10 @@ const schema = new Schema({
     default: false,
     required: false,
   },
+  rt: {
+    type: String,
+    required: false,
+  },
   advancePayment: {
     type: Number,
     required: false,
