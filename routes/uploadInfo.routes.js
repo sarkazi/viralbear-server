@@ -106,7 +106,7 @@ router.patch('/addAdditionalInfo', async (req, res) => {
 
     await updateVbFormByFormId(formId, objDB);
 
-    await sendSurveyInfoToServiceMail({ ...objDB, formId });
+    sendSurveyInfoToServiceMail({ ...objDB, formId });
 
     return res.status(200).json({
       message: `The form has been successfully updated, updates have been sent to the mail`,
@@ -511,6 +511,8 @@ router.post(
 
       const agreementLink = resStorage.response.Location;
 
+      console.log(agreementLink, 88);
+
       if (!agreementLink) {
         return res.status(200).json({
           message: 'Error when uploading pdf file to storage',
@@ -594,6 +596,8 @@ router.post(
         text: TextOfMailForAuthor,
       };
 
+      console.log(dataForSendingAgreement, 8867);
+
       if (!!vbForm.refFormId?.paid) {
         const linkData = await findLinkByVideoId(vbForm.refFormId.videoId);
 
@@ -612,8 +616,8 @@ router.post(
         }
       }
 
-      await sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
-      await sendAgreementToClientMail(dataForSendingAgreement);
+      sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
+      sendAgreementToClientMail(dataForSendingAgreement);
 
       return res.status(200).json({
         message: `The agreement was uploaded to the storage and sent to "${vbForm?.sender?.email}"`,

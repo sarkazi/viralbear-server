@@ -1004,9 +1004,18 @@ router.post(
     } catch (err) {
       console.log(err);
 
+      const message =
+        typeof err === 'string'
+          ? err
+          : typeof err?.message === 'string'
+          ? err.message
+          : typeof err?.response?.data?.message === 'string'
+          ? err.response.data.message
+          : 'Server side error';
+
       return res.status(500).json({
         status: 'error',
-        message: err?.message ? err.message : 'Server side error',
+        message,
       });
     }
   }

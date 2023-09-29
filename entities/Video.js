@@ -46,10 +46,12 @@ const schema = new Schema(
       uploadedToFb: {
         type: Boolean,
         required: false,
+        default: false,
       },
       uploadedToYoutube: {
         type: Boolean,
         required: false,
+        default: false,
       },
       countryCode: {
         type: String,

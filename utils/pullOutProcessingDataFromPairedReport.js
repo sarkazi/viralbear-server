@@ -1,4 +1,4 @@
-const { convertCurrency } = require('../controllers/common.controller');
+const { calcOfCurrencyRatio } = require('../controllers/common.controller');
 
 const pullOutProcessingDataFromPairedReport = async ({
   parseReport,
@@ -8,6 +8,11 @@ const pullOutProcessingDataFromPairedReport = async ({
 }) => {
   return await new Promise(async (resolve, reject) => {
     if (companyName === 'newsflare') {
+      const currencyRatio = await calcOfCurrencyRatio({
+        fromCur: 'GBP',
+        toCur: 'USD',
+      });
+
       resolve({
         company: companyName,
         searchBy: 'videoId',
@@ -18,11 +23,7 @@ const pullOutProcessingDataFromPairedReport = async ({
               usage: obj['Sale Type'],
               amount:
                 obj['Your Earnings'] && obj['Your Earnings'] > 0
-                  ? await convertCurrency({
-                      from: 'GBP',
-                      to: 'USD',
-                      amount: obj['Your Earnings'],
-                    })
+                  ? currencyRatio * obj['Your Earnings']
                   : 0,
             };
           })
@@ -41,6 +42,11 @@ const pullOutProcessingDataFromPairedReport = async ({
         }),
       });
     } else if (companyName === 'aflo') {
+      const currencyRatio = await calcOfCurrencyRatio({
+        fromCur: 'JPY',
+        toCur: 'USD',
+      });
+
       resolve({
         company: companyName,
         searchBy: 'videoId',
@@ -55,13 +61,7 @@ const pullOutProcessingDataFromPairedReport = async ({
                   : obj['Supplier Ref:'],
               usage: null,
               amount:
-                obj.TOTAL && obj.TOTAL > 0
-                  ? await convertCurrency({
-                      from: 'JPY',
-                      to: 'USD',
-                      amount: obj.TOTAL,
-                    })
-                  : 0,
+                obj.TOTAL && obj.TOTAL > 0 ? currencyRatio * obj.TOTAL : 0,
             };
           })
         ),
@@ -79,23 +79,27 @@ const pullOutProcessingDataFromPairedReport = async ({
         }),
       });
     } else if (companyName === 'kameraone') {
+      const currencyRatio = await calcOfCurrencyRatio({
+        fromCur: 'EUR',
+        toCur: 'USD',
+      });
+
       resolve({
         company: companyName,
         searchBy: 'videoId',
         data: await Promise.all(
           parseReport.map(async (obj) => {
             return {
-              videoId: obj['Video_ref_ID'],
+              videoId:
+                typeof obj['Video_ref_ID'] === 'string' &&
+                obj['Video_ref_ID'].includes(',')
+                  ? +obj['Video_ref_ID'].split(',')[0]
+                  : obj['Video_ref_ID'],
               usage: null,
-              amount:
-                obj[' EUR/clip'] && obj[' EUR/clip'] > 0
-                  ? await convertCurrency({
-                      from: 'EUR',
-                      to: 'USD',
-                      amount:
-                        (revShare / totalSumFromKameraOne) * obj[' EUR/clip'],
-                    })
-                  : 0,
+              amount: !!obj[' EUR/clip']
+                ? (revShare / totalSumFromKameraOne) *
+                  (currencyRatio * obj[' EUR/clip'])
+                : 0,
             };
           })
         ),

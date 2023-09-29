@@ -157,15 +157,6 @@ router.post(
 
       const { video, screen } = req.files;
 
-      if (
-        path.extname(video[0].originalname) !== '.mp4' ||
-        path.extname(screen[0].originalname) !== '.jpg'
-      ) {
-        return res
-          .status(200)
-          .json({ message: 'Invalid file/s extension', status: 'warning' });
-      }
-
       let videoId;
 
       if (
@@ -190,6 +181,15 @@ router.post(
           message: 'Missing values for adding a new video',
           status: 'warning',
         });
+      }
+
+      if (
+        path.extname(video[0].originalname) !== '.mp4' ||
+        path.extname(screen[0].originalname) !== '.jpg'
+      ) {
+        return res
+          .status(200)
+          .json({ message: 'Invalid file/s extension', status: 'warning' });
       }
 
       if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
@@ -852,7 +852,7 @@ router.get('/findAll', authMiddleware, async (req, res) => {
       }),
       ...(typeof JSON.parse(personal) === 'boolean' && {
         researcher: {
-          searchBy: 'id',
+          searchBy: 'researcher',
           value: convertInMongoIdFormat({ string: req.user.id }),
         },
       }),
@@ -881,7 +881,7 @@ router.get('/findAll', authMiddleware, async (req, res) => {
         ...(personal &&
           typeof JSON.parse(personal) === 'boolean' && {
             researcher: {
-              searchBy: 'id',
+              searchBy: 'researcher',
               value: convertInMongoIdFormat({ string: req.user.id }),
             },
           }),
@@ -2555,8 +2555,8 @@ router.patch(
 
           if (responseAfterUploadOnYoutube.status === 'success') {
             await updateVideoBy({
-              searchBy: '_id',
-              searchValue: video._id,
+              searchBy: 'videoData.videoId',
+              searchValue: video.videoData.videoId,
               dataToUpdate: { uploadedToYoutube: true },
             });
           }

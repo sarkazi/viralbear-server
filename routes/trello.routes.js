@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const moment = require('moment');
 const trelloInstance = require('../api/trello.instance');
+const mongoose = require('mongoose');
 
 const {
   getAllCommentsByBoard,
@@ -35,7 +36,6 @@ const {
 const { findLinkBy, updateLinkBy } = require('../controllers/links.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
-const { ObjectId } = require('mongodb');
 
 router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
   try {
@@ -293,7 +293,7 @@ router.get(
 
       const currentWorker = await getUserBy({
         searchBy: '_id',
-        value: new ObjectId(currentUserId),
+        value: mongoose.Types.ObjectId(currentUserId),
       });
 
       if (!currentWorker) {
@@ -335,9 +335,19 @@ router.get(
 router.get('/getCardsWithReminder', authMiddleware, async (req, res) => {
   const reminderCustomFieldId = process.env.TRELLO_CUSTOM_FIELD_REMINDER;
 
-  const userId = new ObjectId(req.user.id);
+  const userId = req.user.id;
 
-  const user = await getUserBy({ searchBy: '_id', value: userId });
+  const user = await getUserBy({
+    searchBy: '_id',
+    value: mongoose.Types.ObjectId(userId),
+  });
+
+  if (!user) {
+    return res.status(200).json({
+      message: 'User not found',
+      status: 'warning',
+    });
+  }
 
   try {
     let cards = await getAllCardsFromTrello();

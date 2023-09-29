@@ -411,6 +411,8 @@ const updateVideoBy = async ({
   dataToUpdate,
   dataToInc,
 }) => {
+  console.log(searchBy, searchValue, dataToUpdate, 88776);
+
   await Video.updateOne(
     {
       [searchBy]: searchValue,
@@ -588,22 +590,24 @@ const findByNotApproved = async () => {
   const videos = await Video.find({
     isApproved: false,
     needToBeFixed: { $exists: false },
-  }).populate({
-    path: 'vbForm',
-    select: { refFormId: 1 },
-    populate: {
-      path: 'refFormId',
-      select: { advancePayment: 1 },
-    },
-  }).populate({
-    path: 'trelloData.researchers.researcher',
-    model: 'User',
-    select: {
-      name: 1,
-      email: 1,
-      avatarUrl: 1,
-    },
-  });
+  })
+    .populate({
+      path: 'vbForm',
+      select: { refFormId: 1 },
+      populate: {
+        path: 'refFormId',
+        select: { advancePayment: 1 },
+      },
+    })
+    .populate({
+      path: 'trelloData.researchers.researcher',
+      model: 'User',
+      select: {
+        name: 1,
+        email: 1,
+        avatarUrl: 1,
+      },
+    });
 
   return videos;
 };
@@ -683,22 +687,24 @@ const findOneVideoInFeed = async (req, res) => {
 const findByFixed = async () => {
   const videos = await Video.find({
     needToBeFixed: { $exists: true },
-  }).populate({
-    path: 'vbForm',
-    select: { refFormId: 1 },
-    populate: {
-      path: 'refFormId',
-      select: { advancePayment: 1 },
-    },
-  }).populate({
-    path: 'trelloData.researchers.researcher',
-    model: 'User',
-    select: {
-      name: 1,
-      email: 1,
-      avatarUrl: 1,
-    },
-  });
+  })
+    .populate({
+      path: 'vbForm',
+      select: { refFormId: 1 },
+      populate: {
+        path: 'refFormId',
+        select: { advancePayment: 1 },
+      },
+    })
+    .populate({
+      path: 'trelloData.researchers.researcher',
+      model: 'User',
+      select: {
+        name: 1,
+        email: 1,
+        avatarUrl: 1,
+      },
+    });
 
   return videos;
 };
@@ -1127,13 +1133,11 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
           ? true
           : false;
 
-        console.log(calcTheRequiredFpsForVideo({ videoFps }), 88);
-
         ffmpeg(`${directoryForInputVideo}/input-for-conversion.mp4`)
           .withVideoCodec('libx264')
           .withAudioCodec('libmp3lame')
-          .size(heightVideo <= 720 ? '1280x720' : '1920x1080')
-          .aspect('16:9')
+          .size(heightVideo <= 720 ? '720x1080' : '1080x1920')
+          .aspect('9:16')
           .autopad('black')
           .videoBitrate('15000', false)
           .fps(calcTheRequiredFpsForVideo({ videoFps }))
@@ -1273,7 +1277,6 @@ module.exports = {
   deleteVideoById,
   findByNotApproved,
   getAllVideos,
-
   getCountVideosBy,
   updateVideosBy,
   markVideoEmployeeAsHavingReceivedAnAdvance,

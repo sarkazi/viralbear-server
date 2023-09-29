@@ -525,7 +525,7 @@ router.patch(
 
       let paymentInfo = null;
 
-      if (body?.paymentInfo) {
+      if (!!body?.paymentInfo) {
         if (body.paymentInfo.paymentMethod === 'bankTransfer') {
           const {
             phoneNumber,
@@ -663,6 +663,8 @@ router.patch(
         }),
         ...(!!body?.balance && { lastPaymentDate: moment().toDate() }),
       };
+
+      console.log(paymentInfo, 88);
 
       objDBForIncrement = {
         ...(!!body?.balance && { balance: body.balance }),
