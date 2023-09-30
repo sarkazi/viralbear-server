@@ -2181,7 +2181,10 @@ router.patch('/addCommentForFixed', authMiddleware, async (req, res) => {
       },
     });
 
-    const updatedVideo = await Video.findOne({ 'videoData.videoId': videoId });
+    const updatedVideo = await findVideoBy({
+      searchBy: 'videoData.videoId',
+      value: videoId,
+    });
 
     return res.status(200).json({
       status: 'success',
@@ -3126,7 +3129,7 @@ router.post(
       const stream = streamifier.createReadStream(resBucket.buffer);
 
       if (!video?.uploadedToYoutube) {
-        const SCOPES = ['https://www.googleapis.com/auth/youtube'];
+        const SCOPES = ['https://www.googleapis.com/auth/youtube.upload'];
 
         const responseAfterUploadOnYoutube = await new Promise(
           (resolve, reject) => {
@@ -3153,8 +3156,6 @@ router.post(
                   });
 
                 googleApiOAuth2Instance.getToken(code, async (err, token) => {
-                  console.log(token, 88);
-
                   if (err) {
                     console.log(
                       err?.response?.data?.error,
@@ -3245,7 +3246,9 @@ router.post(
                     message: `${err?.response?.data?.error} (Youtube API)`,
                   });
                 }
-                if (token) {
+                if (!!token) {
+                  console.log(token);
+
                   google.youtube('v3').videos.insert(
                     {
                       access_token: token.access_token,
@@ -3353,6 +3356,16 @@ router.post(
         //    dataToUpdate: { uploadedToFb: true },
         //  });
         //}
+
+
+        //на будущее
+
+        
+        //https://graph.facebook.com/oauth/access_token?
+        //client_id=APP_ID&
+        //client_secret=APP_SECRET&
+        //grant_type=fb_exchange_token&
+        //fb_exchange_token=EXISTING_ACCESS_TOKEN
       }
 
       await updateVideoBy({
