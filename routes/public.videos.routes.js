@@ -8,7 +8,12 @@ const {
   findStartEndPointOfDuration,
 } = require('../utils/findStartEndPointOfDuration');
 
-const { getAllVideos } = require('../controllers/video.controller');
+const {
+  getAllVideos,
+  findNextVideoInFeed,
+  findPrevVideoInFeed,
+  findVideoBy,
+} = require('../controllers/video.controller');
 
 router.get('/findAll', async (req, res) => {
   const {
@@ -154,6 +159,82 @@ router.get('/findAll', async (req, res) => {
       status: 'error',
       message: 'Server side error',
     });
+  }
+});
+
+router.get('/findOne/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    video = await findVideoBy({ searchBy: 'videoData.videoId', value: +id });
+
+    if (!video) {
+      return res.status(200).json({
+        message: `Video with id "${id}" was not found`,
+        status: 'warning',
+      });
+    }
+
+    if (!video.isApproved) {
+      return res.status(200).json({
+        message: 'This video is not available in the feed',
+        status: 'warning',
+      });
+    }
+
+    return res.status(200).json({
+      apiData: video,
+      status: 'success',
+      message: 'Video info successfully received',
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.get('/findOne/next/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const video = await findNextVideoInFeed({ currentVideoId: +id });
+
+    if (!video.length) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'This is the last video',
+      });
+    }
+
+    return res.status(200).json({
+      apiData: video[0],
+      status: 'success',
+      message: 'Video info successfully received',
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.get('/findOne/prev/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const video = await findPrevVideoInFeed({ currentVideoId: +id });
+
+    if (!video.length) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'This is first video',
+      });
+    }
+
+    return res.status(200).json({
+      apiData: video[0],
+      status: 'success',
+      message: 'Video info successfully received',
+    });
+  } catch (err) {
+    console.log(err);
   }
 });
 

@@ -6,9 +6,13 @@ const fs = require('fs');
 const path = require('path');
 const request = require('request');
 
+const Video = require('../entities/Video');
+
 const { google } = require('googleapis');
 
 const mongoose = require('mongoose');
+
+const trelloInstance = require('../api/trello.instance');
 
 const axios = require('axios');
 
@@ -19,8 +23,13 @@ const googleApiOAuth2Instance = require('../googleApiOAuth2.instance');
 
 const moment = require('moment');
 
-const Video = require('../entities/Video');
 const Sales = require('../entities/Sales');
+
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 const fbUpload = require('facebook-api-video-upload');
 
@@ -1128,11 +1137,63 @@ router.get('/findOneById/:videoId', async (req, res) => {
   }
 });
 
-router.get('/findOneInTheFeed/:id', findOneVideoInFeed);
+router.get('/findNext/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
 
-router.get('/findNext/:id', findNextVideoInFeed);
+    const video = await findNextVideoInFeed({ currentVideoId: +id });
 
-router.get('/findPrev/:id', findPrevVideoInFeed);
+    console.log(video, 88);
+
+    if (!video.length) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'This is the last video',
+      });
+    }
+
+    return res.status(200).json({
+      apiData: video[0],
+      status: 'success',
+      message: 'Video successfully received',
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(400).json({
+      status: 'error',
+      message: 'Server side error',
+    });
+  }
+});
+
+router.get('/findPrev/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const video = await findPrevVideoInFeed({ currentVideoId: +id });
+
+    if (!video.length) {
+      return res.status(200).json({
+        status: 'warning',
+        message: 'This is the very first video',
+      });
+    }
+
+    return res.status(200).json({
+      apiData: video[0],
+      status: 'success',
+      message: 'Video successfully received',
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(400).json({
+      status: 'error',
+      message: 'Server side error',
+    });
+  }
+});
 
 router.patch(
   '/update/:id',
@@ -2566,56 +2627,59 @@ router.patch(
         }
 
         if (!video?.uploadedToFb) {
-          //socketInstance
-          //  .io()
-          //  .sockets.in(req.user.id)
-          //  .emit('progressOfRequestInPublishing', {
-          //    event: 'Uploading video to facebook',
-          //    file: null,
-          //  });
-          //const { data: pagesResData } = await axios.get(
-          //  `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
-          //  {
-          //    params: {
-          //      fields: 'name,access_token',
-          //      access_token: process.env.FACEBOOK_API_TOKEN,
-          //    },
-          //  }
-          //);
-          //const pageToken = pagesResData.data.find(
-          //  (page) => page.id === process.env.FACEBOOK_PAGE_ID
-          //).access_token;
-          //console.log(pageToken);
-          //const responseAfterUploadOnFacebook = await new Promise(
-          //  async (resolve, reject) => {
-          //    fbUpload({
-          //      token: pageToken,
-          //      id: process.env.FACEBOOK_PAGE_ID,
-          //      stream,
-          //      title: video.videoData.title,
-          //      description: video.videoData.description,
-          //    })
-          //      .then((res) => {
-          //        resolve({
-          //          status: 'success',
-          //          message: 'Video successfully uploaded on facebook',
-          //        });
-          //      })
-          //      .catch((err) => {
-          //        resolve({
-          //          status: 'error',
-          //          message: err?.response?.data?.message,
-          //        });
-          //      });
-          //  }
-          //);
-          //if (responseAfterUploadOnFacebook.status === 'success') {
-          //  await updateVideoBy({
-          //    searchBy: '_id',
-          //    searchValue: video._id,
-          //    dataToUpdate: { uploadedToFb: true },
-          //  });
-          //}
+          socketInstance
+            .io()
+            .sockets.in(req.user.id)
+            .emit('progressOfRequestInPublishing', {
+              event: 'Uploading video to facebook',
+              file: null,
+            });
+
+          const { data: pagesResData } = await axios.get(
+            `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
+            {
+              params: {
+                fields: 'name,access_token',
+                access_token: process.env.FACEBOOK_API_TOKEN,
+              },
+            }
+          );
+
+          const pageToken = pagesResData.data.find(
+            (page) => page.id === process.env.FACEBOOK_PAGE_ID
+          ).access_token;
+
+          const responseAfterUploadOnFacebook = await new Promise(
+            async (resolve, reject) => {
+              fbUpload({
+                token: pageToken,
+                id: process.env.FACEBOOK_PAGE_ID,
+                stream,
+                title: video.videoData.title,
+                description: video.videoData.description,
+              })
+                .then((res) => {
+                  resolve({
+                    status: 'success',
+                    message: 'Video successfully uploaded on facebook',
+                  });
+                })
+                .catch((err) => {
+                  resolve({
+                    status: 'error',
+                    message: err?.response?.data?.message,
+                  });
+                });
+            }
+          );
+
+          if (responseAfterUploadOnFacebook.status === 'success') {
+            await updateVideoBy({
+              searchBy: '_id',
+              searchValue: video._id,
+              dataToUpdate: { uploadedToFb: true },
+            });
+          }
         }
       }
 
@@ -3356,11 +3420,7 @@ router.post(
         //    dataToUpdate: { uploadedToFb: true },
         //  });
         //}
-
-
         //на будущее
-
-        
         //https://graph.facebook.com/oauth/access_token?
         //client_id=APP_ID&
         //client_secret=APP_SECRET&
@@ -3586,6 +3646,31 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       message: 'Server side error',
       status: 'error',
     });
+  }
+});
+
+router.post('/test', async (req, res) => {
+  const body = req.body;
+
+  try {
+    await Video.create({
+      ...body,
+      trelloData: {
+        ...body.trelloData,
+        researchers: !body.trelloData.researchers.length
+          ? []
+          : body.trelloData.researchers.map((el) => {
+              return {
+                ...el,
+                researcher: mongoose.Types.ObjectId(el.researcher),
+              };
+            }),
+      },
+    });
+
+    res.status(200).json({ status: 'success' });
+  } catch (err) {
+    console.log(err);
   }
 });
 

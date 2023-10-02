@@ -121,7 +121,8 @@ const refreshMrssFiles = async () => {
           }),
       })
         .limit(200)
-        .sort({ $natural: -1 });
+        //.sort({ $natural: -1 });
+        .sort({ 'videoData.videoId': -1 });
 
       if (obj.name === 'AP video hub' || obj.name === 'AP video hub archive') {
         fs.writeFile(
@@ -411,8 +412,6 @@ const updateVideoBy = async ({
   dataToUpdate,
   dataToInc,
 }) => {
-  console.log(searchBy, searchValue, dataToUpdate, 88776);
-
   await Video.updateOne(
     {
       [searchBy]: searchValue,
@@ -425,34 +424,13 @@ const updateVideoBy = async ({
   );
 };
 
-const findNextVideoInFeed = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const video = await Video.findOne({
-      isApproved: true,
-      'videoData.videoId': { $gt: +id },
-    });
-
-    if (!video) {
-      return res.status(200).json({ message: `Video with id ${id} not found` });
-    }
-
-    const nextVideo = await Video.findOne({
-      isApproved: true,
-      'videoData.videoId': { $gt: +video.videoData.videoId },
-    });
-
-    const { updatedAt, __v, _id, ...data } = video._doc;
-
-    res.status(200).json({
-      data: data,
-      isLastVideo: nextVideo ? false : true,
-    });
-  } catch (err) {
-    console.log(err);
-    throw Error('Server side error...');
-  }
+const findNextVideoInFeed = async ({ currentVideoId }) => {
+  return await Video.find({
+    isApproved: true,
+    'videoData.videoId': { $gt: currentVideoId },
+  })
+    .limit(1)
+    .sort({ 'videoData.videoId': 1 });
 };
 
 const uploadContentOnBucket = async (buffer, name, bucketPath) => {
@@ -469,39 +447,13 @@ const uploadContentOnBucket = async (buffer, name, bucketPath) => {
   return bucketRequest;
 };
 
-const findPrevVideoInFeed = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const video = await Video.find(
-      {
-        isApproved: true,
-        'videoData.videoId': { $lt: +id },
-      },
-      { updatedAt: 0, _id: 0, __v: 0 }
-    )
-      .limit(1)
-      .sort({ 'videoData.videoId': -1 });
-
-    if (!video) {
-      return res.status(200).json({ message: `Video with id ${id} not found` });
-    }
-
-    const prevVideo = await Video.find({
-      isApproved: true,
-      'videoData.videoId': { $lt: +video[0]?.videoData?.videoId },
-    })
-      .limit(1)
-      .sort({ 'videoData.videoId': -1 });
-
-    res.status(200).json({
-      data: video[0],
-      isFirstVideo: prevVideo[0] ? false : true,
-    });
-  } catch (err) {
-    console.log(err);
-    throw Error('Server side error...');
-  }
+const findPrevVideoInFeed = async ({ currentVideoId }) => {
+  return await Video.find({
+    isApproved: true,
+    'videoData.videoId': { $lt: currentVideoId },
+  })
+    .limit(1)
+    .sort({ 'videoData.videoId': -1 });
 };
 
 const createNewVideo = async (body) => {

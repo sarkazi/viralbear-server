@@ -122,7 +122,7 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
     if (role === 'editor') {
       editor = await getUserBy({
         searchBy: '_id',
-        value: new ObjectId(req.user.id),
+        value: mongoose.Types.ObjectId(req.user.id),
       });
 
       const researchersHiddenToEditor = await getAllUsers({

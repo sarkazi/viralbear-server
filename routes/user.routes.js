@@ -86,6 +86,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       sortByPosition,
       page,
       limit,
+      sort,
     } = req.query;
 
     const userId = req.user.id;
@@ -176,6 +177,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         }),
         skip,
         limit,
+        ...(sort && { sort }),
       });
     }
 

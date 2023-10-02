@@ -6,6 +6,8 @@ const xlsx = require('xlsx');
 
 const mongoose = require('mongoose');
 
+const fs = require('fs');
+
 const { ObjectId } = mongoose.Types;
 
 var Mutex = require('async-mutex').Mutex;
@@ -17,6 +19,7 @@ const {
   getAllSales,
   findSaleById,
   getSaleBy,
+  getCountSales,
 } = require('../controllers/sales.controller');
 
 const {
@@ -402,6 +405,7 @@ router.post(
                     status: 'notFound',
                   };
                 } else {
+                  //console.log(obj, 'found');
                   let amountToResearcher = 0;
                   let amountToAuthor = 0;
                   let amount = 0;
@@ -1144,6 +1148,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       personal,
       relatedToTheVbForm,
       forLastDays,
+      giveQuantity,
     } = req.query;
 
     if (
@@ -1169,6 +1174,8 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       userId = mongoose.Types.ObjectId(req.user.id);
     }
 
+    let salesCount = null;
+
     let sales = await getAllSales({
       count,
       ...(company && { company }),
@@ -1193,10 +1200,15 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       return acc + item.amountToResearcher;
     }, 0);
 
+    if (giveQuantity && !!JSON.parse(giveQuantity)) {
+      salesCount = await getCountSales({});
+    }
+
     const apiData = {
       sales,
       sumAmount: +sumAmount.toFixed(2),
       sumAmountResearcher: +sumAmountResearcher.toFixed(2),
+      ...(typeof salesCount === 'number' && { salesCount }),
     };
 
     return res.status(200).json({

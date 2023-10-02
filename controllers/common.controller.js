@@ -13,7 +13,9 @@ const calcOfCurrencyRatio = async ({ fromCur, toCur }) => {
         }
 
         return {
-          amount: data.payload.rates[0].buy,
+          amount: data.payload.rates.find((obj) => {
+            return obj.category === 'DepositPayments';
+          }).buy,
           cur,
           status: cur === fromCur ? 'from' : 'to',
         };

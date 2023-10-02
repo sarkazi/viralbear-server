@@ -58,6 +58,8 @@ const pullOutProcessingDataFromPairedReport = async ({
                 obj['Supplier Ref:'] &&
                 obj['Supplier Ref:'].toString().includes('_tv')
                   ? +obj['Supplier Ref:'].replace('_tv', '')
+                  : !obj['Supplier Ref:'].includes(' ')
+                  ? +obj['Supplier Ref:']
                   : obj['Supplier Ref:'],
               usage: null,
               amount:

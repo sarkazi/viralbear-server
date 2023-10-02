@@ -235,28 +235,28 @@ router.post('/trello/allBoard', async (req, res) => {
       //}
     }
 
-    if (
-      changedData?.action?.display?.translationKey === 'action_archived_card' &&
-      changedData?.webhook?.idModel === process.env.TRELLO_BOARD_ID
-    ) {
-      console.log(`The webhook for archiving the card in trello worked`);
+    //if (
+    //  changedData?.action?.display?.translationKey === 'action_archived_card' &&
+    //  changedData?.webhook?.idModel === process.env.TRELLO_BOARD_ID
+    //) {
+    //  console.log(`The webhook for archiving the card in trello worked`);
 
-      const trelloCardId = changedData.action.data.card.id;
+    //  const trelloCardId = changedData.action.data.card.id;
 
-      const video = await findVideoBy({
-        searchBy: 'trelloData.trelloCardId',
-        value: trelloCardId,
-      });
+    //  const video = await findVideoBy({
+    //    searchBy: 'trelloData.trelloCardId',
+    //    value: trelloCardId,
+    //  });
 
-      if (video) {
-        await deleteVideoById(video.videoData.videoId);
+    //  if (video) {
+    //    await deleteVideoById(video.videoData.videoId);
 
-        socketInstance.io().emit('triggerForAnUpdateInPublishing', {
-          priority: null,
-          event: null,
-        });
-      }
-    }
+    //    socketInstance.io().emit('triggerForAnUpdateInPublishing', {
+    //      priority: null,
+    //      event: null,
+    //    });
+    //  }
+    //}
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {

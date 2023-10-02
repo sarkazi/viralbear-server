@@ -28,6 +28,7 @@ const getAllUsers = async ({
   skip,
   limit,
   hiddenForEditor,
+  sort,
 }) => {
   return await User.find(
     {
@@ -56,7 +57,8 @@ const getAllUsers = async ({
       skip && limit ? { locale: 'en_US', numericOrdering: true } : null
     )
     .limit(limit ? limit : null)
-    .skip(skip ? skip : null);
+    .skip(skip ? skip : null)
+    .sort(sort === 'desc' ? { _id: -1 } : sort === 'asc' ? { _id: 1 } : null);
 };
 
 const getUserById = async (userId) => {

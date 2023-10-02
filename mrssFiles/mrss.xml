@@ -10,24 +10,6 @@
                 <dfpvideo:version>2</dfpvideo:version>
                   
                         <item>
-                          <media:title>gfd</media:title>
-                          <media:description>fgfg</media:description>
-                          <media:keywords>fgdfg</media:keywords>
-                          <media:city>gfd</media:city>
-                          <media:country>Angola</media:country>
-                          <media:regionCode>AO</media:regionCode>
-                          <media:categoryCode>GEN</media:categoryCode>
-                          <media:category>Weather,Fails and Funnies</media:category>
-                          <media:exclusivity>non-exсlusive</media:exclusivity>
-                          <media:filmingDate>Sat, 30 Sep 2023</media:filmingDate>
-                          <guid>3147</guid>
-                          <pubDate>Sat, 30 Sep 2023 17:09:51 GMT</pubDate>
-                          <media:thumbnail url="https://viralbear2.storage.yandexcloud.net/screens/3147.jpg" />
-                          <media:content url="https://viralbear2.storage.yandexcloud.net/videos/3147.mp4" />
-                          <dfpvideo:lastModifiedDate/>
-                          </item>
-                        
-                        <item>
                           <media:title>Ukrainian soldiers maintain resilience amid shelling: tea time in Bakhmut apartment</media:title>
                           <media:description>In a stark depiction of resilience amidst conflict, a video captured by @vovchikmolot11 on September 20, 2023, in Bakhmut, Ukraine, has surfaced, revealing Ukrainian soldiers carrying on with their daily routines in the face of ongoing shelling. The footage shows a Ukrainian soldier standing resolutely in an apartment, while the videographer himself calmly sits at a table, sipping tea. As explosions from the shelling echo in the background, the soldiers remain undeterred, showcasing their unwavering determination in the midst of the Ukraine-Russia conflict. </media:description>
                           <media:keywords>resilience,conflict,Ukraine,soldier,shelling,Bakhmut,video,determination,tea,apartment,courage,adversity,unwavering,strength,fortitude,war,hardship,endurance,perseverance,unity</media:keywords>
@@ -3611,6 +3593,24 @@ Residents are urged to stay informed through official channels, follow any evacu
                           <pubDate>Wed, 06 Sep 2023 14:12:01 GMT</pubDate>
                           <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2931.jpg" />
                           <media:content url="https://viralbear.storage.yandexcloud.net/videos/2931.mp4" />
+                          <dfpvideo:lastModifiedDate/>
+                          </item>
+                        
+                        <item>
+                          <media:title> Ukrainian soldiers learn covert mine planting amidst Russia-Ukraine conflict</media:title>
+                          <media:description>In a recent video captured by @dmitriykirishun on May 13, 2023, in the Kyiv region of Ukraine, Ukrainian soldiers were seen undergoing training in the clandestine art of mine planting. The footage reveals soldiers meticulously concealing a planted mine beneath a layer of earth and grass, rendering it virtually invisible. This training session was conducted by a group of dedicated volunteers and takes place in the midst of escalating tensions between Russia and Ukraine.</media:description>
+                          <media:keywords>conflict,training,soldiers,Ukraine,Russia,video,mine,planting,volunteers,covert,grass,earth,military,tension,Kyiv,region,concealed,invisible,homeland,captured</media:keywords>
+                          <media:city>Kyiv region</media:city>
+                          <media:country>Ukraine</media:country>
+                          <media:regionCode>UA</media:regionCode>
+                          <media:categoryCode>GEN</media:categoryCode>
+                          <media:category>News</media:category>
+                          <media:exclusivity>non-exсlusive</media:exclusivity>
+                          <media:filmingDate>Sat, 13 May 2023</media:filmingDate>
+                          <guid>2930</guid>
+                          <pubDate>Tue, 05 Sep 2023 10:15:38 GMT</pubDate>
+                          <media:thumbnail url="https://viralbear.storage.yandexcloud.net/screens/2930.jpg" />
+                          <media:content url="https://viralbear.storage.yandexcloud.net/videos/2930.mp4" />
                           <dfpvideo:lastModifiedDate/>
                           </item>
                         

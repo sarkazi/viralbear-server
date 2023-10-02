@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authMiddleware = require('../middleware/auth.middleware');
 
-const { validationResult, check } = require('express-validator');
+const { validationResult, check, isEmail } = require('express-validator');
 
 const { compare, hash } = require('bcryptjs');
 
@@ -18,65 +18,62 @@ const {
 } = require('../controllers/auth.controllers');
 const { sign } = require('jsonwebtoken');
 
-router.post(
-  '/login',
-  [
-    check('email', 'Please enter a valid email').normalizeEmail().isEmail(),
-    check('password', 'Enter password').exists(),
-  ],
-  async (req, res) => {
-    const { email, password } = req.body;
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
 
-    try {
-      const errors = validationResult(req);
-
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          errors: errors.array(),
-          message: 'Incorrect login information',
-          status: 'warning',
-        });
-      }
-
-      const user = await getUserByEmail(email);
-
-      if (!user) {
-        return res
-          .status(404)
-          .json({ message: 'User is not found', status: 'warning', code: 404 });
-      }
-
-      const isMatch = await compare(password, user.password);
-
-      if (!isMatch) {
-        return res.status(403).json({
-          message: 'Wrong password, please try again',
-          status: 'warning',
-          code: 403,
-        });
-      }
-
-      const { accessToken, refreshToken } = generateTokens({
-        userId: user._id,
-        userRole: user.role,
-      });
-
-      return res.status(200).json({
-        apiData: {
-          accessToken,
-          refreshToken,
-          role: user.role,
-          name: user.name,
-          id: user._id,
-        },
-        status: 'success',
-        code: 200,
-      });
-    } catch (err) {
-      console.log(err);
-    }
+  if (!email) {
+    return res.status(200).json({
+      message: 'Missing email',
+      status: 'warning',
+    });
   }
-);
+
+  if (!password) {
+    return res.status(200).json({
+      message: 'Missing password',
+      status: 'warning',
+    });
+  }
+
+  try {
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+      return res
+        .status(200)
+        .json({ message: 'User is not found', status: 'warning', code: 404 });
+    }
+
+    const isMatch = await compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(200).json({
+        message: 'Wrong password, please try again',
+        status: 'warning',
+        code: 403,
+      });
+    }
+
+    const { accessToken, refreshToken } = generateTokens({
+      userId: user._id,
+      userRole: user.role,
+    });
+
+    return res.status(200).json({
+      apiData: {
+        accessToken,
+        refreshToken,
+        role: user.role,
+        name: user.name,
+        id: user._id,
+      },
+      status: 'success',
+      code: 200,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 router.post('/getMe', authMiddleware, async (req, res) => {
   try {

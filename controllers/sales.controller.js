@@ -54,6 +54,10 @@ const getAllSales = async ({
     });
 };
 
+const getCountSales = async () => {
+  return await Sales.find({}).count();
+};
+
 const deleteSaleById = async (saleId) => {
   return await Sales.deleteOne({ _id: saleId });
 };
@@ -120,4 +124,5 @@ module.exports = {
   updateSaleBy,
   markEmployeeOnSalesHavingReceivePercentage,
   getSaleBy,
+  getCountSales,
 };
