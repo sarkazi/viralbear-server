@@ -94,8 +94,8 @@ const pullOutProcessingDataFromPairedReport = async ({
             return {
               videoId:
                 typeof obj['Video_ref_ID'] === 'string' &&
-                obj['Video_ref_ID'].includes(',')
-                  ? +obj['Video_ref_ID'].split(',')[0]
+                obj['Video_ref_ID'].includes(' ')
+                  ? +obj['Video_ref_ID'].split(' ')[1]
                   : obj['Video_ref_ID'],
               usage: null,
               amount: !!obj[' EUR/clip']

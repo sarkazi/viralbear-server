@@ -3,19 +3,15 @@ const socketInstance = require('../socket.instance');
 const path = require('path');
 const { v4: createUniqueHash } = require('uuid');
 
-const uploadFileToStorage = async (
-  fileName,
+const uploadFileToStorage = async ({
+  socketInfo,
   folder,
   name,
   buffer,
   type,
   extension,
   resolve,
-  reject,
-  socketEmitName,
-  eventName,
-  userId
-) => {
+}) => {
   await storageInstance
     .upload(
       {
@@ -43,18 +39,20 @@ const uploadFileToStorage = async (
       }
     )
     .on('httpUploadProgress', (progress) => {
-      const loaded = Math.round((progress.loaded * 100) / progress.total);
+      if (!!socketInfo) {
+        const loaded = Math.round((progress.loaded * 100) / progress.total);
 
-      socketInstance
-        .io()
-        .sockets.in(userId)
-        .emit(socketEmitName, {
-          event: eventName,
-          file: {
-            name: fileName,
-            loaded,
-          },
-        });
+        socketInstance
+          .io()
+          .sockets.in(socketInfo.userId)
+          .emit(socketInfo.socketEmitName, {
+            event: socketInfo.eventName,
+            file: {
+              name: socketInfo.fileName,
+              loaded,
+            },
+          });
+      }
     });
 };
 

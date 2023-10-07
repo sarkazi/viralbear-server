@@ -35,9 +35,12 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
   const convertedLink = conversionIncorrectLinks(link);
 
   try {
-    const videoLink = await findBaseUrl(convertedLink);
+    //const videoLink = await findBaseUrl(convertedLink);
 
-    const linkInfo = await findLinkBy({ searchBy: 'link', value: videoLink });
+    const linkInfo = await findLinkBy({
+      searchBy: 'link',
+      value: convertedLink,
+    });
 
     if (!!linkInfo) {
       const trelloCardData = await getCardDataByCardId(linkInfo.trelloCardId);
@@ -86,7 +89,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
     const trelloResponseAfterCreatingCard = await createCardInTrello(
       authorNickname,
       title,
-      videoLink,
+      convertedLink,
       list,
       foundWorkersTrelloIds
     );
@@ -120,7 +123,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       researcher: selfWorker._id,
       authorsNick: authorNickname,
       title,
-      link: videoLink,
+      link: convertedLink,
       trelloCardUrl: trelloResponseAfterCreatingCard.url,
       trelloCardId: trelloResponseAfterCreatingCard.id,
       listInTrello: list,

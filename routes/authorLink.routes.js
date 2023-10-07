@@ -66,15 +66,15 @@ router.post('/create', authMiddleware, async (req, res) => {
     //    .json({ message: 'Link is invalid', status: 'warning' });
     //}
 
-    const videoId = await pullIdFromUrl(convertedLink);
+    //const videoId = await pullIdFromUrl(convertedLink);
 
-    if (!videoId) {
-      return res
-        .status(200)
-        .json({ message: 'Link is invalid', status: 'warning' });
-    }
+    //if (!videoId) {
+    //  return res
+    //    .status(200)
+    //    .json({ message: 'Link is invalid', status: 'warning' });
+    //}
 
-    const link = await findLinkBy({ searchBy: 'unixid', value: videoId });
+    const link = await findLinkBy({ searchBy: 'link', value: convertedLink });
 
     if (!link) {
       if (confirmIncorrect === false) {
@@ -87,7 +87,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       }
     }
 
-    const authorLink = await findAuthorLinkByVideoId(videoId);
+    const authorLink = await findAuthorLinkByVideoId(convertedLink);
 
     if (!!authorLink) {
       if (confirmDeletion === false) {
@@ -109,7 +109,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       formHash,
       formLink: `${process.env.CLIENT_URI}/submitVideo?unq=${formHash}`,
       videoLink: convertedLink,
-      videoId,
+      convertedLink,
       exclusivity,
       paid: true,
 

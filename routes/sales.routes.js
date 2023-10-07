@@ -400,12 +400,13 @@ router.post(
                 });
 
                 if (!videoDb) {
+                  console.log(obj);
+
                   return {
                     videoId: obj.videoId,
                     status: 'notFound',
                   };
                 } else {
-                  //console.log(obj, 'found');
                   let amountToResearcher = 0;
                   let amountToAuthor = 0;
                   let amount = 0;

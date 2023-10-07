@@ -7,6 +7,11 @@ const socketInstance = require('../socket.instance');
 const { v4: createUniqueHash } = require('uuid');
 const path = require('path');
 const moment = require('moment');
+const {
+  generatingTextOfAgreement,
+} = require('../utils/vbForm/generatingTextOfAgreement.util');
+
+const pdf = require('html-pdf');
 
 const {
   findLastAddedVbForm,
@@ -141,13 +146,18 @@ router.post(
         formHash,
         formHashSimple,
         researcherName,
+        localeForAgreement,
+        signatureUrl,
+        signatureArray,
+        signatureIsEmpty,
       } = req?.body;
 
-      const { videos } = req.files;
-
-      if (!videos && !videoLink) {
+      if (
+        !!JSON.parse(signatureIsEmpty) ||
+        !JSON.parse(signatureArray).length
+      ) {
         return res.status(200).json({
-          message: 'Enter a link or upload a video',
+          message: 'We cannot accept the form without your signature',
           status: 'warning',
         });
       }
@@ -162,10 +172,23 @@ router.post(
         over18YearOld === false ||
         agreedWithTerms === false ||
         didNotGiveRights === false ||
-        !ip
+        !ip ||
+        !signatureUrl ||
+        !localeForAgreement
       ) {
         return res.status(200).json({
-          message: 'Missing parameter or non-inserted checkbox',
+          message: 'Missing parameters for saving the form',
+          status: 'warning',
+        });
+      }
+
+      const parseLocaleText = JSON.parse(localeForAgreement);
+
+      const { videos } = req.files;
+
+      if (!videos && !videoLink) {
+        return res.status(200).json({
+          message: 'Enter a link or upload a video',
           status: 'warning',
         });
       }
@@ -205,6 +228,102 @@ router.post(
         });
       }
 
+      const lastAddedVbForm = await findLastAddedVbForm();
+
+      const vbCode = calcVbCode(lastAddedVbForm);
+
+      let videoLinks = [videoLink];
+
+      if (!!videos && videos.length) {
+        await Promise.all(
+          videos?.map(async (file) => {
+            const resStorage = await new Promise(async (resolve, reject) => {
+              await uploadFileToStorage({
+                folder: 'client-videos',
+                name: `${createUniqueHash()}-${vbCode}`,
+                buffer: file.buffer,
+                type: file.mimetype,
+                extension: path.extname(file.originalname),
+                resolve,
+              });
+            });
+
+            if (resStorage.status === 'success') {
+              videoLinks.push(resStorage.response.Location);
+            } else {
+              return res.status(200).json({
+                message: 'Error during video upload',
+                status: 'warning',
+              });
+            }
+          })
+        );
+      }
+
+      const dynamicDataForAgreement = {
+        parseLocaleText,
+        exclusivity: authorLinkWithThisHash?.exclusivity,
+        percentage: authorLinkWithThisHash?.percentage,
+        advancePayment: authorLinkWithThisHash?.advancePayment,
+        videoLinks,
+        ipAddress: ip,
+        dynamicSignature: signatureUrl,
+        name,
+        lastName,
+        email,
+      };
+
+      const resAfterPdfGenerate = await new Promise((resolve, reject) => {
+        pdf
+          .create(generatingTextOfAgreement(dynamicDataForAgreement), {
+            format: 'A4',
+            border: {
+              bottom: '25px',
+              top: '25px',
+              left: '25px',
+              right: '25px',
+            },
+          })
+          .toBuffer(async (err, buffer) => {
+            if (err) {
+              console.log(err);
+              resolve({
+                status: 'error',
+                event: 'pdfGenerate',
+                message: 'Error at the agreement generation stage. Try again.',
+              });
+            }
+
+            if (buffer) {
+              await uploadFileToStorage({
+                folder: 'agreement',
+                name: `${createUniqueHash()}-${vbCode}`,
+                buffer,
+                type: 'application/pdf',
+                extension: '.pdf',
+                resolve,
+              });
+            }
+          });
+      });
+
+      if (resAfterPdfGenerate.status === 'error') {
+        return res.status(200).json({
+          message: resAfterPdfGenerate.message,
+          status: 'warning',
+        });
+      }
+
+      const agreementLink = resAfterPdfGenerate.response.Location;
+
+      if (!agreementLink) {
+        return res.status(200).json({
+          message:
+            'Error at the stage of saving the agreement to the repository',
+          status: 'warning',
+        });
+      }
+
       let author = await getUserByEmail(email);
 
       if (!author) {
@@ -218,61 +337,6 @@ router.post(
         };
 
         author = await createUser(objDbForCreateUser);
-      }
-
-      const lastAddedVbForm = await findLastAddedVbForm();
-
-      const vbCode = calcVbCode(lastAddedVbForm);
-
-      let videoLinks = [];
-
-      if (videoLink) {
-        videoLinks = [...videoLinks, videoLink];
-      }
-
-      const uploadingVideosToStorage = async () => {
-        if (!videos) {
-          return [
-            {
-              message: 'No upload video found',
-              status: 'warning',
-            },
-          ];
-        } else {
-          return await Promise.all(
-            videos?.map(async (file) => {
-              return await new Promise(async (resolve, reject) => {
-                await uploadFileToStorage(
-                  file.originalname,
-                  'client-videos',
-                  `${createUniqueHash()}-${vbCode}`,
-                  file.buffer,
-                  file.mimetype,
-                  path.extname(file.originalname),
-                  resolve,
-                  reject,
-                  'progressUploadByStorage',
-                  'Uploading the video to the storage'
-                );
-              });
-            })
-          );
-        }
-      };
-
-      const resStorage = await uploadingVideosToStorage();
-
-      socketInstance.io().emit('progressUploadByStorage', {
-        event: 'Just a little bit left',
-        file: null,
-      });
-
-      if (resStorage.every((obj) => obj.status === 'success')) {
-        await Promise.all(
-          resStorage.map(async (res) => {
-            videoLinks = [...videoLinks, res.response.Location];
-          })
-        );
       }
 
       const isFormImpliesAnAdvancePayment =
@@ -342,6 +406,7 @@ router.post(
         ...(isFormImpliesAnAdvancePayment && {
           advancePaymentReceived: false,
         }),
+        agreementLink,
       };
 
       await createNewVbForm(objDB);
@@ -362,20 +427,10 @@ router.post(
       }
 
       const apiData = {
-        name,
-        lastName,
-        email,
-        videoLinks: newVbForm.videoLinks,
-        ip: newVbForm.ip,
-        vbFormId: newVbForm.formId,
-        ...(formHash && {
-          exclusivity: newVbForm.refFormId.exclusivity,
-          percentage: newVbForm.refFormId.percentage,
-          advancePayment: newVbForm.refFormId.advancePayment,
-        }),
+        vbFormCode: newVbForm.formId,
       };
 
-      return res.status(200).send({
+      return res.status(200).json({
         message:
           'The data has been uploaded successfully. The agreement has been sent to the post office.',
         apiData,
@@ -383,8 +438,8 @@ router.post(
       });
     } catch (err) {
       console.log(err);
-      return res.status(500).json({
-        message: err?.message ? err?.message : 'Server-side error',
+      return res.status(400).json({
+        message: err?.message ? err.message : 'Server-side error',
         status: 'error',
       });
     }
@@ -442,83 +497,81 @@ router.post(
   multer({ storage: storage }).fields([{ name: 'pdf' }]),
   async (req, res) => {
     try {
-      const { pdf } = req.files;
-      const { formId } = req.body;
+      //const { pdf } = req.files;
+      //const { formId } = req.body;
 
-      if (!pdf) {
-        return res.status(400).json({
-          message: 'missing pdf file',
-          status: 'error',
-        });
-      }
+      //if (!pdf) {
+      //  return res.status(400).json({
+      //    message: 'missing pdf file',
+      //    status: 'error',
+      //  });
+      //}
 
-      if (!pdf.length > 1) {
-        return res.status(400).json({
-          message: 'A maximum of 1 pdf file is expected',
-          status: 'warning',
-        });
-      }
+      //if (!pdf.length > 1) {
+      //  return res.status(400).json({
+      //    message: 'A maximum of 1 pdf file is expected',
+      //    status: 'warning',
+      //  });
+      //}
 
-      if (!formId) {
-        return res.status(404).json({
-          message: `missing form id value`,
-          status: 'error',
-        });
-      }
+      //if (!formId) {
+      //  return res.status(404).json({
+      //    message: `missing form id value`,
+      //    status: 'error',
+      //  });
+      //}
 
-      const objToSearchVbForm = {
-        searchBy: 'formId',
-        param: formId,
-      };
+      //const objToSearchVbForm = {
+      //  searchBy: 'formId',
+      //  param: formId,
+      //};
 
-      const vbForm = await findOne(objToSearchVbForm);
+      //const vbForm = await findOne(objToSearchVbForm);
 
-      if (!vbForm) {
-        return res.status(200).json({
-          message: `Form with id "${formId}" not found`,
-          status: 'warning',
-        });
-      }
+      //if (!vbForm) {
+      //  return res.status(200).json({
+      //    message: `Form with id "${formId}" not found`,
+      //    status: 'warning',
+      //  });
+      //}
 
-      if (vbForm.agreementLink) {
-        return res.status(200).json({
-          message: 'The agreement link already exists',
-          status: 'warning',
-        });
-      }
+      //if (vbForm.agreementLink) {
+      //  return res.status(200).json({
+      //    message: 'The agreement link already exists',
+      //    status: 'warning',
+      //  });
+      //}
 
-      if (!vbForm.sender) {
-        return res.status(200).json({
-          message: 'The sender of the vb form was not found in the database',
-          status: 'warning',
-        });
-      }
+      //if (!vbForm.sender) {
+      //  return res.status(200).json({
+      //    message: 'The sender of the vb form was not found in the database',
+      //    status: 'warning',
+      //  });
+      //}
 
-      const resStorage = await new Promise(async (resolve, reject) => {
-        await uploadFileToStorage(
-          pdf[0].originalname,
-          'agreement',
-          `${createUniqueHash()}-${formId.replace('VB', '')}`,
-          pdf[0].buffer,
-          pdf[0].mimetype,
-          path.extname(pdf[0].originalname),
-          resolve,
-          reject,
-          'progressUploadByStorage',
-          'Uploading the agreement to the storage'
-        );
-      });
+      //const resStorage = await new Promise(async (resolve, reject) => {
+      //  await uploadFileToStorage(
+      //    pdf[0].originalname,
+      //    'agreement',
+      //    `${createUniqueHash()}-${formId.replace('VB', '')}`,
+      //    pdf[0].buffer,
+      //    pdf[0].mimetype,
+      //    path.extname(pdf[0].originalname),
+      //    resolve,
+      //    reject,
+      //    'progressUploadByStorage',
+      //    'Uploading the agreement to the storage'
+      //  );
+      //});
 
-      const agreementLink = resStorage.response.Location;
+      //const agreementLink = resStorage.response.Location;
 
-      console.log(agreementLink, 88);
-
-      if (!agreementLink) {
-        return res.status(200).json({
-          message: 'Error when uploading pdf file to storage',
-          status: 'warning',
-        });
-      }
+      //if (!agreementLink) {
+      //  return res.status(200).json({
+      //    message: 'Error when uploading pdf file to storage',
+      //    status: 'warning',
+      //  });
+      //}
 
       const accountActivationLink = `${process.env.CLIENT_URI}/login/?auth_hash=${vbForm._id}`;
 
@@ -595,8 +648,6 @@ router.post(
         email: vbForm.sender.email,
         text: TextOfMailForAuthor,
       };
-
-      console.log(dataForSendingAgreement, 8867);
 
       if (!!vbForm.refFormId?.paid) {
         const linkData = await findLinkByVideoId(vbForm.refFormId.videoId);
