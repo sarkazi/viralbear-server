@@ -23,36 +23,39 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
             <title>PDF Result Template</title>
             <style>
               
-              
+              p {
+                padding: unset;
+                margin: unset;
+              }
               .marginSm {
-                margin-bottom: 5px;
+                margin-bottom: 6px;
               }
               .marginMd {
-                margin-bottom: 20px;
+                margin-bottom: 17px;
               }
               .marginXs {
-                margin-bottom: 10px;
+                margin-bottom: 12px;
               }
               .marginLg {
-                margin-bottom: 30px;
+                margin-bottom: 28px;
               }
               .marginExtraLg {
-                margin-bottom: 40px;
+                margin-bottom: 37px;
               }
               .marginFull {
-                margin-bottom: 70px;
+                margin-bottom: 65px;
               }
-              .textXs: {
-                font-size: 8px;
+              .textXs {
+                font-size: 11px;
               },
               .textSm {
-                font-size: 15px;
+                font-size: 2px;
               }
               .textMd {
-                font-size: 22px;
+                font-size: 20px;
               }
               .textLg {
-                font-size: 30px;
+                font-size: 23px;
               }
               .weightMedium {
                 font-weight: 500;
@@ -60,6 +63,10 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
               .weightBold {
                 font-weight: 700;
               }
+              .underline {
+                text-decoration: underline;
+              }
+              
              
               
             </style>
@@ -67,11 +74,11 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
          <body>
         
            <div style='line-height: 140%; font-family: Arial, sans-serif;'>
-             <div style=' display: flex;'>
+             <div style=''>
              
-                 <p class='marginExtraLg textLg' style='text-align: center; text-transform: uppercase;'>${
+                 <h1 class='marginExtraLg textLg' style='text-align: center; text-transform: uppercase; align-self: center;'>${
                    parseLocaleText.licenseAgreement
-                 }</p>
+                 }</h1>
               
    
                <div class='marginMd' >
@@ -83,7 +90,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                    }
                  </p>
                  <div class='marginMd'>
-                     <p  class='marginSm weightBold'>${
+                     <p  class='marginMd weightBold'>${
                        parseLocaleText.parties
                      }</p>
                      <p class='marginSm'>
@@ -92,10 +99,10 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                      }: ${name} ${lastName}
                      </p>
                      <p class='marginSm'>${parseLocaleText.email}: ${email}</p>
-                   <p>
+                   <p class='marginSm'>
                    ${parseLocaleText.videoIsExclusive}
                    </p>
-                   <p>
+                   <p >
                    ${parseLocaleText.userLicensee}: LLC «VIRALBEAR»
                    </p>
                  </div>
@@ -118,7 +125,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                      }: ${ipAddress}</p>
                  
                  </div>
-                 <p  class='textMd marginMd'>
+                 <p  class='textMd marginMd underline'>
                    ${parseLocaleText.guarantees}
                  </p>
                  <p  class='textSm marginXs'>
@@ -140,7 +147,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
              
                    ${parseLocaleText.fifthGuarantee}
                  </p>
-                 <p  class='textMd marginMd'>
+                 <p  class='textMd marginMd underline'>
                  
                    ${parseLocaleText.theRightsYouGrantUs}
                  </p>
@@ -164,13 +171,13 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                      : ''
                  }
    
-                 <p  class='textMd marginMd'>
+                 <p  class='textMd marginMd underline'>
                  ${parseLocaleText.responsibility}
                  </p>
                  <p class='textSm marginMd'>
                  ${parseLocaleText.responsibilityText}
                  </p>
-                 <p class='textMd marginMd'>
+                 <p class='textMd marginMd underline'>
                
                    ${parseLocaleText.terminationOfTheAgreement}
                  </p>
@@ -190,7 +197,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                   
                    ${parseLocaleText.terminationOfTheAgreementText4}
                  </p>
-                 <p  class='textMd marginMd'>
+                 <p  class='textMd marginMd underline'>
              
                    ${parseLocaleText.disputeResolution}
                  </p>
@@ -198,7 +205,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                   
                    ${parseLocaleText.disputeResolutionText}
                  </p>
-                 <p  class='textMd marginMd'>
+                 <p  class='textMd marginMd underline'>
                    ${parseLocaleText.confidentiality}
                  </p>
                  <p class='textSm marginLg'>
@@ -209,29 +216,29 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                   style='border-top: 1px solid rgb(203, 203, 203); padding-top: 10px'
                  
                    >
-                     <p class='textXs marginXs'>
-                   
+                     <p class='textXs marginXs' style='line-height: 120%;'>
                        ${parseLocaleText.subtext1}
                      </p>
    
-                     <p  class='textXs marginFull'>
-                   
+                     <p  class='textXs marginFull' style='line-height: 120%;'>
                        ${parseLocaleText.subtext2}
                      </p>
    
-                     <p  class='textMd marginLg weightBold' style='text-transform: uppercase;'>
+                     <p  class='textMd marginLg weightBold' style='text-transform: uppercase; margin-bottom: 30px;'>
                      ${parseLocaleText.agreeAndAccepted}:
                      </p>
                    </div>
                    <div style='position: relative;'>
                      <div style='position: absolute; top: 0; left: 0; width: 50%; padding: 5px;'>
-                       <p class='textMd'> ${parseLocaleText.licensor}</p>
+                       <p class='textMd marginMd'> ${
+                         parseLocaleText.licensor
+                       }</p>
                        <div class='marginLg'>
                          <p class='textSm marginMd'>
                          ${parseLocaleText.by}:
                          </p>
                          <div style='width: 100%;'>
-                          <img style='width: 70%;' src='${dynamicSignature}'/>
+                          <img style='width: 85%;' src='${dynamicSignature}'/>
                          </div>
                        </div>
    
@@ -240,7 +247,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                        </p>
                      </div>
                      <div style='position: absolute; top: 0; right: 0; width: 50%; padding: 5px;'>
-                       <p class='textMd'>LLC «VIRALBEAR»</p>
+                       <p class='textMd marginMd'>LLC «VIRALBEAR»</p>
    
                        <div class='marginLg'>
                          <p class='textSm marginMd'>
@@ -248,7 +255,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                          </p>
    
                          <div style='width: 100%;'>
-                         <img style='width: 50%;' src='https://storage.yandexcloud.net/viralbear/other/signature.jpg'/>
+                         <img style='width: 70%;' src='https://storage.yandexcloud.net/viralbear/other/signature.jpg'/>
                          </div>
                        </div>
    

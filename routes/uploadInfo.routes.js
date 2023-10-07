@@ -7,11 +7,15 @@ const socketInstance = require('../socket.instance');
 const { v4: createUniqueHash } = require('uuid');
 const path = require('path');
 const moment = require('moment');
+const fs = require('fs');
+
+const pdfConverter = require('html-pdf');
+
+const htmlPDF = require('puppeteer-html-pdf');
+
 const {
   generatingTextOfAgreement,
 } = require('../utils/vbForm/generatingTextOfAgreement.util');
-
-const pdf = require('html-pdf');
 
 const {
   findLastAddedVbForm,
@@ -273,15 +277,48 @@ router.post(
         email,
       };
 
-      const resAfterPdfGenerate = await new Promise((resolve, reject) => {
-        pdf
+      const resAfterPdfGenerate = await new Promise(async (resolve, reject) => {
+        //await htmlPDF.create(
+        //  generatingTextOfAgreement(dynamicDataForAgreement),
+        //  {
+        //    format: 'A4',
+        //    margin: {
+        //      bottom: '30px',
+        //      top: '30px',
+        //      left: '30px',
+        //      right: '30px',
+        //    },
+        //  },
+        //  async (err, buffer) => {
+        //    if (err) {
+        //      console.log(err);
+        //      resolve({
+        //        status: 'error',
+        //        event: 'pdfGenerate',
+        //        message: 'Error at the agreement generation stage. Try again.',
+        //      });
+        //    }
+        //    if (buffer) {
+        //      await uploadFileToStorage({
+        //        folder: 'agreement',
+        //        name: `${createUniqueHash()}-${vbCode}`,
+        //        buffer,
+        //        type: 'application/pdf',
+        //        extension: '.pdf',
+        //        resolve,
+        //      });
+        //    }
+        //  }
+        //);
+
+        pdfConverter
           .create(generatingTextOfAgreement(dynamicDataForAgreement), {
             format: 'A4',
             border: {
-              bottom: '25px',
-              top: '25px',
-              left: '25px',
-              right: '25px',
+              bottom: '30px',
+              top: '30px',
+              left: '30px',
+              right: '30px',
             },
           })
           .toBuffer(async (err, buffer) => {
@@ -293,8 +330,9 @@ router.post(
                 message: 'Error at the agreement generation stage. Try again.',
               });
             }
-
             if (buffer) {
+              console.log(buffer, 77);
+
               await uploadFileToStorage({
                 folder: 'agreement',
                 name: `${createUniqueHash()}-${vbCode}`,
