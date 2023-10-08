@@ -9,8 +9,8 @@ const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
     } else {
       return [
         process.env.SERVICE_INFO_EMAIL,
-        //vbForm.refFormId.researcher.email,
-        'nikemorozow@gmail.com',
+        vbForm.refFormId.researcher.email,
+        //'nikemorozow@gmail.com',
       ];
     }
   };
