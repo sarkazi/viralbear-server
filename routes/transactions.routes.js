@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const authMiddleware = require('../middleware/auth.middleware');
+const { errorsHandler } = require('../handlers/error.handler');
 
 const {
   getAllTransactions,
@@ -41,7 +42,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',

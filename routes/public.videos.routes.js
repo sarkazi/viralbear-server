@@ -7,6 +7,7 @@ const { findTimestampsBySearch } = require('../utils/findTimestampsBySearch');
 const {
   findStartEndPointOfDuration,
 } = require('../utils/findStartEndPointOfDuration');
+const { errorsHandler } = require('../handlers/error.handler');
 
 const {
   getAllVideos,
@@ -153,7 +154,7 @@ router.get('/findAll', async (req, res) => {
       message: 'The list of videos is received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
 
     return res.status(500).json({
       status: 'error',
@@ -188,7 +189,7 @@ router.get('/findOne/:id', async (req, res) => {
       message: 'Video info successfully received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
   }
 });
 
@@ -211,7 +212,7 @@ router.get('/findOne/next/:id', async (req, res) => {
       message: 'Video info successfully received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
   }
 });
 
@@ -234,7 +235,7 @@ router.get('/findOne/prev/:id', async (req, res) => {
       message: 'Video info successfully received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
   }
 });
 

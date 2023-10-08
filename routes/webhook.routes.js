@@ -4,6 +4,8 @@ const router = express.Router();
 const socketInstance = require('../socket.instance');
 
 const { getUserBy } = require('../controllers/user.controller');
+
+const { errorsHandler } = require('../handlers/error.handler');
 const {
   writeNewMoveToDone,
   findTheRecordOfTheCardMovedToDone,
@@ -176,7 +178,7 @@ router.post('/trello/reviewList', async (req, res) => {
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
   }
 });
 
@@ -260,7 +262,7 @@ router.post('/trello/allBoard', async (req, res) => {
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
   }
 });
 

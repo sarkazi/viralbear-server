@@ -1,6 +1,14 @@
 const { Schema, model } = require('mongoose');
 const schema = new Schema({
-  researcher: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  researcher: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  researcherIsSelectedByAuthor: {
+    type: Boolean,
+    default: false,
+  },
   advancePayment: {
     type: Number,
     required: true,

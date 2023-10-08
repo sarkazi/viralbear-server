@@ -61,7 +61,15 @@ const schema = new Schema({
     type: Number,
     required: false,
   },
+  inTheArchive: {
+    type: Boolean,
+    default: false,
+  },
   country: {
+    type: String,
+    required: false,
+  },
+  accountActivationLink: {
     type: String,
     required: false,
   },

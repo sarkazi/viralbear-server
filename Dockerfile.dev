@@ -23,6 +23,7 @@ RUN mkdir -p /usr/share/fonts/truetype/
 RUN install -m644 ArialRegular.ttf /usr/share/fonts/truetype/
 RUN rm ./ArialRegular.ttf
 
+
 RUN npm install phantomjs-prebuilt --s
 RUN npm install -g html-pdf
 RUN npm install

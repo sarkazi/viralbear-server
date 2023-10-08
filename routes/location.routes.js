@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getAllCountries } = require('../controllers/location.controller');
-
+const { errorsHandler } = require('../handlers/error.handler');
 router.get('/getAllCountries', async (req, res) => {
   try {
     const countries = await getAllCountries();
@@ -16,7 +16,7 @@ router.get('/getAllCountries', async (req, res) => {
       message: 'List of countries received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     console.log(err?.response?.data);
     return res.status(500).json({
       status: 'error',

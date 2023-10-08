@@ -7,6 +7,8 @@ const multer = require('multer');
 const path = require('path');
 const mongoose = require('mongoose');
 
+const { errorsHandler } = require('../handlers/error.handler');
+
 const authMiddleware = require('../middleware/auth.middleware');
 
 const validationForRequiredInputDataInUserModel = require('../utils/validationForRequiredInputDataInUserModel');
@@ -198,9 +200,9 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res
-      .status(500)
+      .status(400)
       .json({ status: 'error', message: 'Server side error' });
   }
 });
@@ -273,9 +275,9 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
       apiData: users,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res
-      .status(500)
+      .status(400)
       .json({ status: 'error', message: 'Server side error' });
   }
 });
@@ -294,7 +296,11 @@ router.get('/getById/:userId', async (req, res) => {
 
     return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
+
+    return res
+      .status(400)
+      .json({ message: 'Server side error', status: 'error' });
   }
 });
 
@@ -331,8 +337,8 @@ router.get('/getBy', authMiddleware, async (req, res) => {
 
     return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log(errorsHandler(err));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -471,8 +477,8 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log(errorsHandler(err));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -652,6 +658,9 @@ router.patch(
         ...(!!body?.percentage && { percentage: body.percentage }),
         ...(!!body?.advancePayment && { advancePayment: body.advancePayment }),
         ...(!!body?.country && { country: body.country }),
+        ...(!!body?.inTheArchive && {
+          inTheArchive: JSON.parse(body.inTheArchive),
+        }),
         ...(!!paymentInfo && paymentInfo),
         ...(!!avatarUrl && { avatarUrl }),
         ...(typeof body?.canBeAssigned === 'boolean' && {
@@ -665,8 +674,6 @@ router.patch(
         }),
         ...(!!body?.balance && { lastPaymentDate: moment().toDate() }),
       };
-
-      console.log(paymentInfo, 88);
 
       objDBForIncrement = {
         ...(!!body?.balance && { balance: body.balance }),
@@ -684,8 +691,8 @@ router.patch(
         status: 'success',
       });
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({
+      console.log(errorsHandler(err));
+      return res.status(400).json({
         message: 'Server side error',
         status: 'error',
       });
@@ -719,8 +726,8 @@ router.patch(
         status: 'success',
       });
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({
+      console.log(errorsHandler(err));
+      return res.status(400).json({
         message: 'Server side error',
         status: 'error',
       });
@@ -959,9 +966,10 @@ router.get(
 
           const acquiredVideosMainRole = await getAllVideos({
             isApproved: true,
+
             researcher: {
-              searchBy: 'email',
-              value: user.email,
+              value: user._id,
+              searchBy: 'researcher',
               isAcquirer: true,
             },
           });
@@ -1325,8 +1333,8 @@ router.get(
         },
       });
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({
+      console.log(errorsHandler(err));
+      return res.status(400).json({
         message: 'Server side error',
         status: 'error',
       });
@@ -1479,7 +1487,7 @@ router.get(
         },
       });
     } catch (err) {
-      console.log(err);
+      console.log(errorsHandler(err));
       return res.status(400).json({
         message: 'Server side error',
         status: 'error',
@@ -1638,8 +1646,8 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     const acquiredVideosMainRole = await getAllVideos({
       isApproved: true,
       researcher: {
-        searchBy: 'email',
-        value: user.email,
+        searchBy: 'researcher',
+        value: user._id,
         isAcquirer: true,
       },
     });
@@ -1729,7 +1737,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
         amount += user.note;
       }
 
-      return amount;
+      return Math.round(amount);
     };
 
     const apiData = {
@@ -1807,7 +1815,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -1825,7 +1833,7 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -2000,7 +2008,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -2023,7 +2031,7 @@ router.post('/findByValueList', async (req, res) => {
       apiData: users,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -2271,7 +2279,7 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
     return res.status(500).json({
       message: 'Server side error',
@@ -2299,7 +2307,7 @@ router.get('/authors/getPaymentDetails', authMiddleware, async (req, res) => {
       apiData: author?.paymentInfo ? author.paymentInfo : {},
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
     return res.status(500).json({
       message: 'Server side error',
@@ -2625,7 +2633,7 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       },
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -2698,7 +2706,7 @@ router.post('/authors/register', async (req, res) => {
       message: 'Congratulations on registering on the service!',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -2721,8 +2729,8 @@ router.get(
         vbFormExists: true,
         isApproved: true,
         researcher: {
-          searchBy: 'id',
-          value: userId,
+          searchBy: 'researcher',
+          value: mongoose.Types.ObjectId(userId),
         },
         ...(forLastDays && { forLastDays }),
       });
@@ -2836,7 +2844,7 @@ router.get(
         apiData: acquiredVideosStat,
       });
     } catch (err) {
-      console.log(err);
+      console.log(errorsHandler(err));
 
       return res.status(500).json({
         message: 'Server side error',

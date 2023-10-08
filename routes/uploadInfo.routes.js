@@ -1,17 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const authMiddleware = require('../middleware/auth.middleware');
+
 const calcVbCode = require('../utils/calcVbCode');
 const socketInstance = require('../socket.instance');
 const { v4: createUniqueHash } = require('uuid');
 const path = require('path');
 const moment = require('moment');
-const fs = require('fs');
 
 const pdfConverter = require('html-pdf');
 
-const htmlPDF = require('puppeteer-html-pdf');
+const { errorsHandler } = require('../handlers/error.handler');
 
 const {
   generatingTextOfAgreement,
@@ -29,6 +28,7 @@ const {
   getUserById,
   getAllUsers,
   getUserBy,
+  updateUserBy,
 } = require('../controllers/user.controller');
 
 const {
@@ -122,7 +122,7 @@ router.patch('/addAdditionalInfo', async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res
       .status(500)
       .json({ message: 'Server-side error', status: 'error' });
@@ -154,6 +154,7 @@ router.post(
         signatureUrl,
         signatureArray,
         signatureIsEmpty,
+        socketId,
       } = req?.body;
 
       if (
@@ -236,7 +237,7 @@ router.post(
 
       const vbCode = calcVbCode(lastAddedVbForm);
 
-      let videoLinks = [videoLink];
+      const videoLinks = [...(!!videoLink ? [videoLink] : [])];
 
       if (!!videos && videos.length) {
         await Promise.all(
@@ -249,6 +250,12 @@ router.post(
                 type: file.mimetype,
                 extension: path.extname(file.originalname),
                 resolve,
+                socketInfo: {
+                  userId: socketId,
+                  socketEmitName: 'sendingVbForm',
+                  fileName: file.originalname,
+                  eventName: 'Uploading videos to storage',
+                },
               });
             });
 
@@ -278,42 +285,19 @@ router.post(
       };
 
       const resAfterPdfGenerate = await new Promise(async (resolve, reject) => {
-        //await htmlPDF.create(
-        //  generatingTextOfAgreement(dynamicDataForAgreement),
-        //  {
-        //    format: 'A4',
-        //    margin: {
-        //      bottom: '30px',
-        //      top: '30px',
-        //      left: '30px',
-        //      right: '30px',
-        //    },
-        //  },
-        //  async (err, buffer) => {
-        //    if (err) {
-        //      console.log(err);
-        //      resolve({
-        //        status: 'error',
-        //        event: 'pdfGenerate',
-        //        message: 'Error at the agreement generation stage. Try again.',
-        //      });
-        //    }
-        //    if (buffer) {
-        //      await uploadFileToStorage({
-        //        folder: 'agreement',
-        //        name: `${createUniqueHash()}-${vbCode}`,
-        //        buffer,
-        //        type: 'application/pdf',
-        //        extension: '.pdf',
-        //        resolve,
-        //      });
-        //    }
-        //  }
-        //);
+        socketInstance.io().sockets.in(socketId).emit('sendingVbForm', {
+          event: 'Generating an agreement',
+          file: null,
+        });
 
         pdfConverter
           .create(generatingTextOfAgreement(dynamicDataForAgreement), {
             format: 'A4',
+            childProcessOptions: {
+              env: {
+                OPENSSL_CONF: '/dev/null',
+              },
+            },
             border: {
               bottom: '30px',
               top: '30px',
@@ -323,7 +307,7 @@ router.post(
           })
           .toBuffer(async (err, buffer) => {
             if (err) {
-              console.log(err);
+              console.log(errorsHandler(err));;
               resolve({
                 status: 'error',
                 event: 'pdfGenerate',
@@ -331,8 +315,6 @@ router.post(
               });
             }
             if (buffer) {
-              console.log(buffer, 77);
-
               await uploadFileToStorage({
                 folder: 'agreement',
                 name: `${createUniqueHash()}-${vbCode}`,
@@ -340,6 +322,11 @@ router.post(
                 type: 'application/pdf',
                 extension: '.pdf',
                 resolve,
+                socketInfo: {
+                  userId: socketId,
+                  socketEmitName: 'sendingVbForm',
+                  eventName: 'Saving the agreement to the repository',
+                },
               });
             }
           });
@@ -362,6 +349,11 @@ router.post(
         });
       }
 
+      socketInstance.io().sockets.in(socketId).emit('sendingVbForm', {
+        event: 'Saving data...',
+        file: null,
+      });
+
       let author = await getUserByEmail(email);
 
       if (!author) {
@@ -378,15 +370,14 @@ router.post(
       }
 
       const isFormImpliesAnAdvancePayment =
-        authorLinkWithThisHash && !!authorLinkWithThisHash.advancePayment;
+        !!authorLinkWithThisHash?.advancePayment;
 
       let authorLinkForConnectWithResearcher = null;
 
       if (!!formHashSimple) {
-        const allResearchers = await getAllUsers({ roles: ['researcher'] });
-
-        const researcher = allResearchers.find((researcher) => {
-          return researcher._id.toString().includes(formHashSimple);
+        const researcher = await getUserBy({
+          searchBy: 'name',
+          value: formHashSimple,
         });
 
         if (!!researcher) {
@@ -415,6 +406,7 @@ router.post(
             exclusivity: true,
             used: true,
             paid: false,
+            researcherIsSelectedByAuthor: true,
           });
         }
       }
@@ -454,6 +446,111 @@ router.post(
         param: `VB${vbCode}`,
       });
 
+      const defineAccountActivationLink = () => {
+        if (!newVbForm?.refFormId) {
+          return {
+            accountActivationLink: null,
+            annotation: 'noRefForm',
+          };
+        } else {
+          if (!newVbForm.refFormId.paid) {
+            return {
+              accountActivationLink: null,
+              annotation: 'noPaidRefForm',
+            };
+          } else {
+            if (!!newVbForm.sender?.activatedTheAccount) {
+              return {
+                accountActivationLink: null,
+                annotation: 'accountAlreadyActivated',
+              };
+            } else {
+              if (!newVbForm.sender?.accountActivationLink) {
+                return {
+                  accountActivationLink: `${process.env.CLIENT_URI}/login/?auth_hash=${newVbForm._id}`,
+                  annotation: 'activationLinkGenerated',
+                };
+              } else {
+                return {
+                  accountActivationLink: newVbForm.sender.accountActivationLink,
+                  annotation: 'activationLinkAlreadyExist',
+                };
+              }
+            }
+          }
+        }
+      };
+
+      const { annotation, accountActivationLink } =
+        defineAccountActivationLink();
+
+      const defineTextForAuthor = () => {
+        switch (annotation) {
+          case 'noRefForm':
+          case 'noPaidRefForm':
+            return `
+              Hello ${newVbForm.sender.name}.<br/>
+              Thank you for uploading the video to our platform. The agreement file is in the attachment of this email.<br/>
+              Have a nice day!
+              `;
+          case 'accountAlreadyActivated':
+            return `
+                Hello ${newVbForm.sender.name}.<br/>
+                Thank you for uploading the video to our platform.<br/>
+                Log in to viralbear.media with your details: ${process.env.CLIENT_URI}/login. The agreement file is in the attachment of this email.<br/>
+                Have a nice day!
+                `;
+          case 'activationLinkGenerated':
+          case 'activationLinkAlreadyExist':
+            return `
+                Hello ${newVbForm.sender.name}.<br/>
+                Thank you for uploading the video to our platform.<br/>
+                Follow the links and set the password for the viralbear.media personal account: ${accountActivationLink}. The agreement file is in the attachment of this email.<br/>
+                Have a nice day!
+                `;
+        }
+      };
+
+      if (annotation === 'activationLinkGenerated') {
+        await updateUserBy({
+          updateBy: '_id',
+          value: newVbForm.sender._id,
+          objDBForSet: {
+            accountActivationLink,
+          },
+        });
+      }
+
+      const dataForSendingMainInfo = {
+        vbForm: newVbForm,
+        ...(!!accountActivationLink && { accountActivationLink }),
+      };
+
+      const dataForSendingAgreement = {
+        name: newVbForm.sender.name,
+        agreementLink: newVbForm.agreementLink,
+        email: newVbForm.sender.email,
+        text: defineTextForAuthor(),
+      };
+
+      if (!!newVbForm.refFormId?.paid) {
+        const linkData = await findLinkByVideoId(newVbForm.refFormId.videoId);
+
+        if (linkData) {
+          const trelloCard = await getCardDataByCardId(linkData.trelloCardId);
+
+          await updateCustomFieldByTrelloCard(
+            trelloCard.id,
+            process.env.TRELLO_CUSTOM_FIELD_VB_CODE,
+            {
+              value: {
+                number: newVbForm.formId.replace('VB', ''),
+              },
+            }
+          );
+        }
+      }
+
       if (!!authorLinkWithThisHash) {
         await updateManyAuthorLinks({
           searchBy: 'videoId',
@@ -468,6 +565,9 @@ router.post(
         vbFormCode: newVbForm.formId,
       };
 
+      sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
+      sendAgreementToClientMail(dataForSendingAgreement);
+
       return res.status(200).json({
         message:
           'The data has been uploaded successfully. The agreement has been sent to the post office.',
@@ -475,7 +575,7 @@ router.post(
         status: 'success',
       });
     } catch (err) {
-      console.log(err);
+      console.log(errorsHandler(err));;
       return res.status(400).json({
         message: err?.message ? err.message : 'Server-side error',
         status: 'error',
@@ -525,200 +625,9 @@ router.get('/findOne', async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     res.status(500).json({ message: 'Server side error', status: 'error' });
   }
 });
-
-router.post(
-  '/saveAgreement',
-  multer({ storage: storage }).fields([{ name: 'pdf' }]),
-  async (req, res) => {
-    try {
-      //const { pdf } = req.files;
-      //const { formId } = req.body;
-
-      //if (!pdf) {
-      //  return res.status(400).json({
-      //    message: 'missing pdf file',
-      //    status: 'error',
-      //  });
-      //}
-
-      //if (!pdf.length > 1) {
-      //  return res.status(400).json({
-      //    message: 'A maximum of 1 pdf file is expected',
-      //    status: 'warning',
-      //  });
-      //}
-
-      //if (!formId) {
-      //  return res.status(404).json({
-      //    message: `missing form id value`,
-      //    status: 'error',
-      //  });
-      //}
-
-      //const objToSearchVbForm = {
-      //  searchBy: 'formId',
-      //  param: formId,
-      //};
-
-      //const vbForm = await findOne(objToSearchVbForm);
-
-      //if (!vbForm) {
-      //  return res.status(200).json({
-      //    message: `Form with id "${formId}" not found`,
-      //    status: 'warning',
-      //  });
-      //}
-
-      //if (vbForm.agreementLink) {
-      //  return res.status(200).json({
-      //    message: 'The agreement link already exists',
-      //    status: 'warning',
-      //  });
-      //}
-
-      //if (!vbForm.sender) {
-      //  return res.status(200).json({
-      //    message: 'The sender of the vb form was not found in the database',
-      //    status: 'warning',
-      //  });
-      //}
-
-      //const resStorage = await new Promise(async (resolve, reject) => {
-      //  await uploadFileToStorage(
-      //    pdf[0].originalname,
-      //    'agreement',
-      //    `${createUniqueHash()}-${formId.replace('VB', '')}`,
-      //    pdf[0].buffer,
-      //    pdf[0].mimetype,
-      //    path.extname(pdf[0].originalname),
-      //    resolve,
-      //    reject,
-      //    'progressUploadByStorage',
-      //    'Uploading the agreement to the storage'
-      //  );
-      //});
-
-      //const agreementLink = resStorage.response.Location;
-
-      //if (!agreementLink) {
-      //  return res.status(200).json({
-      //    message: 'Error when uploading pdf file to storage',
-      //    status: 'warning',
-      //  });
-      //}
-
-      const accountActivationLink = `${process.env.CLIENT_URI}/login/?auth_hash=${vbForm._id}`;
-
-      const isPaidForm =
-        !!vbForm?.refFormId?.advancePayment || !!vbForm?.refFormId?.percentage;
-
-      const isNoPaidForm =
-        (!!vbForm?.refFormId && !vbForm?.refFormId?.paid) ||
-        (!!vbForm?.refFormId &&
-          !vbForm?.refFormId?.advancePayment &&
-          !vbForm?.refFormId?.percentage);
-
-      const isRefForm = !!vbForm?.refFormId;
-
-      const sendLinkToActivateYourAccount =
-        !!vbForm?.refFormId?.researcher?.email &&
-        !vbForm.sender?.activatedTheAccount &&
-        isPaidForm;
-
-      const TextOfMailForAuthor =
-        !isRefForm || isNoPaidForm
-          ? `
-      Hello ${vbForm.sender.name}.<br/>
-      Thank you for uploading the video to our platform. The agreement file is in the attachment of this email.<br/>
-      Have a nice day!
-      `
-          : !vbForm.sender?.activatedTheAccount
-          ? `
-        Hello ${vbForm.sender.name}.<br/>
-        Thank you for uploading the video to our platform.<br/>
-        Follow the links and set the password for the viralbear.media personal account: ${accountActivationLink}. The agreement file is in the attachment of this email.<br/>
-        Have a nice day!
-        `
-          : `
-        Hello ${vbForm.sender.name}.<br/>
-        Thank you for uploading the video to our platform.<br/>
-        Log in to viralbear.media with your details: ${process.env.CLIENT_URI}. The agreement file is in the attachment of this email.<br/>
-        Have a nice day!
-        `;
-
-      await updateVbFormByFormId(formId, {
-        agreementLink,
-        ...(vbForm?.refFormId && {
-          accountActivationLink,
-        }),
-      });
-
-      const dataForSendingMainInfo = {
-        name: vbForm.sender.name,
-        clientEmail: vbForm.sender.email,
-        videoLinks: vbForm.videoLinks,
-        didYouRecord: vbForm.didYouRecord,
-        ...(vbForm.operator && { operator: vbForm.operator }),
-        ...(vbForm.resources.length > 0 && { resources: vbForm.resources }),
-        over18YearOld: vbForm.over18YearOld,
-        agreedWithTerms: vbForm.agreedWithTerms,
-        noSubmitAnywhere: vbForm.noSubmitAnywhere,
-        didNotGiveRights: vbForm.didNotGiveRights,
-        ip: vbForm.ip,
-        createdAt: vbForm.createdAt,
-        agreementLink: agreementLink,
-        formId: vbForm.formId,
-        ...(isRefForm && {
-          refForm: vbForm.refFormId,
-        }),
-        ...(sendLinkToActivateYourAccount && {
-          accountActivationLink,
-        }),
-      };
-
-      const dataForSendingAgreement = {
-        name: vbForm.sender.name,
-        agreementLink,
-        email: vbForm.sender.email,
-        text: TextOfMailForAuthor,
-      };
-
-      if (!!vbForm.refFormId?.paid) {
-        const linkData = await findLinkByVideoId(vbForm.refFormId.videoId);
-
-        if (linkData) {
-          const trelloCard = await getCardDataByCardId(linkData.trelloCardId);
-
-          await updateCustomFieldByTrelloCard(
-            trelloCard.id,
-            process.env.TRELLO_CUSTOM_FIELD_VB_CODE,
-            {
-              value: {
-                number: vbForm.formId.replace('VB', ''),
-              },
-            }
-          );
-        }
-      }
-
-      sendMainInfoByVBToServiceMail(dataForSendingMainInfo);
-      sendAgreementToClientMail(dataForSendingAgreement);
-
-      return res.status(200).json({
-        message: `The agreement was uploaded to the storage and sent to "${vbForm?.sender?.email}"`,
-        status: 'success',
-      });
-    } catch (err) {
-      console.log(err);
-      return res
-        .status(500)
-        .json({ message: 'Server-side error', status: 'error' });
-    }
-  }
-);
 
 module.exports = router;

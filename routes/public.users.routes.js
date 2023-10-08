@@ -7,6 +7,8 @@ const {
   getUserBy,
 } = require('../controllers/user.controller.js');
 
+const { errorsHandler } = require('../handlers/error.handler');
+
 router.get('/getAll', async (req, res) => {
   try {
     const { roles } = req.query;
@@ -31,7 +33,7 @@ router.get('/getAll', async (req, res) => {
       apiData: users,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res
       .status(500)
       .json({ status: 'error', message: 'Server side error' });
@@ -59,7 +61,7 @@ router.get('/getBy', async (req, res) => {
 
     return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
   }
 });
 

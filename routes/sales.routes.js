@@ -3,6 +3,7 @@ const router = express.Router();
 
 const multer = require('multer');
 const xlsx = require('xlsx');
+const { errorsHandler } = require('../handlers/error.handler');
 
 const mongoose = require('mongoose');
 
@@ -262,7 +263,7 @@ router.post('/manualAddition', authMiddleware, async (req, res) => {
       message: 'The data has been processed successfully',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
 
     return res.status(500).json({
       status: 'error',
@@ -1007,7 +1008,7 @@ router.post(
         apiData,
       });
     } catch (err) {
-      console.log(err);
+      console.log(errorsHandler(err));;
 
       const message =
         typeof err === 'string'
@@ -1130,7 +1131,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
       message: 'sales have been successfully added to the system',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1220,7 +1221,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1367,7 +1368,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
       });
     }
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1430,7 +1431,7 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1517,7 +1518,7 @@ router.get('/getTop', authMiddleware, async (req, res) => {
       apiData: salesGroup,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',

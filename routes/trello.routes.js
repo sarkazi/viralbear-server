@@ -3,6 +3,7 @@ const router = express.Router();
 const moment = require('moment');
 const trelloInstance = require('../api/trello.instance');
 const mongoose = require('mongoose');
+const { errorsHandler } = require('../handlers/error.handler');
 
 const {
   getAllCommentsByBoard,
@@ -104,7 +105,7 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
       },
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(400).json({
       message: 'server side error',
       status: 'error',
@@ -272,7 +273,7 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(400).json({
       message: 'Error when receiving cards from the "done" list',
       status: 'error',
@@ -323,7 +324,7 @@ router.get(
         },
       });
     } catch (err) {
-      console.log(err);
+      console.log(errorsHandler(err));;
       return res.status(400).json({
         message: 'Server side error',
         status: 'error',
@@ -434,7 +435,7 @@ router.get('/getCardsWithReminder', authMiddleware, async (req, res) => {
       apiData: cards,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -553,7 +554,7 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -575,7 +576,7 @@ router.get('/getAllNicknamesByMembers', async (req, res) => {
       apiData: nicknames,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',

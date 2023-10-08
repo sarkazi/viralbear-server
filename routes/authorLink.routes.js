@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
 
+const { errorsHandler } = require('../handlers/error.handler');
+
 const { generateHash } = require('random-hash');
 
 const authMiddleware = require('../middleware/auth.middleware');
@@ -125,7 +127,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       apiData: newAuthorLink,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -161,7 +163,7 @@ router.get('/findOne/:value', async (req, res) => {
       apiData: authorLinkForm,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));;
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',

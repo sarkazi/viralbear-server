@@ -4,6 +4,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 const ObjectId = mongoose.Types.ObjectId;
+const { errorsHandler } = require('../handlers/error.handler');
 
 const authMiddleware = require('../middleware/auth.middleware');
 
@@ -137,7 +138,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       message: 'Video added and sent',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res
       .status(400)
       .json({ status: 'error', message: 'Server side error' });

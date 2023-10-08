@@ -1,112 +1,108 @@
 const mailTransporter = require('../nodemailer.instance');
 
-const sendMainInfoByVBToServiceMail = async (dataForSendingMessage) => {
-  const {
-    name,
-    clientEmail,
-    videoLinks,
-    didYouRecord,
-    operator,
-    resources,
-    over18YearOld,
-    agreedWithTerms,
-    noSubmitAnywhere,
-    didNotGiveRights,
-    ip,
-    createdAt,
-    agreementLink,
-    formId,
-    refForm,
-    accountActivationLink,
-  } = dataForSendingMessage;
+const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
+  const { vbForm, accountActivationLink } = dataForSendingMessage;
 
-  const linkMarkup = videoLinks
+  const defineMailRecipients = () => {
+    if (!vbForm?.refFormId) {
+      return [process.env.SERVICE_LICENSING_EMAIL];
+    } else {
+      return [
+        process.env.SERVICE_INFO_EMAIL,
+        //vbForm.refFormId.researcher.email,
+        'nikemorozow@gmail.com',
+      ];
+    }
+  };
+
+  const linkMarkup = vbForm.videoLinks
     .map((link) => {
       return `<li>${link}</li>,`;
     })
     .join(', ');
 
-  const resourcesMarkup = resources
+  const resourcesMarkup = vbForm.resources
     ?.map((site) => {
       return `<li style="color: #DC143C; text-decoration: none">${site}</li>,`;
     })
     .join(', ');
 
-  await mailTransporter.sendMail({
+  mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
-    to: !!refForm?.researcher?.email
-      ? [process.env.SERVICE_INFO_EMAIL, refForm.researcher.email]
-      : process.env.SERVICE_LICENSING_EMAIL,
-    subject: `New video was submitted! VB code: ${+formId.replace('VB', '')}`,
+    to: defineMailRecipients(),
+    subject: `New video was submitted! VB code: ${vbForm.formId.replace(
+      'VB',
+      ''
+    )}`,
     html: `
 
-   <b>Name: ${name}</b><br>
-   <b>Email: ${clientEmail}</b><br>
+   <b>Name: ${vbForm.sender.name}</b><br>
+   <b>Email: ${vbForm.sender.email}</b><br>
    <b>Video link/s:</b><br>
    <ul style="list-style: none; padding: 0; margin: 0">${linkMarkup}</ul>
    <b>Did you record: ${
-     didYouRecord === true
+     !!vbForm.didYouRecord
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
    }</b><br>
    ${
-     operator
-       ? `<b>Operator: <span style="color: #DC143C">${operator}</span></b><br></br>`
+     vbForm.operator
+       ? `<b>Operator: <span style="color: #DC143C">${vbForm.operator}</span></b><br></br>`
        : `<b style="display: none"></b>`
    }
    <b>I didn’t submit or upload this video to any other site: ${
-     noSubmitAnywhere === true
+     !!vbForm.noSubmitAnywhere
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
    }</b><br>
    ${
-     resources
+     vbForm.resources.length
        ? `<b>Resource/s:</b><br>
           <ul style="list-style: none; padding: 0; margin: 0">${resourcesMarkup}</ul>`
        : `<b style="display: none"></b>`
    }
    <b>Over 18 years old: ${
-     over18YearOld === true
+     !!vbForm.over18YearOld
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
    }</b><br>
    <b>Agreed with terms: ${
-     agreedWithTerms === true
+     !!vbForm.agreedWithTerms
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
    }</b><br>
    <b>Didn’t give rights: ${
-     didNotGiveRights === true
+     !!vbForm.didNotGiveRights
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
    }</b><br>
    ${
-     !!refForm?.advancePayment
-       ? `<b>Advance payment: ${refForm.advancePayment}</b><br></br>`
+     !!vbForm?.refFormId?.advancePayment
+       ? `<b>Advance payment: ${vbForm.refFormId.advancePayment}</b><br></br>`
        : ''
    }
    ${
-     !!refForm?.percentage
-       ? `<b>Percentage: ${refForm.percentage}</b><br></br>`
+     !!vbForm?.refFormId?.percentage
+       ? `<b>Percentage: ${vbForm.refFormId.percentage}</b><br></br>`
        : ''
    }
    ${
-     !!refForm?.researcher?.email
-       ? `<b>Researcher email: ${refForm.researcher.email}</b><br>`
+     !!vbForm?.refFormId?.researcher?.email
+       ? `<b>Researcher email: ${vbForm.refFormId.researcher.email}</b><br>`
        : ''
    }
    ${
-     !!refForm?.trelloCardUrl
-       ? `<b>Trello card URL: ${refForm.trelloCardUrl}</b><br>`
+     !!vbForm?.refFormId?.trelloCardUrl
+       ? `<b>Trello card URL: ${vbForm.refFormId.trelloCardUrl}</b><br>`
        : ''
    }
-   <b>IP: ${ip}</b><br>
-   <b>Submitted date: ${createdAt}</b><br>
-   <b>Contract: ${agreementLink}</b><br>
-   <b>Form VB code: ${formId.replace('VB', '')}</b><br>
+   <b>IP: ${vbForm.ip}</b><br>
+   <b>Submitted date: ${vbForm.createdAt}</b><br>
+   <b>Contract: ${vbForm.agreementLink}</b><br>
+   <b>Form VB code: ${vbForm.formId.replace('VB', '')}</b><br>
    ${
      !!accountActivationLink
-       ? `<b>Link to the personal account of the author ${name}: ${accountActivationLink}</b>`
+       ? `<b>Link to the personal account of the author ${vbForm.sender.name}: ${accountActivationLink}</b>`
        : ''
    }
    `,

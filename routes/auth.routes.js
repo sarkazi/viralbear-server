@@ -7,6 +7,8 @@ const { validationResult, check, isEmail } = require('express-validator');
 
 const { compare, hash } = require('bcryptjs');
 
+const { errorsHandler } = require('../handlers/error.handler');
+
 const {
   getUserByEmail,
   getUserById,
@@ -44,6 +46,13 @@ router.post('/login', async (req, res) => {
         .json({ message: 'User is not found', status: 'warning', code: 404 });
     }
 
+    if (!!user.inTheArchive) {
+      return res.status(200).json({
+        message: 'Your account is blocked. Contact the administrator',
+        status: 'warning',
+      });
+    }
+
     const isMatch = await compare(password, user.password);
 
     if (!isMatch) {
@@ -71,7 +80,7 @@ router.post('/login', async (req, res) => {
       code: 200,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
   }
 });
 
@@ -94,7 +103,7 @@ router.post('/getMe', authMiddleware, async (req, res) => {
       message: 'User data received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',

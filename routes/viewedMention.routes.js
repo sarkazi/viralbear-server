@@ -8,6 +8,8 @@ const {
   findMentionByActionIn,
 } = require('../controllers/viewedMention.controller');
 
+const { errorsHandler } = require('../handlers/error.handler');
+
 const { getUserById } = require('../controllers/user.controller');
 
 router.post('/add', authMiddleware, async (req, res) => {
@@ -47,7 +49,7 @@ router.post('/add', authMiddleware, async (req, res) => {
       apiData: { newViewedMentions },
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -74,7 +76,7 @@ router.get('/findOne/:actionId', async (req, res) => {
       apiData: mention,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -108,7 +110,7 @@ router.post('/markEverythingAsRead', authMiddleware, async (req, res) => {
       .status(200)
       .json({ message: 'All mentions are marked as read', status: 'success' });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
     res.status(400).json({ message: 'Server side error', status: 'error' });
   }
 });

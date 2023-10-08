@@ -32,6 +32,7 @@ const getAllUsers = async ({
 }) => {
   return await User.find(
     {
+      inTheArchive: { $ne: true },
       ...(me && JSON.parse(me) === false && { _id: { $ne: userId } }),
       ...(roles?.length && { role: { $in: roles } }),
       ...(exist?.length &&
@@ -102,7 +103,16 @@ const sendPassword = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: 'User is not found' });
+      return res
+        .status(200)
+        .json({ message: 'User is not found', status: 'warning' });
+    }
+
+    if (!!user.inTheArchive) {
+      return res.status(200).json({
+        message: 'Your account is blocked. Contact the administrator',
+        status: 'warning',
+      });
     }
 
     const tailHashLink = md5(`${user.email}${user.password}`) + Date.now();
@@ -116,12 +126,16 @@ const sendPassword = async (req, res) => {
       user.email,
       'Password recovery for "Viral Bear"',
       `Password recovery for "Viral Bear"`,
-      `<a href="http://localhost:${process.env.CLIENT_URI}/login?hash=${tailHashLink}">Follow the link</a> to set a new password to log in to viralbear.media`
+      `<a href="${process.env.CLIENT_URI}/login?rec_hash=${tailHashLink}">Follow the link</a> to set a new password to log in to viralbear.media`
     );
 
-    res.status(200).json({ message: 'Check your mailbox' });
+    res.status(200).json({ message: 'Check your mailbox', status: 'success' });
   } catch (err) {
     console.log(err);
+    return res.status(400).json({
+      message: 'Server side error',
+      status: 'error',
+    });
   }
 };
 
@@ -129,14 +143,18 @@ const recoveryPassword = async (req, res) => {
   const { hash, password } = req.body;
 
   if (!hash) {
-    return res.status(404).json({ message: 'The link is invalid' });
+    return res
+      .status(200)
+      .json({ message: 'The link is invalid', status: 'warning' });
   }
 
   try {
     const recoveryData = await RecoveryLinks.findOne({ hash });
 
     if (!recoveryData) {
-      return res.status(404).json({ message: 'The link is invalid' });
+      return res
+        .status(200)
+        .json({ message: 'The link is invalid', status: 'warning' });
     }
 
     const timeHasPassedInMinutes = moment(
@@ -146,13 +164,22 @@ const recoveryPassword = async (req, res) => {
     if (timeHasPassedInMinutes > 60) {
       await recoveryData.deleteOne({});
 
-      return res.status(404).json({ message: 'The link is invalid' });
+      return res
+        .status(200)
+        .json({ message: 'The link is invalid', status: 'warning' });
     }
 
     const worker = await User.findOne({ email: recoveryData.email });
 
     if (!worker) {
-      return res.status(404).json({ message: 'No access' });
+      return res.status(200).json({ message: 'No access', status: 'warning' });
+    }
+
+    if (!!worker.inTheArchive) {
+      return res.status(200).json({
+        message: 'Your account is blocked. Contact the administrator',
+        status: 'warning',
+      });
     }
 
     const salt = await genSalt(10);
@@ -161,9 +188,17 @@ const recoveryPassword = async (req, res) => {
 
     await RecoveryLinks.deleteOne({ hash });
 
-    res.status(200).json({ message: 'Password has been successfully updated' });
+    return res.status(200).json({
+      message: 'Password has been successfully updated',
+      status: 'success',
+    });
   } catch (err) {
     console.log(err);
+
+    return res.status(400).json({
+      message: 'Server side error',
+      status: 'error',
+    });
   }
 };
 

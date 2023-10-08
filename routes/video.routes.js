@@ -18,6 +18,8 @@ const axios = require('axios');
 
 const streamifier = require('streamifier');
 
+const { errorsHandler } = require('../handlers/error.handler');
+
 const socketInstance = require('../socket.instance');
 const googleApiOAuth2Instance = require('../googleApiOAuth2.instance');
 
@@ -38,6 +40,9 @@ const authMiddleware = require('../middleware/auth.middleware');
 const { generateVideoId } = require('../utils/generateVideoId');
 const { findTimestampsBySearch } = require('../utils/findTimestampsBySearch');
 const { convertInMongoIdFormat } = require('../utils/convertInMongoIdFormat');
+const {
+  definingDescriptionForYoutube,
+} = require('../utils/videos/definingDescriptionForYoutube');
 
 const { getDurationFromBuffer } = require('fancy-video-duration');
 
@@ -280,19 +285,20 @@ router.post(
                     message: 'Error when reading a file from disk',
                   });
                 } else {
-                  await uploadFileToStorage(
-                    video[0].originalname,
-                    'converted-videos',
-                    videoId,
+                  await uploadFileToStorage({
+                    folder: 'converted-videos',
+                    name: videoId,
                     buffer,
-                    video[0].mimetype,
-                    path.extname(video[0].originalname),
+                    type: video[0].mimetype,
+                    extension: path.extname(video[0].originalname),
                     resolve,
-                    reject,
-                    'progressOfRequestInPublishing',
-                    'Uploading the converted video to the bucket',
-                    req.user.id
-                  );
+                    socketInfo: {
+                      userId: req.user.id,
+                      socketEmitName: 'progressOfRequestInPublishing',
+                      fileName: video[0].originalname,
+                      eventName: 'Uploading the converted video to the bucket',
+                    },
+                  });
                 }
               }
             );
@@ -308,20 +314,20 @@ router.post(
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              video[0].originalname,
-              'videos',
-
-              videoId,
-              video[0].buffer,
-              video[0].mimetype,
-              path.extname(video[0].originalname),
+            await uploadFileToStorage({
+              folder: 'videos',
+              name: videoId,
+              buffer: video[0].buffer,
+              type: video[0].mimetype,
+              extension: path.extname(video[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading video to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: video[0].originalname,
+                eventName: 'Uploading video to the bucket',
+              },
+            });
           }
         );
 
@@ -334,20 +340,20 @@ router.post(
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              screen[0].originalname,
-              'screens',
-
-              videoId,
-              screen[0].buffer,
-              screen[0].mimetype,
-              path.extname(screen[0].originalname),
+            await uploadFileToStorage({
+              folder: 'screens',
+              name: videoId,
+              buffer: screen[0].buffer,
+              type: screen[0].mimetype,
+              extension: path.extname(screen[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading screen to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: screen[0].originalname,
+                eventName: 'Uploading screen to the bucket',
+              },
+            });
           }
         );
 
@@ -500,9 +506,9 @@ router.post(
           message: 'Video successfully added',
         });
       } catch (err) {
-        console.log(err);
+        console.log(errorsHandler(err));
 
-        return res.status(500).json({
+        return res.status(400).json({
           message: err?.message ? err?.message : 'Server side error',
           status: 'error',
         });
@@ -587,19 +593,20 @@ router.post('/convert', authMiddleware, async (req, res) => {
                   message: 'Error when reading a file from disk',
                 });
               } else {
-                await uploadFileToStorage(
-                  video.videoData.videoId,
-                  'converted-videos',
-                  video.videoData.videoId,
+                await uploadFileToStorage({
+                  folder: 'converted-videos',
+                  name: video.videoData.videoId,
                   buffer,
-                  'video/mp4',
-                  '.mp4',
+                  type: 'video/mp4',
+                  extension: '.mp4',
                   resolve,
-                  reject,
-                  'progressOfRequestInPublishing',
-                  'Uploading the converted video to the bucket',
-                  userId
-                );
+                  socketInfo: {
+                    userId: userId,
+                    socketEmitName: 'progressOfRequestInPublishing',
+                    fileName: video.videoData.videoId,
+                    eventName: 'Uploading the converted video to the bucket',
+                  },
+                });
               }
             }
           );
@@ -647,9 +654,9 @@ router.post('/convert', authMiddleware, async (req, res) => {
         apiData: updatedVideo,
       });
     } catch (err) {
-      console.log(err);
+      console.log(errorsHandler(err));
       return res
-        .status(500)
+        .status(400)
         .json({ message: 'Server side error', status: 'error' });
     }
   });
@@ -692,9 +699,9 @@ router.get('/findOneBy', async (req, res) => {
       message: 'Detailed video information received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
-    return res.status(500).json({
+    return res.status(400).json({
       status: 'error',
       message: 'Server side error',
     });
@@ -822,7 +829,7 @@ router.get('/findCountByGroups', async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
     return res.status(400).json({
       status: 'error',
@@ -921,9 +928,9 @@ router.get('/findAll', authMiddleware, async (req, res) => {
       message: 'The list of videos is received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
-    return res.status(500).json({
+    return res.status(400).json({
       status: 'error',
       message: 'Server side error',
     });
@@ -959,9 +966,9 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
-    return res.status(500).json({
+    return res.status(400).json({
       message: 'Server-side error',
       status: 'error',
     });
@@ -974,7 +981,7 @@ router.get('/findByIsBrandSafe', authMiddleware, async (req, res) => {
 
     return res.status(200).json(videosForSocialMedia);
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
     return res.status(400).json({
       message: 'server side error',
@@ -1011,9 +1018,9 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
-    res.status(500).json({
+    res.status(400).json({
       status: 'error',
       message: 'server side error',
     });
@@ -1097,8 +1104,8 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
       apiData: videos.videosByThisAuthor,
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log(errorsHandler(err));
+    return res.status(400).json({
       message: `Server side error`,
       status: 'error',
     });
@@ -1129,8 +1136,8 @@ router.get('/findOneById/:videoId', async (req, res) => {
       apiData: video,
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log(errorsHandler(err));
+    return res.status(400).json({
       message: `Server side error`,
       status: 'error',
     });
@@ -1158,7 +1165,7 @@ router.get('/findNext/:id', async (req, res) => {
       message: 'Video successfully received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
     return res.status(400).json({
       status: 'error',
@@ -1186,7 +1193,7 @@ router.get('/findPrev/:id', async (req, res) => {
       message: 'Video successfully received',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
     return res.status(400).json({
       status: 'error',
@@ -1363,19 +1370,20 @@ router.patch(
                     message: 'Error when reading a file from disk',
                   });
                 } else {
-                  await uploadFileToStorage(
-                    reqVideo[0].originalname,
-                    'converted-videos',
-                    videoId,
+                  await uploadFileToStorage({
+                    folder: 'converted-videos',
+                    name: videoId,
                     buffer,
-                    reqVideo[0].mimetype,
-                    path.extname(reqVideo[0].originalname),
+                    type: reqVideo[0].mimetype,
+                    extension: path.extname(reqVideo[0].originalname),
                     resolve,
-                    reject,
-                    'progressOfRequestInPublishing',
-                    'Uploading the converted video to the bucket',
-                    req.user.id
-                  );
+                    socketInfo: {
+                      userId: req.user.id,
+                      socketEmitName: 'progressOfRequestInPublishing',
+                      fileName: reqVideo[0].originalname,
+                      eventName: 'Uploading the converted video to the bucket',
+                    },
+                  });
                 }
               }
             );
@@ -1391,19 +1399,20 @@ router.patch(
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqVideo[0].originalname,
-              'videos',
-              videoId,
-              reqVideo[0].buffer,
-              reqVideo[0].mimetype,
-              path.extname(reqVideo[0].originalname),
+            await uploadFileToStorage({
+              folder: 'videos',
+              name: videoId,
+              buffer: reqVideo[0].buffer,
+              type: reqVideo[0].mimetype,
+              extension: path.extname(reqVideo[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading video to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: reqVideo[0].originalname,
+                eventName: 'Uploading video to the bucket',
+              },
+            });
           }
         );
 
@@ -1443,19 +1452,20 @@ router.patch(
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqScreen[0].originalname,
-              'screens',
-              videoId,
-              reqScreen[0].buffer,
-              reqScreen[0].mimetype,
-              path.extname(reqScreen[0].originalname),
+            await uploadFileToStorage({
+              folder: 'screens',
+              name: videoId,
+              buffer: reqScreen[0].buffer,
+              type: reqScreen[0].mimetype,
+              extension: path.extname(reqScreen[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading screen to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: reqScreen[0].originalname,
+                eventName: 'Uploading screen to the bucket',
+              },
+            });
           }
         );
 
@@ -1724,8 +1734,9 @@ router.patch(
         },
       });
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({
+      console.log(errorsHandler(err));
+
+      return res.status(400).json({
         message: err?.message ? err?.message : 'Server side error',
         status: 'error',
       });
@@ -1758,9 +1769,9 @@ router.patch('/updateByValue', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(err);
+    console.log(errorsHandler(err));
 
-    return res.status(500).json({
+    return res.status(400).json({
       message: err?.message ? err?.message : 'Server side error',
       status: 'error',
     });
@@ -1934,19 +1945,20 @@ router.patch(
                     message: 'Error when reading a file from disk',
                   });
                 } else {
-                  await uploadFileToStorage(
-                    reqVideo[0].originalname,
-                    'converted-videos',
-                    videoId,
+                  await uploadFileToStorage({
+                    folder: 'converted-videos',
+                    name: videoId,
                     buffer,
-                    reqVideo[0].mimetype,
-                    path.extname(reqVideo[0].originalname),
+                    type: reqVideo[0].mimetype,
+                    extension: path.extname(reqVideo[0].originalname),
                     resolve,
-                    reject,
-                    'progressOfRequestInPublishing',
-                    'Uploading the converted video to the bucket',
-                    req.user.id
-                  );
+                    socketInfo: {
+                      userId: req.user.id,
+                      socketEmitName: 'progressOfRequestInPublishing',
+                      fileName: reqVideo[0].originalname,
+                      eventName: 'Uploading the converted video to the bucket',
+                    },
+                  });
                 }
               }
             );
@@ -1962,19 +1974,20 @@ router.patch(
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqVideo[0].originalname,
-              'videos',
-              videoId,
-              reqVideo[0].buffer,
-              reqVideo[0].mimetype,
-              path.extname(reqVideo[0].originalname),
+            await uploadFileToStorage({
+              folder: 'videos',
+              name: videoId,
+              buffer: reqVideo[0].buffer,
+              type: reqVideo[0].mimetype,
+              extension: path.extname(reqVideo[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading video to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: reqVideo[0].originalname,
+                eventName: 'Uploading video to the bucket',
+              },
+            });
           }
         );
 
@@ -2014,19 +2027,20 @@ router.patch(
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqScreen[0].originalname,
-              'screens',
-              videoId,
-              reqScreen[0].buffer,
-              reqScreen[0].mimetype,
-              path.extname(reqScreen[0].originalname),
+            await uploadFileToStorage({
+              folder: 'screens',
+              name: videoId,
+              buffer: reqScreen[0].buffer,
+              type: reqScreen[0].mimetype,
+              extension: path.extname(reqScreen[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading screen to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: reqScreen[0].originalname,
+                eventName: 'Uploading screen to the bucket',
+              },
+            });
           }
         );
 
@@ -2214,8 +2228,10 @@ router.patch(
         },
       });
     } catch (err) {
-      console.log(err);
-      res.status(400).json({ message: 'Server side error', status: 'error' });
+      console.log(errorsHandler(err));
+      return res
+        .status(400)
+        .json({ message: 'Server side error', status: 'error' });
     }
   }
 );
@@ -2253,8 +2269,8 @@ router.patch('/addCommentForFixed', authMiddleware, async (req, res) => {
       apiData: updatedVideo,
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log(errorsHandler(err));
+    return res.status(400).json({
       status: 'success',
       message: 'Server-side error',
     });
@@ -2495,7 +2511,10 @@ router.patch(
                           requestBody: {
                             snippet: {
                               title: video.videoData.title,
-                              description: video.videoData.description,
+                              description: definingDescriptionForYoutube({
+                                desc: video.videoData.description,
+                                country: video.videoData.country,
+                              }),
                               tags: video.videoData.tags,
                               //categoryId: 28,
                               defaultLanguage: 'en',
@@ -2565,7 +2584,7 @@ router.patch(
                       message: `${err?.response?.data?.error} (Youtube API)`,
                     });
                   }
-                  if (token) {
+                  if (!!token) {
                     google.youtube('v3').videos.insert(
                       {
                         access_token: token.access_token,
@@ -2573,7 +2592,10 @@ router.patch(
                         requestBody: {
                           snippet: {
                             title: video.videoData.title,
-                            description: video.videoData.description,
+                            description: definingDescriptionForYoutube({
+                              desc: video.videoData.description,
+                              country: video.videoData.country,
+                            }),
                             tags: video.videoData.tags,
                             //categoryId: 28,
                             defaultLanguage: 'en',
@@ -2627,59 +2649,55 @@ router.patch(
         }
 
         if (!video?.uploadedToFb) {
-          socketInstance
-            .io()
-            .sockets.in(req.user.id)
-            .emit('progressOfRequestInPublishing', {
-              event: 'Uploading video to facebook',
-              file: null,
-            });
-
-          const { data: pagesResData } = await axios.get(
-            `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
-            {
-              params: {
-                fields: 'name,access_token',
-                access_token: process.env.FACEBOOK_API_TOKEN,
-              },
-            }
-          );
-
-          const pageToken = pagesResData.data.find(
-            (page) => page.id === process.env.FACEBOOK_PAGE_ID
-          ).access_token;
-
-          const responseAfterUploadOnFacebook = await new Promise(
-            async (resolve, reject) => {
-              fbUpload({
-                token: pageToken,
-                id: process.env.FACEBOOK_PAGE_ID,
-                stream,
-                title: video.videoData.title,
-                description: video.videoData.description,
-              })
-                .then((res) => {
-                  resolve({
-                    status: 'success',
-                    message: 'Video successfully uploaded on facebook',
-                  });
-                })
-                .catch((err) => {
-                  resolve({
-                    status: 'error',
-                    message: err?.response?.data?.message,
-                  });
-                });
-            }
-          );
-
-          if (responseAfterUploadOnFacebook.status === 'success') {
-            await updateVideoBy({
-              searchBy: '_id',
-              searchValue: video._id,
-              dataToUpdate: { uploadedToFb: true },
-            });
-          }
+          //socketInstance
+          //  .io()
+          //  .sockets.in(req.user.id)
+          //  .emit('progressOfRequestInPublishing', {
+          //    event: 'Uploading video to facebook',
+          //    file: null,
+          //  });
+          //const { data: pagesResData } = await axios.get(
+          //  `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
+          //  {
+          //    params: {
+          //      fields: 'name,access_token',
+          //      access_token: process.env.FACEBOOK_API_TOKEN,
+          //    },
+          //  }
+          //);
+          //const pageToken = pagesResData.data.find(
+          //  (page) => page.id === process.env.FACEBOOK_PAGE_ID
+          //).access_token;
+          //const responseAfterUploadOnFacebook = await new Promise(
+          //  async (resolve, reject) => {
+          //    fbUpload({
+          //      token: pageToken,
+          //      id: process.env.FACEBOOK_PAGE_ID,
+          //      stream,
+          //      title: video.videoData.title,
+          //      description: video.videoData.description,
+          //    })
+          //      .then((res) => {
+          //        resolve({
+          //          status: 'success',
+          //          message: 'Video successfully uploaded on facebook',
+          //        });
+          //      })
+          //      .catch((err) => {
+          //        resolve({
+          //          status: 'error',
+          //          message: err?.response?.data?.message,
+          //        });
+          //      });
+          //  }
+          //);
+          //if (responseAfterUploadOnFacebook.status === 'success') {
+          //  await updateVideoBy({
+          //    searchBy: '_id',
+          //    searchValue: video._id,
+          //    dataToUpdate: { uploadedToFb: true },
+          //  });
+          //}
         }
       }
 
@@ -2765,19 +2783,20 @@ router.patch(
                     message: 'Error when reading a file from disk',
                   });
                 } else {
-                  await uploadFileToStorage(
-                    reqVideo[0].originalname,
-                    'converted-videos',
-                    videoId,
+                  await uploadFileToStorage({
+                    folder: 'converted-videos',
+                    name: videoId,
                     buffer,
-                    reqVideo[0].mimetype,
-                    path.extname(reqVideo[0].originalname),
+                    type: reqVideo[0].mimetype,
+                    extension: path.extname(reqVideo[0].originalname),
                     resolve,
-                    reject,
-                    'progressOfRequestInPublishing',
-                    'Uploading the converted video to the bucket',
-                    req.user.id
-                  );
+                    socketInfo: {
+                      userId: req.user.id,
+                      socketEmitName: 'progressOfRequestInPublishing',
+                      fileName: reqVideo[0].originalname,
+                      eventName: 'Uploading the converted video to the bucket',
+                    },
+                  });
                 }
               }
             );
@@ -2793,19 +2812,20 @@ router.patch(
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqVideo[0].originalname,
-              'videos',
-              videoId,
-              reqVideo[0].buffer,
-              reqVideo[0].mimetype,
-              path.extname(reqVideo[0].originalname),
+            await uploadFileToStorage({
+              folder: 'videos',
+              name: videoId,
+              buffer: reqVideo[0].buffer,
+              type: reqVideo[0].mimetype,
+              extension: path.extname(reqVideo[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading video to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: reqVideo[0].originalname,
+                eventName: 'Uploading video to the bucket',
+              },
+            });
           }
         );
 
@@ -2845,19 +2865,20 @@ router.patch(
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
-            await uploadFileToStorage(
-              reqScreen[0].originalname,
-              'screens',
-              videoId,
-              reqScreen[0].buffer,
-              reqScreen[0].mimetype,
-              path.extname(reqScreen[0].originalname),
+            await uploadFileToStorage({
+              folder: 'screens',
+              name: videoId,
+              buffer: reqScreen[0].buffer,
+              type: reqScreen[0].mimetype,
+              extension: path.extname(reqScreen[0].originalname),
               resolve,
-              reject,
-              'progressOfRequestInPublishing',
-              'Uploading screen to the bucket',
-              req.user.id
-            );
+              socketInfo: {
+                userId: req.user.id,
+                socketEmitName: 'progressOfRequestInPublishing',
+                fileName: reqScreen[0].originalname,
+                eventName: 'Uploading screen to the bucket',
+              },
+            });
           }
         );
 
@@ -3117,9 +3138,7 @@ router.patch(
         message: 'The video was successfully published',
       });
     } catch (err) {
-      console.log(err);
-
-      console.log(err?.response?.data?.error);
+      console.log(errorsHandler(err));
 
       return res
         .status(400)
@@ -3249,7 +3268,10 @@ router.post(
                         requestBody: {
                           snippet: {
                             title: video.videoData.title,
-                            description: video.videoData.description,
+                            description: definingDescriptionForYoutube({
+                              desc: video.videoData.description,
+                              country: video.videoData.country,
+                            }),
                             tags: video.videoData.tags,
                             //categoryId: 28,
                             defaultLanguage: 'en',
@@ -3311,8 +3333,6 @@ router.post(
                   });
                 }
                 if (!!token) {
-                  console.log(token);
-
                   google.youtube('v3').videos.insert(
                     {
                       access_token: token.access_token,
@@ -3320,7 +3340,10 @@ router.post(
                       requestBody: {
                         snippet: {
                           title: video.videoData.title,
-                          description: video.videoData.description,
+                          description: definingDescriptionForYoutube({
+                            desc: video.videoData.description,
+                            country: video.videoData.country,
+                          }),
                           tags: video.videoData.tags,
                           //categoryId: 28,
                           defaultLanguage: 'en',
@@ -3439,7 +3462,7 @@ router.post(
         message: 'The video was successfully uploaded to social networks',
       });
     } catch (err) {
-      console.log(err);
+      console.log(errorsHandler(err));
 
       return res.status(400).json({
         status: 'error',
@@ -3501,8 +3524,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       apiData: { trelloCardId: video.trelloData.trelloCardId },
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log(errorsHandler(err));
+    return res.status(400).json({
       message: err?.message ? err?.message : 'Server side error',
       status: 'error',
     });
@@ -3641,8 +3664,8 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       message: 'Video analytics on sales received',
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log(errorsHandler(err));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });

@@ -49,7 +49,7 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                 font-size: 11px;
               },
               .textSm {
-                font-size: 2px;
+                font-size: 13px;
               }
               .textMd {
                 font-size: 20px;
@@ -110,12 +110,15 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                      <p class='marginMd weightBold'>${
                        parseLocaleText.subject
                      }</p>
-                   ${videoLinks?.map(
-                     (link) =>
-                       `<div class='marginSm'>
-                       <p class='textSm'>${parseLocaleText.link}: ${link}</p>
-                     </div>`
-                   )}
+                     <p class='textSm'>${parseLocaleText.linksOnVideo}:</p>
+                     <ul class='marginSm'>
+                      ${videoLinks
+                        ?.map(
+                          (link) => `<li class='textSm marginXs'>${link}</li>`
+                        )
+                        .join('')}
+                     </ul>
+                  
                      <p class="textSm marginSm">${
                        parseLocaleText.date
                      }: ${moment()}</p>

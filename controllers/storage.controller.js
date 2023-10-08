@@ -42,13 +42,15 @@ const uploadFileToStorage = async ({
       if (!!socketInfo) {
         const loaded = Math.round((progress.loaded * 100) / progress.total);
 
+        console.log(loaded);
+
         socketInstance
           .io()
           .sockets.in(socketInfo.userId)
           .emit(socketInfo.socketEmitName, {
             event: socketInfo.eventName,
             file: {
-              name: socketInfo.fileName,
+              ...(!!socketInfo?.fileName && { name: socketInfo.fileName }),
               loaded,
             },
           });
