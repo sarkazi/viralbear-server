@@ -1,8 +1,9 @@
-const errorsHandler = (err) => {
-  if (err?.response?.data?.error === 'API_TOKEN_LIMIT_EXCEEDED') {
-    return 'TRELLO_API_TOKEN_LIMIT_EXCEEDED';
-  } else {
-    return err;
+const errorsHandler = ({ err, trace }) => {
+  if (!err?.response?.data?.error !== 'API_TOKEN_LIMIT_EXCEEDED') {
+    return {
+      err: err?.response?.data === 'invalid id' ? 'trello invalid id' : err,
+      trace,
+    };
   }
 };
 

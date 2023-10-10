@@ -20,6 +20,9 @@ const {
   findLastAddedVbForm,
   createNewVbForm,
   updateVbFormByFormId,
+  deleteVbFormBy,
+  deleteVbFormsBy,
+  findAllVbForms,
 } = require('../controllers/uploadInfo.controller');
 
 const {
@@ -49,7 +52,10 @@ const {
   sendEmail,
 } = require('../controllers/sendEmail.controller');
 
-const { findLinkByVideoId } = require('../controllers/links.controller');
+const {
+  findLinkByVideoId,
+  findLinkBy,
+} = require('../controllers/links.controller');
 
 const {
   getCardDataByCardId,
@@ -122,7 +128,7 @@ router.patch('/addAdditionalInfo', async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'uploadinfo.addAdditionalInfo' }));
     return res
       .status(500)
       .json({ message: 'Server-side error', status: 'error' });
@@ -217,19 +223,24 @@ router.post(
           searchBy: 'formHash',
           value: formHash,
         });
-      }
 
-      if (formHash && !authorLinkWithThisHash) {
-        return res.status(200).json({
-          message: 'Invalid link for the form. Request another one...',
-          status: 'warning',
-        });
-      }
+        if (!authorLinkWithThisHash) {
+          return res.status(200).json({
+            message: 'Invalid link for the form. Request another one...',
+            status: 'warning',
+          });
+        }
 
-      if (formHash && authorLinkWithThisHash.used === true) {
-        return res.status(200).json({
-          message: 'A video has already been added to this link',
-          status: 'warning',
+        if (authorLinkWithThisHash.used === true) {
+          return res.status(200).json({
+            message: 'A video has already been added to this link',
+            status: 'warning',
+          });
+        }
+
+        await deleteVbFormsBy({
+          deleteBy: 'refFormId',
+          value: authorLinkWithThisHash._id,
         });
       }
 
@@ -307,7 +318,9 @@ router.post(
           })
           .toBuffer(async (err, buffer) => {
             if (err) {
-              console.log(errorsHandler(err));;
+              console.log(
+                errorsHandler({ err, trace: 'uploadinfo.convertAgreement' })
+              );
               resolve({
                 status: 'error',
                 event: 'pdfGenerate',
@@ -534,9 +547,12 @@ router.post(
       };
 
       if (!!newVbForm.refFormId?.paid) {
-        const linkData = await findLinkByVideoId(newVbForm.refFormId.videoId);
+        const linkData = await findLinkBy({
+          searchBy: 'unixid',
+          value: newVbForm.refFormId.videoId,
+        });
 
-        if (linkData) {
+        if (!!linkData?.trelloCardId && process.env.MODE === 'production') {
           const trelloCard = await getCardDataByCardId(linkData.trelloCardId);
 
           await updateCustomFieldByTrelloCard(
@@ -575,7 +591,7 @@ router.post(
         status: 'success',
       });
     } catch (err) {
-      console.log(errorsHandler(err));;
+      console.log(errorsHandler({ err, trace: 'uploadinfo.create' }));
       return res.status(400).json({
         message: err?.message ? err.message : 'Server-side error',
         status: 'error',
@@ -625,7 +641,7 @@ router.get('/findOne', async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'uploadinfo.findOne' }));
     res.status(500).json({ message: 'Server side error', status: 'error' });
   }
 });

@@ -127,7 +127,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       apiData: newAuthorLink,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'authorLink.create' }));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',
@@ -163,7 +163,7 @@ router.get('/findOne/:value', async (req, res) => {
       apiData: authorLinkForm,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'authorLink.findOne' }));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',

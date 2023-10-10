@@ -56,6 +56,18 @@ const updateVbFormByFormId = async (formId, objDB) => {
   );
 };
 
+const deleteVbFormBy = async ({ deleteBy, value }) => {
+  return await UploadInfo.deleteOne({
+    [deleteBy]: value,
+  });
+};
+
+const deleteVbFormsBy = async ({ deleteBy, value }) => {
+  return await UploadInfo.deleteMany({
+    [deleteBy]: value,
+  });
+};
+
 const updateVbFormBy = async ({ updateBy, value, dataForUpdate }) => {
   return await UploadInfo.updateOne(
     {
@@ -67,10 +79,19 @@ const updateVbFormBy = async ({ updateBy, value, dataForUpdate }) => {
   );
 };
 
+const findAllVbForms = async ({ refFormId }) => {
+  return await UploadInfo.find({
+    ...(!!refFormId && { refFormId }),
+  });
+};
+
 module.exports = {
   findOne,
   findLastAddedVbForm,
   createNewVbForm,
   updateVbFormByFormId,
   updateVbFormBy,
+  deleteVbFormBy,
+  findAllVbForms,
+  deleteVbFormsBy,
 };

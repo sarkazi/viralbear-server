@@ -200,7 +200,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'user.getAll' }));
     return res
       .status(400)
       .json({ status: 'error', message: 'Server side error' });
@@ -275,7 +275,7 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
       apiData: users,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'user.findToDisplayOnSite' }));
     return res
       .status(400)
       .json({ status: 'error', message: 'Server side error' });
@@ -296,7 +296,7 @@ router.get('/getById/:userId', async (req, res) => {
 
     return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'user.getById' }));
 
     return res
       .status(400)
@@ -337,7 +337,7 @@ router.get('/getBy', authMiddleware, async (req, res) => {
 
     return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'user.getBy' }));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -477,7 +477,7 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'user.createOne' }));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -691,7 +691,7 @@ router.patch(
         status: 'success',
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(errorsHandler({ err, trace: 'user.updateOne' }));
       return res.status(400).json({
         message: 'Server side error',
         status: 'error',
@@ -726,7 +726,7 @@ router.patch(
         status: 'success',
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(errorsHandler({ err, trace: 'user.updateMany' }));
       return res.status(400).json({
         message: 'Server side error',
         status: 'error',
@@ -878,31 +878,10 @@ router.get(
                 purchased: true,
               },
             });
-          const acquiredNoExclusivityVideosCountLast30Days =
-            await getCountVideosBy({
-              forLastDays: 30,
-              isApproved: true,
-              exclusivity: false,
-              user: {
-                value: user._id,
-                searchBy: 'researcher',
-                purchased: true,
-              },
-            });
 
           const acquiredExclusivityVideosCount = await getCountVideosBy({
             isApproved: true,
             exclusivity: true,
-            user: {
-              value: user._id,
-              searchBy: 'researcher',
-              purchased: true,
-            },
-          });
-
-          const acquiredNoExclusivityVideosCount = await getCountVideosBy({
-            isApproved: true,
-            exclusivity: false,
             user: {
               value: user._id,
               searchBy: 'researcher',
@@ -1093,18 +1072,19 @@ router.get(
                 last7Days: acquiredVideosCountLast7DaysMainRole,
               },
             },
-            percentageOfExclusivityToNonExclusivityVideos: {
-              total: acquiredNoExclusivityVideosCount
+
+            exclusivityRate: {
+              total: !!acquiredVideosCountMainRole
                 ? Math.round(
                     (acquiredExclusivityVideosCount /
-                      acquiredNoExclusivityVideosCount) *
+                      acquiredVideosCountMainRole) *
                       100
                   )
                 : 0,
-              last30Days: acquiredNoExclusivityVideosCountLast30Days
+              last30Days: !!acquiredVideosCountLast30DaysMainRole
                 ? Math.round(
                     (acquiredExclusivityVideosCountLast30Days /
-                      acquiredNoExclusivityVideosCountLast30Days) *
+                      acquiredVideosCountLast30DaysMainRole) *
                       100
                   )
                 : 0,
@@ -1203,15 +1183,15 @@ router.get(
               user.approvedRateAfterReview.total,
           };
 
-          acc.percentageOfExclusivityToNonExclusivityVideos = {
+          acc.exclusivityRate = {
             //за 30 дней
-            last30Days:
-              acc.percentageOfExclusivityToNonExclusivityVideos.last30Days +
-              user.percentageOfExclusivityToNonExclusivityVideos.last30Days,
+            last30Days: Math.round(
+              acc.exclusivityRate.last30Days + user.exclusivityRate.last30Days
+            ),
             //всего
-            total:
-              acc.percentageOfExclusivityToNonExclusivityVideos.total +
-              user.percentageOfExclusivityToNonExclusivityVideos.total,
+            total: Math.round(
+              acc.exclusivityRate.total + user.exclusivityRate.total
+            ),
           };
 
           //суммарный общий заработок работников
@@ -1265,7 +1245,7 @@ router.get(
           },
           average: 0,
           percentageOfProfitableVideos: 0,
-          percentageOfExclusivityToNonExclusivityVideos: {
+          exclusivityRate: {
             last30Days: 0,
             total: 0,
           },
@@ -1313,16 +1293,13 @@ router.get(
                 employeeStat.length
               ).toFixed(2),
             },
-            percentageOfExclusivityToNonExclusivityVideos: {
+            exclusivityRate: {
               last30Days: +(
-                totalSumOfStatFields
-                  .percentageOfExclusivityToNonExclusivityVideos.last30Days /
+                totalSumOfStatFields.exclusivityRate.last30Days /
                 employeeStat.length
               ).toFixed(2),
               total: +(
-                totalSumOfStatFields
-                  .percentageOfExclusivityToNonExclusivityVideos.total /
-                employeeStat.length
+                totalSumOfStatFields.exclusivityRate.total / employeeStat.length
               ).toFixed(2),
             },
             percentageOfProfitableVideos: +(
@@ -1333,7 +1310,9 @@ router.get(
         },
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(
+        errorsHandler({ err, trace: 'user.collectStatForEmployees.enlarged' })
+      );
       return res.status(400).json({
         message: 'Server side error',
         status: 'error',
@@ -1487,7 +1466,9 @@ router.get(
         },
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(
+        errorsHandler({ err, trace: 'user.collectStatForEmployees.shorten' })
+      );
       return res.status(400).json({
         message: 'Server side error',
         status: 'error',
@@ -1587,29 +1568,9 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       },
     });
 
-    const acquiredNoExclusivityVideosCountLast30Days = await getCountVideosBy({
-      forLastDays: 30,
-      isApproved: true,
-      exclusivity: false,
-      user: {
-        value: user._id,
-        searchBy: 'researcher',
-        purchased: true,
-      },
-    });
     const acquiredExclusivityVideosCount = await getCountVideosBy({
       isApproved: true,
       exclusivity: true,
-      user: {
-        value: user._id,
-        searchBy: 'researcher',
-        purchased: true,
-      },
-    });
-
-    const acquiredNoExclusivityVideosCount = await getCountVideosBy({
-      isApproved: true,
-      exclusivity: false,
       user: {
         value: user._id,
         searchBy: 'researcher',
@@ -1760,18 +1721,17 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
           last30Days: acquiredVideosCountLast30DaysMainRole,
         },
       },
-      percentageOfExclusivityToNonExclusivityVideos: {
-        allTime: acquiredNoExclusivityVideosCount
+      exclusivityRate: {
+        allTime: !!acquiredVideosCountMainRole
           ? Math.round(
-              (acquiredExclusivityVideosCount /
-                acquiredNoExclusivityVideosCount) *
+              (acquiredExclusivityVideosCount / acquiredVideosCountMainRole) *
                 100
             )
           : 0,
-        last30Days: acquiredNoExclusivityVideosCountLast30Days
+        last30Days: !!acquiredVideosCountLast30DaysMainRole
           ? Math.round(
               (acquiredExclusivityVideosCountLast30Days /
-                acquiredNoExclusivityVideosCountLast30Days) *
+                acquiredVideosCountLast30DaysMainRole) *
                 100
             )
           : 0,
@@ -1815,8 +1775,8 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
-    return res.status(500).json({
+    console.log(errorsHandler({ err, trace: 'user.collectStatForEmployee' }));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -1833,8 +1793,8 @@ router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
-    return res.status(500).json({
+    console.log(errorsHandler({ err, trace: 'user.deleteUser' }));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -2008,8 +1968,8 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
-    return res.status(500).json({
+    console.log(errorsHandler({ err, trace: 'user.topUpEmployeeBalance' }));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -2031,8 +1991,8 @@ router.post('/findByValueList', async (req, res) => {
       apiData: users,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
-    return res.status(500).json({
+    console.log(errorsHandler({ err, trace: 'user.findByValueList' }));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -2279,9 +2239,11 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
       });
     }
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(
+      errorsHandler({ err, trace: 'user.authors.collectStatOnVideo' })
+    );
 
-    return res.status(500).json({
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -2307,9 +2269,11 @@ router.get('/authors/getPaymentDetails', authMiddleware, async (req, res) => {
       apiData: author?.paymentInfo ? author.paymentInfo : {},
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(
+      errorsHandler({ err, trace: 'user.authors.getPaymentDetails' })
+    );
 
-    return res.status(500).json({
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -2633,8 +2597,8 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       },
     });
   } catch (err) {
-    console.log(errorsHandler(err));
-    return res.status(500).json({
+    console.log(errorsHandler({ err, trace: 'user.authors.topUpBalance' }));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -2706,8 +2670,8 @@ router.post('/authors/register', async (req, res) => {
       message: 'Congratulations on registering on the service!',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
-    return res.status(500).json({
+    console.log(errorsHandler({ err, trace: 'user.authors.register' }));
+    return res.status(400).json({
       message: 'Server side error',
       status: 'error',
     });
@@ -2844,9 +2808,14 @@ router.get(
         apiData: acquiredVideosStat,
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(
+        errorsHandler({
+          err,
+          trace: 'user.researchers.collectStatOnAcquiredVideos',
+        })
+      );
 
-      return res.status(500).json({
+      return res.status(400).json({
         message: 'Server side error',
         status: 'error',
       });

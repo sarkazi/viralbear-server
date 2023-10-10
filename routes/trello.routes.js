@@ -105,7 +105,7 @@ router.get('/findMentionsByEmployee', authMiddleware, async (req, res) => {
       },
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'trello.findMentionsByEmployee' }));
     return res.status(400).json({
       message: 'server side error',
       status: 'error',
@@ -273,7 +273,7 @@ router.get('/findCardsFromDoneList', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'trello.findCardsFromDoneList' }));
     return res.status(400).json({
       message: 'Error when receiving cards from the "done" list',
       status: 'error',
@@ -324,7 +324,9 @@ router.get(
         },
       });
     } catch (err) {
-      console.log(errorsHandler(err));;
+      console.log(
+        errorsHandler({ err, trace: 'trello.findOverdueCardsFromDoneList' })
+      );
       return res.status(400).json({
         message: 'Server side error',
         status: 'error',
@@ -435,7 +437,7 @@ router.get('/getCardsWithReminder', authMiddleware, async (req, res) => {
       apiData: cards,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'trello.getCardsWithReminder' }));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -554,7 +556,7 @@ router.get('/findOne/:trelloCardId', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'trello.findOne' }));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -576,7 +578,9 @@ router.get('/getAllNicknamesByMembers', async (req, res) => {
       apiData: nicknames,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(
+      errorsHandler({ err, trace: 'trello.getAllNicknamesByMembers' })
+    );
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',

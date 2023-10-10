@@ -6,6 +6,10 @@ const moment = require('moment');
 
 const Stream = require('stream');
 
+const {
+  paramsForVideoConversion,
+} = require('../const/paramsForVideoConversion');
+
 const calcTheRequiredFpsForVideo = require('../utils/calcTheRequiredFpsForVideo');
 
 const path = require('path');
@@ -258,8 +262,10 @@ const refreshMrssFiles = async () => {
                           ).format(`ddd, D MMM YYYY`)}</media:filmingDate>
                           <guid>${
                             obj.name === 'Reuters' &&
-                            +video.videoData.videoId >= 2615 &&
-                            +video.videoData.videoId <= 2773
+                            ((+video.videoData.videoId >= 2615 &&
+                              +video.videoData.videoId <= 2773) ||
+                              (+video.videoData.videoId >= 3149 &&
+                                +video.videoData.videoId <= 3200))
                               ? `${video.videoData.videoId}0000`
                               : video.videoData.videoId
                           }</guid>
@@ -1086,14 +1092,18 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
           : false;
 
         ffmpeg(`${directoryForInputVideo}/input-for-conversion.mp4`)
-          .withVideoCodec('libx264')
-          .withAudioCodec('libmp3lame')
-          .size(heightVideo <= 720 ? '720x1080' : '1080x1920')
-          .aspect('9:16')
-          .autopad('black')
-          .videoBitrate('15000', false)
+          .withVideoCodec(paramsForVideoConversion.videoCodec)
+          .withAudioCodec(paramsForVideoConversion.audioCodec)
+          .size(
+            heightVideo <= 720
+              ? paramsForVideoConversion.size.sm
+              : paramsForVideoConversion.size.lg
+          )
+          .aspect(paramsForVideoConversion.aspectRatio)
+          .autopad(paramsForVideoConversion.autopad)
+          .videoBitrate(paramsForVideoConversion.videoBitrate, false)
           .fps(calcTheRequiredFpsForVideo({ videoFps }))
-          .toFormat('mp4')
+          .toFormat(paramsForVideoConversion.format)
           .on('start', () => {
             console.log(
               '------------------ start conversion ----------------------'

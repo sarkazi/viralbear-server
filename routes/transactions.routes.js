@@ -42,7 +42,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'transaction.getAll' }));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',

@@ -33,7 +33,7 @@ router.get('/getAll', async (req, res) => {
       apiData: users,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'public.user.getAll' }));
     return res
       .status(500)
       .json({ status: 'error', message: 'Server side error' });
@@ -42,7 +42,7 @@ router.get('/getAll', async (req, res) => {
 
 router.get('/getBy', async (req, res) => {
   try {
-    const { searchBy, value } = req.query;
+    const { searchBy, value, fieldsInTheResponse } = req.query;
 
     if (!searchBy || !value) {
       return res.status(200).json({
@@ -51,7 +51,13 @@ router.get('/getBy', async (req, res) => {
       });
     }
 
-    const user = await getUserBy({ searchBy, value });
+    const user = await getUserBy({
+      searchBy,
+      value,
+      ...(!!fieldsInTheResponse && {
+        fieldsInTheResponse,
+      }),
+    });
 
     if (!user) {
       return res
@@ -61,7 +67,7 @@ router.get('/getBy', async (req, res) => {
 
     return res.status(200).json({ apiData: user, status: 'success' });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'public.user.getBy' }));
   }
 });
 

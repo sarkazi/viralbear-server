@@ -263,7 +263,7 @@ router.post('/manualAddition', authMiddleware, async (req, res) => {
       message: 'The data has been processed successfully',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'sale.manualAddition' }));;
 
     return res.status(500).json({
       status: 'error',
@@ -1008,7 +1008,7 @@ router.post(
         apiData,
       });
     } catch (err) {
-      console.log(errorsHandler(err));;
+      console.log(errorsHandler({ err, trace: 'sale.parsingFromFile' }));;
 
       const message =
         typeof err === 'string'
@@ -1131,7 +1131,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
       message: 'sales have been successfully added to the system',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'sale.ingestInSystem' }));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1221,7 +1221,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'sale.getAll' }));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1368,7 +1368,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
       });
     }
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'sale.getStatisticsOnAuthors' }));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1431,7 +1431,7 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'sale.deleteOne' }));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',
@@ -1518,7 +1518,7 @@ router.get('/getTop', authMiddleware, async (req, res) => {
       apiData: salesGroup,
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'sale.getTop' }));;
     return res.status(500).json({
       status: 'error',
       message: err?.message ? err.message : 'Server side error',

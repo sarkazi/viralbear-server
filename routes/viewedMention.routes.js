@@ -49,7 +49,7 @@ router.post('/add', authMiddleware, async (req, res) => {
       apiData: { newViewedMentions },
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'viewedMention.add' }));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -76,7 +76,7 @@ router.get('/findOne/:actionId', async (req, res) => {
       apiData: mention,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'viewedMention.findOne' }));
     res.status(400).json({
       message: 'Server side error',
       status: 'error',
@@ -110,7 +110,7 @@ router.post('/markEverythingAsRead', authMiddleware, async (req, res) => {
       .status(200)
       .json({ message: 'All mentions are marked as read', status: 'success' });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'viewedMention.markEverythingAsRead' }));
     res.status(400).json({ message: 'Server side error', status: 'error' });
   }
 });

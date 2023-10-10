@@ -16,7 +16,7 @@ router.get('/getAllCountries', async (req, res) => {
       message: 'List of countries received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'location.getAllCountries' }));;
     console.log(err?.response?.data);
     return res.status(500).json({
       status: 'error',

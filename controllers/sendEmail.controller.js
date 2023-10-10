@@ -4,14 +4,17 @@ const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
   const { vbForm, accountActivationLink } = dataForSendingMessage;
 
   const defineMailRecipients = () => {
-    if (!vbForm?.refFormId) {
-      return [process.env.SERVICE_LICENSING_EMAIL];
+    if (process.env.MODE === 'development') {
+      return ['nikemorozow@gmail.com'];
     } else {
-      return [
-        process.env.SERVICE_INFO_EMAIL,
-        vbForm.refFormId.researcher.email,
-        //'nikemorozow@gmail.com',
-      ];
+      if (!vbForm?.refFormId) {
+        return [process.env.SERVICE_LICENSING_EMAIL];
+      } else {
+        return [
+          process.env.SERVICE_INFO_EMAIL,
+          vbForm.refFormId.researcher.email,
+        ];
+      }
     }
   };
 
@@ -138,12 +141,21 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
     researcherEmail,
   } = dataForSendingSurveyInfo;
 
+  const defineMailRecipients = () => {
+    if (process.env.MODE === 'development') {
+      return ['nikemorozow@gmail.com'];
+    } else {
+      if (!!refForm && !!researcherEmail) {
+        return [process.env.SERVICE_INFO_EMAIL, researcherEmail];
+      } else {
+        return process.env.SERVICE_LICENSING_EMAIL;
+      }
+    }
+  };
+
   await mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
-    to:
-      !!refForm && !!researcherEmail
-        ? [process.env.SERVICE_INFO_EMAIL, researcherEmail]
-        : process.env.SERVICE_LICENSING_EMAIL,
+    to: defineMailRecipients(),
     subject: `Information from the survey! VB code: ${formId.replace(
       'VB',
       ''

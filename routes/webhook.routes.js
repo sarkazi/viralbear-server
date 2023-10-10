@@ -119,7 +119,7 @@ router.post('/trello/doneList', async (req, res) => {
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {
-    console.log('trello webhook error');
+    console.log(errorsHandler({ err, trace: 'webhookTrello.doneList' }));
     return res.status(200).json({ status: 'error' });
   }
 });
@@ -178,7 +178,7 @@ router.post('/trello/reviewList', async (req, res) => {
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'webhookTrello.reviewList' }));
   }
 });
 
@@ -262,7 +262,7 @@ router.post('/trello/allBoard', async (req, res) => {
 
     return res.status(200).json({ status: 'success' });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'webhookTrello.allBoard' }));
   }
 });
 

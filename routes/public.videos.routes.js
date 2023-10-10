@@ -154,7 +154,7 @@ router.get('/findAll', async (req, res) => {
       message: 'The list of videos is received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'public.video.findAll' }));;
 
     return res.status(500).json({
       status: 'error',
@@ -189,7 +189,7 @@ router.get('/findOne/:id', async (req, res) => {
       message: 'Video info successfully received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'public.video.findOne' }));;
   }
 });
 
@@ -212,7 +212,7 @@ router.get('/findOne/next/:id', async (req, res) => {
       message: 'Video info successfully received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'public.video.findOne.next' }));;
   }
 });
 
@@ -235,7 +235,7 @@ router.get('/findOne/prev/:id', async (req, res) => {
       message: 'Video info successfully received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));;
+    console.log(errorsHandler({ err, trace: 'public.video.findOne.prev' }));;
   }
 });
 

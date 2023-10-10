@@ -3,8 +3,6 @@ const router = express.Router();
 
 const authMiddleware = require('../middleware/auth.middleware');
 
-const { validationResult, check, isEmail } = require('express-validator');
-
 const { compare, hash } = require('bcryptjs');
 
 const { errorsHandler } = require('../handlers/error.handler');
@@ -14,10 +12,12 @@ const {
   getUserById,
   getUserBy,
 } = require('../controllers/user.controller');
+
 const {
   generateTokens,
   validateRefreshToken,
 } = require('../controllers/auth.controllers');
+
 const { sign } = require('jsonwebtoken');
 
 router.post('/login', async (req, res) => {
@@ -80,7 +80,7 @@ router.post('/login', async (req, res) => {
       code: 200,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'auth.login' }));
   }
 });
 
@@ -103,7 +103,7 @@ router.post('/getMe', authMiddleware, async (req, res) => {
       message: 'User data received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'auth.getMe' }));
     return res.status(500).json({
       message: 'Server side error',
       status: 'error',

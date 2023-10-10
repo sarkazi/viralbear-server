@@ -138,7 +138,7 @@ router.post('/sendLinkToTrello', authMiddleware, async (req, res) => {
       message: 'Video added and sent',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'link.sendLinkToTrello' }));
     return res
       .status(400)
       .json({ status: 'error', message: 'Server side error' });

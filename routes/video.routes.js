@@ -506,7 +506,7 @@ router.post(
           message: 'Video successfully added',
         });
       } catch (err) {
-        console.log(errorsHandler(err));
+        console.log(errorsHandler({ err, trace: 'video.addVideo' }));
 
         return res.status(400).json({
           message: err?.message ? err?.message : 'Server side error',
@@ -654,7 +654,7 @@ router.post('/convert', authMiddleware, async (req, res) => {
         apiData: updatedVideo,
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(errorsHandler({ err, trace: 'video.convert' }));
       return res
         .status(400)
         .json({ message: 'Server side error', status: 'error' });
@@ -699,7 +699,7 @@ router.get('/findOneBy', async (req, res) => {
       message: 'Detailed video information received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findOneBy' }));
 
     return res.status(400).json({
       status: 'error',
@@ -829,7 +829,7 @@ router.get('/findCountByGroups', async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findCountByGroups' }));
 
     return res.status(400).json({
       status: 'error',
@@ -928,7 +928,7 @@ router.get('/findAll', authMiddleware, async (req, res) => {
       message: 'The list of videos is received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findAll' }));
 
     return res.status(400).json({
       status: 'error',
@@ -966,7 +966,7 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findReadyForPublication' }));
 
     return res.status(400).json({
       message: 'Server-side error',
@@ -981,7 +981,7 @@ router.get('/findByIsBrandSafe', authMiddleware, async (req, res) => {
 
     return res.status(200).json(videosForSocialMedia);
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findByIsBrandSafe' }));
 
     return res.status(400).json({
       message: 'server side error',
@@ -1018,7 +1018,7 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findByFixed' }));
 
     res.status(400).json({
       status: 'error',
@@ -1104,7 +1104,7 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
       apiData: videos.videosByThisAuthor,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findByAuthor' }));
     return res.status(400).json({
       message: `Server side error`,
       status: 'error',
@@ -1136,7 +1136,7 @@ router.get('/findOneById/:videoId', async (req, res) => {
       apiData: video,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findOneById' }));
     return res.status(400).json({
       message: `Server side error`,
       status: 'error',
@@ -1165,7 +1165,7 @@ router.get('/findNext/:id', async (req, res) => {
       message: 'Video successfully received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findNext' }));
 
     return res.status(400).json({
       status: 'error',
@@ -1193,7 +1193,7 @@ router.get('/findPrev/:id', async (req, res) => {
       message: 'Video successfully received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.findPrev' }));
 
     return res.status(400).json({
       status: 'error',
@@ -1734,7 +1734,7 @@ router.patch(
         },
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(errorsHandler({ err, trace: 'video.update' }));
 
       return res.status(400).json({
         message: err?.message ? err?.message : 'Server side error',
@@ -1769,7 +1769,7 @@ router.patch('/updateByValue', authMiddleware, async (req, res) => {
       status: 'success',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.updateByValue' }));
 
     return res.status(400).json({
       message: err?.message ? err?.message : 'Server side error',
@@ -2228,7 +2228,7 @@ router.patch(
         },
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(errorsHandler({ err, trace: 'video.fixedVideo' }));
       return res
         .status(400)
         .json({ message: 'Server side error', status: 'error' });
@@ -2269,7 +2269,7 @@ router.patch('/addCommentForFixed', authMiddleware, async (req, res) => {
       apiData: updatedVideo,
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.addCommentForFixed' }));
     return res.status(400).json({
       status: 'success',
       message: 'Server-side error',
@@ -2648,56 +2648,56 @@ router.patch(
           }
         }
 
-        if (!video?.uploadedToFb) {
-          //socketInstance
-          //  .io()
-          //  .sockets.in(req.user.id)
-          //  .emit('progressOfRequestInPublishing', {
-          //    event: 'Uploading video to facebook',
-          //    file: null,
-          //  });
-          //const { data: pagesResData } = await axios.get(
-          //  `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
-          //  {
-          //    params: {
-          //      fields: 'name,access_token',
-          //      access_token: process.env.FACEBOOK_API_TOKEN,
-          //    },
-          //  }
-          //);
-          //const pageToken = pagesResData.data.find(
-          //  (page) => page.id === process.env.FACEBOOK_PAGE_ID
-          //).access_token;
-          //const responseAfterUploadOnFacebook = await new Promise(
-          //  async (resolve, reject) => {
-          //    fbUpload({
-          //      token: pageToken,
-          //      id: process.env.FACEBOOK_PAGE_ID,
-          //      stream,
-          //      title: video.videoData.title,
-          //      description: video.videoData.description,
-          //    })
-          //      .then((res) => {
-          //        resolve({
-          //          status: 'success',
-          //          message: 'Video successfully uploaded on facebook',
-          //        });
-          //      })
-          //      .catch((err) => {
-          //        resolve({
-          //          status: 'error',
-          //          message: err?.response?.data?.message,
-          //        });
-          //      });
-          //  }
-          //);
-          //if (responseAfterUploadOnFacebook.status === 'success') {
-          //  await updateVideoBy({
-          //    searchBy: '_id',
-          //    searchValue: video._id,
-          //    dataToUpdate: { uploadedToFb: true },
-          //  });
-          //}
+        if (!video?.uploadedToFb && process.env.MODE === 'production') {
+          socketInstance
+            .io()
+            .sockets.in(req.user.id)
+            .emit('progressOfRequestInPublishing', {
+              event: 'Uploading video to facebook',
+              file: null,
+            });
+          const { data: pagesResData } = await axios.get(
+            `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
+            {
+              params: {
+                fields: 'name,access_token',
+                access_token: process.env.FACEBOOK_API_TOKEN,
+              },
+            }
+          );
+          const pageToken = pagesResData.data.find(
+            (page) => page.id === process.env.FACEBOOK_PAGE_ID
+          ).access_token;
+          const responseAfterUploadOnFacebook = await new Promise(
+            async (resolve, reject) => {
+              fbUpload({
+                token: pageToken,
+                id: process.env.FACEBOOK_PAGE_ID,
+                stream,
+                title: video.videoData.title,
+                description: video.videoData.description,
+              })
+                .then((res) => {
+                  resolve({
+                    status: 'success',
+                    message: 'Video successfully uploaded on facebook',
+                  });
+                })
+                .catch((err) => {
+                  resolve({
+                    status: 'error',
+                    message: err?.response?.data?.message,
+                  });
+                });
+            }
+          );
+          if (responseAfterUploadOnFacebook.status === 'success') {
+            await updateVideoBy({
+              searchBy: '_id',
+              searchValue: video._id,
+              dataToUpdate: { uploadedToFb: true },
+            });
+          }
         }
       }
 
@@ -3138,7 +3138,7 @@ router.patch(
         message: 'The video was successfully published',
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(errorsHandler({ err, trace: 'video.publishing' }));
 
       return res
         .status(400)
@@ -3392,57 +3392,58 @@ router.post(
         }
       }
 
-      if (!video?.uploadedToFb) {
-        //socketInstance
-        //  .io()
-        //  .sockets.in(req.user.id)
-        //  .emit('progressOfRequestInPublishing', {
-        //    event: 'Uploading video to facebook',
-        //    file: null,
-        //  });
-        //const { data: pagesResData } = await axios.get(
-        //  `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
-        //  {
-        //    params: {
-        //      fields: 'name,access_token',
-        //      access_token: process.env.FACEBOOK_API_TOKEN,
-        //    },
-        //  }
-        //);
-        //const pageToken = pagesResData.data.find(
-        //  (page) => page.id === process.env.FACEBOOK_PAGE_ID
-        //).access_token;
-        //console.log(pageToken);
-        //const responseAfterUploadOnFacebook = await new Promise(
-        //  async (resolve, reject) => {
-        //    fbUpload({
-        //      token: pageToken,
-        //      id: process.env.FACEBOOK_PAGE_ID,
-        //      stream,
-        //      title: video.videoData.title,
-        //      description: video.videoData.description,
-        //    })
-        //      .then((res) => {
-        //        resolve({
-        //          status: 'success',
-        //          message: 'Video successfully uploaded on facebook',
-        //        });
-        //      })
-        //      .catch((err) => {
-        //        resolve({
-        //          status: 'error',
-        //          message: err?.response?.data?.message,
-        //        });
-        //      });
-        //  }
-        //);
-        //if (responseAfterUploadOnFacebook.status === 'success') {
-        //  await updateVideoBy({
-        //    searchBy: '_id',
-        //    searchValue: video._id,
-        //    dataToUpdate: { uploadedToFb: true },
-        //  });
-        //}
+      if (!video?.uploadedToFb && process.env.MODE === 'production') {
+        socketInstance
+          .io()
+          .sockets.in(req.user.id)
+          .emit('progressOfRequestInPublishing', {
+            event: 'Uploading video to facebook',
+            file: null,
+          });
+        const { data: pagesResData } = await axios.get(
+          `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
+          {
+            params: {
+              fields: 'name,access_token',
+              access_token: process.env.FACEBOOK_API_TOKEN,
+            },
+          }
+        );
+        const pageToken = pagesResData.data.find(
+          (page) => page.id === process.env.FACEBOOK_PAGE_ID
+        ).access_token;
+        console.log(pageToken);
+        const responseAfterUploadOnFacebook = await new Promise(
+          async (resolve, reject) => {
+            fbUpload({
+              token: pageToken,
+              id: process.env.FACEBOOK_PAGE_ID,
+              stream,
+              title: video.videoData.title,
+              description: video.videoData.description,
+            })
+              .then((res) => {
+                resolve({
+                  status: 'success',
+                  message: 'Video successfully uploaded on facebook',
+                });
+              })
+              .catch((err) => {
+                resolve({
+                  status: 'error',
+                  message: err?.response?.data?.message,
+                });
+              });
+          }
+        );
+        if (responseAfterUploadOnFacebook.status === 'success') {
+          await updateVideoBy({
+            searchBy: '_id',
+            searchValue: video._id,
+            dataToUpdate: { uploadedToFb: true },
+          });
+        }
+
         //на будущее
         //https://graph.facebook.com/oauth/access_token?
         //client_id=APP_ID&
@@ -3462,7 +3463,7 @@ router.post(
         message: 'The video was successfully uploaded to social networks',
       });
     } catch (err) {
-      console.log(errorsHandler(err));
+      console.log(errorsHandler({ err, trace: 'video.publishingInSocialMedia' }));
 
       return res.status(400).json({
         status: 'error',
@@ -3524,7 +3525,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       apiData: { trelloCardId: video.trelloData.trelloCardId },
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.delete' }));
     return res.status(400).json({
       message: err?.message ? err?.message : 'Server side error',
       status: 'error',
@@ -3664,7 +3665,7 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       message: 'Video analytics on sales received',
     });
   } catch (err) {
-    console.log(errorsHandler(err));
+    console.log(errorsHandler({ err, trace: 'video.getSalesAnalytics' }));
     return res.status(400).json({
       message: 'Server side error',
       status: 'error',
