@@ -37,8 +37,20 @@ const getCountApprovedTrelloCardBy = async ({
     .sort({ $natural: -1 });
 };
 
+const getApprovedTrelloCardBy = async ({ searchBy, value, forLastDays }) => {
+  return await MovedFromReviewListSchema.find({
+    [searchBy]: value,
+    ...(forLastDays && {
+      createdAt: {
+        $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
+      },
+    }),
+  }).sort({ $natural: -1 });
+};
+
 module.exports = {
   writeNewMoveFromReview,
   findTheRecordOfTheCardMovedFromReview,
   getCountApprovedTrelloCardBy,
+  getApprovedTrelloCardBy,
 };

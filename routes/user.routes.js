@@ -9,6 +9,8 @@ const mongoose = require('mongoose');
 
 const { errorsHandler } = require('../handlers/error.handler');
 
+const fs = require('fs');
+
 const authMiddleware = require('../middleware/auth.middleware');
 
 const validationForRequiredInputDataInUserModel = require('../utils/validationForRequiredInputDataInUserModel');
@@ -41,6 +43,7 @@ const {
 const {
   getCountLinksBy,
   getCountLinks,
+  getLinks,
 } = require('../controllers/links.controller');
 
 const {
@@ -70,9 +73,13 @@ const {
 
 const {
   getCountApprovedTrelloCardBy,
+  getApprovedTrelloCardBy,
 } = require('../controllers/movedFromReviewList.controller');
 
-const { inviteMemberOnBoard } = require('../controllers/trello.controller');
+const {
+  inviteMemberOnBoard,
+  getCardDataByCardId,
+} = require('../controllers/trello.controller');
 
 const { uploadFileToStorage } = require('../controllers/storage.controller');
 
@@ -631,19 +638,14 @@ router.patch(
 
       if (files?.avatarFile) {
         const { response } = await new Promise(async (resolve, reject) => {
-          await uploadFileToStorage(
-            null,
-            'avatarsOfUsers',
-            `avatar-${userId}`,
-            files.avatarFile[0].buffer,
-            files.avatarFile[0].mimetype,
-            path.extname(files.avatarFile[0].originalname),
+          await uploadFileToStorage({
+            folder: 'avatarsOfUsers',
+            name: `avatar-${userId}`,
+            buffer: files.avatarFile[0].buffer,
+            type: files.avatarFile[0].mimetype,
+            extension: path.extname(files.avatarFile[0].originalname),
             resolve,
-            reject,
-            null,
-            null,
-            userId
-          );
+          });
         });
 
         avatarUrl = response?.Location;
@@ -984,6 +986,112 @@ router.get(
             },
           });
 
+          //--------------------------------------------------------
+
+          if (user.name === 'Kirill') {
+            //const test = await getAllVideos({
+            //  isApproved: true,
+            //  researcher: {
+            //    value: user._id,
+            //    searchBy: 'researcher',
+            //    isAcquirer: true,
+            //    advanceHasBeenPaid: false,
+            //  },
+            //});
+            //Promise.delay = function (t, val) {
+            //  return new Promise((resolve) => {
+            //    setTimeout(resolve.bind(null, val), t);
+            //  });
+            //};
+            //Promise.raceAll = function (promises, timeoutTime, timeoutVal) {
+            //  return Promise.all(
+            //    promises.map((p) => {
+            //      return Promise.race([
+            //        p,
+            //        Promise.delay(timeoutTime, timeoutVal),
+            //      ]);
+            //    })
+            //  );
+            //};
+            //const hh = await Promise.raceAll(
+            //  arr.map(async (ll) => {
+            //    return await getCardDataByCardId(ll);
+            //  }),
+            //  6000,
+            //  null
+            //);
+            //const hhhhh = await Promise.all(
+            //  testff.map(async (fff) => {
+            //    const video = await findVideoBy({
+            //      searchBy: 'trelloData.trelloCardId',
+            //      value: fff.id,
+            //    });
+            //    console.log(
+            //      video.trelloData.researchers.map((jj) => {
+            //        return jj;
+            //      })
+            //    );
+            //    if (!video) {
+            //      return {
+            //        id: fff.id,
+            //        status: 'not found',
+            //      };
+            //    } else {
+            //      return {
+            //        researcher: video.trelloData.researchers.find((ydgfyds) => {
+            //          ydgfyds.researcher.name === user.name;
+            //        }),
+            //        id: fff.id,
+            //        status: 'found',
+            //      };
+            //    }
+            //  })
+            //);
+            //fs.writeFile('output.json', JSON.stringify(hhhh), 'utf8', () => {});
+          }
+
+          if (
+            user.name === 'Apratim' ||
+            user.name === 'Marina' ||
+            user.name === 'Maher'
+          ) {
+            if (user.name === 'Marina') {
+              //const tt = await getApprovedTrelloCardBy({
+              //  searchBy: 'researcherId',
+              //  value: user._id,
+              //});
+              const yy = await getLinks({
+                researcherId: user._id,
+                //listInTrello: 'Review',
+              });
+
+              console.log(yy);
+
+              //const arr = tt.map((el) => {
+              //  return el.trelloCardId;
+              //});
+
+              //console.log(
+              //  arr.filter((item, index) => arr.indexOf(item) !== index),
+              //  55
+              //);
+
+              //fs.writeFile(
+              //  'movedFromReview_Marina.json',
+              //  JSON.stringify(tt),
+              //  'utf8',
+              //  () => {}
+              //);
+              //fs.writeFile(
+              //  'sendToReview_Marina.json',
+              //  JSON.stringify(yy),
+              //  'utf8',
+              //  () => {}
+              //);
+            }
+          }
+          //--------------------------------------------------------
+
           advance = !user?.advancePayment
             ? 0
             : videosCountWithUnpaidAdvance * user.advancePayment;
@@ -1092,9 +1200,9 @@ router.get(
             approvedRateAfterReview: {
               total: !videosCountSentToReview
                 ? 0
-                : Math.round(videosCountReviewed / videosCountSentToReview) *
-                    100 >
-                  100
+                : Math.round(
+                    (videosCountReviewed / videosCountSentToReview) * 100
+                  ) > 100
                 ? 100
                 : Math.round(
                     (videosCountReviewed / videosCountSentToReview) * 100
@@ -1102,11 +1210,10 @@ router.get(
               last30Days: !videosCountSentToReviewLast30Days
                 ? 0
                 : Math.round(
-                    videosCountReviewedLast30Days /
-                      videosCountSentToReviewLast30Days
-                  ) *
-                    100 >
-                  100
+                    (videosCountReviewedLast30Days /
+                      videosCountSentToReviewLast30Days) *
+                      100
+                  ) > 100
                 ? 100
                 : Math.round(
                     (videosCountReviewedLast30Days /
@@ -1739,17 +1846,17 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       approvedRateAfterReview: {
         allTime: !videosCountSentToReview
           ? 0
-          : Math.round(videosCountReviewed / videosCountSentToReview) * 100 >
+          : Math.round((videosCountReviewed / videosCountSentToReview) * 100) >
             100
           ? 100
           : Math.round((videosCountReviewed / videosCountSentToReview) * 100),
         last30Days: !videosCountSentToReviewLast30Days
           ? 0
           : Math.round(
-              videosCountReviewedLast30Days / videosCountSentToReviewLast30Days
-            ) *
-              100 >
-            100
+              (videosCountReviewedLast30Days /
+                videosCountSentToReviewLast30Days) *
+                100
+            ) > 100
           ? 100
           : Math.round(
               (videosCountReviewedLast30Days /

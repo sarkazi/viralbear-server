@@ -24,6 +24,18 @@ const getCountLinks = async ({ researcherId, listInTrello, forLastDays }) => {
   }).countDocuments();
 };
 
+const getLinks = async ({ researcherId, listInTrello, forLastDays }) => {
+  return await Links.find({
+    ...(researcherId && { researcher: researcherId }),
+    ...(listInTrello && { listInTrello }),
+    ...(forLastDays && {
+      createdAt: {
+        $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
+      },
+    }),
+  });
+};
+
 const findBaseUrl = async (link) => {
   return new Promise((resolve, reject) => {
     request(
@@ -219,4 +231,5 @@ module.exports = {
   findLinkBy,
   getCountLinks,
   updateLinkBy,
+  getLinks,
 };

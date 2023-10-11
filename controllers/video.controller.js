@@ -724,7 +724,7 @@ const getAllVideos = async ({
           $elemMatch: {
             [researcher.searchBy]: researcher.value,
             ...(typeof researcher?.advanceHasBeenPaid === 'boolean' && {
-              advanceHasBeenPaid,
+              advanceHasBeenPaid: researcher.advanceHasBeenPaid,
             }),
             ...(typeof researcher?.isAcquirer === 'boolean' && {
               main: researcher.isAcquirer,
@@ -732,6 +732,7 @@ const getAllVideos = async ({
           },
         },
       }),
+
       ...(durationPoints && {
         'videoData.duration': {
           $gte: durationPoints?.start,
