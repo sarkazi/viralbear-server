@@ -531,6 +531,8 @@ router.patch(
 
       const body = req.body;
 
+      console.log(body, 77);
+
       if (!body?.paymentInfo?.paymentMethod && !!user?.paymentInfo) {
         await updateUser({
           userId: userIdToUpdate,
@@ -618,6 +620,8 @@ router.patch(
           };
         }
       }
+
+      console.log(paymentInfo, 77);
 
       if (user.role === 'author') {
         const isValidate = validationForRequiredInputDataInUserModel(
@@ -1050,46 +1054,44 @@ router.get(
             //fs.writeFile('output.json', JSON.stringify(hhhh), 'utf8', () => {});
           }
 
-          if (
-            user.name === 'Apratim' ||
-            user.name === 'Marina' ||
-            user.name === 'Maher'
-          ) {
-            if (user.name === 'Marina') {
-              //const tt = await getApprovedTrelloCardBy({
-              //  searchBy: 'researcherId',
-              //  value: user._id,
-              //});
-              const yy = await getLinks({
-                researcherId: user._id,
-                //listInTrello: 'Review',
-              });
+          //if (
+          //  user.name === 'Apratim' ||
+          //  user.name === 'Marina' ||
+          //  user.name === 'Maher'
+          //) {
+          //  if (user.name === 'Marina') {
+          //    //const tt = await getApprovedTrelloCardBy({
+          //    //  searchBy: 'researcherId',
+          //    //  value: user._id,
+          //    //});
+          //    const yy = await getLinks({
+          //      researcherId: user._id,
+          //      //listInTrello: 'Review',
+          //    });
 
-              console.log(yy);
+          //    //const arr = tt.map((el) => {
+          //    //  return el.trelloCardId;
+          //    //});
 
-              //const arr = tt.map((el) => {
-              //  return el.trelloCardId;
-              //});
+          //    //console.log(
+          //    //  arr.filter((item, index) => arr.indexOf(item) !== index),
+          //    //  55
+          //    //);
 
-              //console.log(
-              //  arr.filter((item, index) => arr.indexOf(item) !== index),
-              //  55
-              //);
-
-              //fs.writeFile(
-              //  'movedFromReview_Marina.json',
-              //  JSON.stringify(tt),
-              //  'utf8',
-              //  () => {}
-              //);
-              //fs.writeFile(
-              //  'sendToReview_Marina.json',
-              //  JSON.stringify(yy),
-              //  'utf8',
-              //  () => {}
-              //);
-            }
-          }
+          //    //fs.writeFile(
+          //    //  'movedFromReview_Marina.json',
+          //    //  JSON.stringify(tt),
+          //    //  'utf8',
+          //    //  () => {}
+          //    //);
+          //    //fs.writeFile(
+          //    //  'sendToReview_Marina.json',
+          //    //  JSON.stringify(yy),
+          //    //  'utf8',
+          //    //  () => {}
+          //    //);
+          //  }
+          //}
           //--------------------------------------------------------
 
           advance = !user?.advancePayment

@@ -2649,6 +2649,8 @@ router.patch(
         }
 
         if (!video?.uploadedToFb && process.env.MODE === 'production') {
+          console.log('загрузка на facebook');
+
           socketInstance
             .io()
             .sockets.in(req.user.id)
@@ -2691,11 +2693,18 @@ router.patch(
                 });
             }
           );
+
           if (responseAfterUploadOnFacebook.status === 'success') {
             await updateVideoBy({
               searchBy: '_id',
               searchValue: video._id,
               dataToUpdate: { uploadedToFb: true },
+            });
+          } else {
+            console.log({
+              message: 'Error when uploading to facebook',
+              error: responseAfterUploadOnFacebook.message,
+              videoId: video.videoData.videoId,
             });
           }
         }
@@ -3442,6 +3451,12 @@ router.post(
             searchValue: video._id,
             dataToUpdate: { uploadedToFb: true },
           });
+        } else {
+          console.log({
+            message: 'Error when uploading to facebook',
+            error: responseAfterUploadOnFacebook.message,
+            videoId: video.videoData.videoId,
+          });
         }
 
         //на будущее
@@ -3463,7 +3478,9 @@ router.post(
         message: 'The video was successfully uploaded to social networks',
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'video.publishingInSocialMedia' }));
+      console.log(
+        errorsHandler({ err, trace: 'video.publishingInSocialMedia' })
+      );
 
       return res.status(400).json({
         status: 'error',

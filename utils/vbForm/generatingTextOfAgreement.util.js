@@ -119,14 +119,16 @@ const generatingTextOfAgreement = (dynamicDataForAgreement) => {
                         .join('')}
                      </ul>
                   
-                     <p class="textSm marginSm">${
-                       parseLocaleText.date
-                     }: ${moment()}</p>
+                     <p class="textSm ${
+                       !ipAddress ? 'marginExtraLg' : 'marginSm'
+                     }">${parseLocaleText.date}: ${moment()}</p>
                 
-                     <p class="textSm marginExtraLg">${
-                       parseLocaleText.ipAddress
-                     }: ${ipAddress}</p>
-                 
+                    ${
+                      !!ipAddress
+                        ? `<p class='textSm marginExtraLg'>${parseLocaleText.ipAddress}: ${ipAddress}</p>`
+                        : ''
+                    }
+
                  </div>
                  <p  class='textMd marginMd underline'>
                    ${parseLocaleText.guarantees}

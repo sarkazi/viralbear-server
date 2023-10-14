@@ -152,7 +152,7 @@ router.post(
         over18YearOld,
         agreedWithTerms,
         didNotGiveRights,
-        ip,
+        ipData: reqIPData,
         formHash,
         formHashSimple,
         researcherName,
@@ -183,7 +183,7 @@ router.post(
         over18YearOld === false ||
         agreedWithTerms === false ||
         didNotGiveRights === false ||
-        !ip ||
+        !reqIPData ||
         !signatureUrl ||
         !localeForAgreement
       ) {
@@ -192,6 +192,8 @@ router.post(
           status: 'warning',
         });
       }
+
+      const ipData = JSON.parse(reqIPData);
 
       const parseLocaleText = JSON.parse(localeForAgreement);
 
@@ -288,7 +290,9 @@ router.post(
         percentage: authorLinkWithThisHash?.percentage,
         advancePayment: authorLinkWithThisHash?.advancePayment,
         videoLinks,
-        ipAddress: ip,
+        ...(ipData.status === 'success' && {
+          ipAddress: ipData.resData,
+        }),
         dynamicSignature: signatureUrl,
         name,
         lastName,
@@ -439,7 +443,9 @@ router.post(
         agreedWithTerms,
         didNotGiveRights,
         formId: `VB${vbCode}`,
-        ip,
+        ...(ipData.status === 'success' && {
+          ip: ipData.resData,
+        }),
         ...((!!authorLinkWithThisHash ||
           !!authorLinkForConnectWithResearcher) && {
           refFormId: !!authorLinkWithThisHash
@@ -458,6 +464,14 @@ router.post(
         searchBy: 'formId',
         param: `VB${vbCode}`,
       });
+
+      if (ipData.status === 'error') {
+        console.log({
+          vbCode: newVbForm.formId,
+          defineIPError: ipData.errData,
+          authorEmail: author.email,
+        });
+      }
 
       const defineAccountActivationLink = () => {
         if (!newVbForm?.refFormId) {

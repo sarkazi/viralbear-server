@@ -44,7 +44,7 @@ const schema = new Schema(
     },
     ip: {
       type: String,
-      required: true,
+      required: false,
     },
     formId: {
       type: String,
