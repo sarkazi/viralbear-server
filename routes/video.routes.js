@@ -2649,8 +2649,6 @@ router.patch(
         }
 
         if (!video?.uploadedToFb && process.env.MODE === 'production') {
-          console.log('загрузка на facebook');
-
           socketInstance
             .io()
             .sockets.in(req.user.id)
@@ -2688,7 +2686,7 @@ router.patch(
                 .catch((err) => {
                   resolve({
                     status: 'error',
-                    message: err?.response?.data?.message,
+                    resErr: err,
                   });
                 });
             }
@@ -2703,7 +2701,7 @@ router.patch(
           } else {
             console.log({
               message: 'Error when uploading to facebook',
-              error: responseAfterUploadOnFacebook.message,
+              error: responseAfterUploadOnFacebook.resErr,
               videoId: video.videoData.videoId,
             });
           }
@@ -3440,7 +3438,7 @@ router.post(
               .catch((err) => {
                 resolve({
                   status: 'error',
-                  message: err?.response?.data?.message,
+                  resErr: err,
                 });
               });
           }
@@ -3454,7 +3452,7 @@ router.post(
         } else {
           console.log({
             message: 'Error when uploading to facebook',
-            error: responseAfterUploadOnFacebook.message,
+            error: responseAfterUploadOnFacebook.resErr,
             videoId: video.videoData.videoId,
           });
         }
