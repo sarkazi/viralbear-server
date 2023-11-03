@@ -1,30 +1,30 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 
-const { errorsHandler } = require('../handlers/error.handler');
+const { errorsHandler } = require("../handlers/error.handler");
 
-const { generateHash } = require('random-hash');
+const { generateHash } = require("random-hash");
 
-const authMiddleware = require('../middleware/auth.middleware');
+const authMiddleware = require("../middleware/auth.middleware");
 
-const { getUserById } = require('../controllers/user.controller');
+const { getUserById } = require("../controllers/user.controller");
 
 const {
   conversionIncorrectLinks,
   findBaseUrl,
   pullIdFromUrl,
   findLinkBy,
-} = require('../controllers/links.controller');
+} = require("../controllers/links.controller");
 
 const {
   findAuthorLinkByVideoId,
   deleteAuthorLink,
   createNewAuthorLink,
   findOneRefFormByParam,
-} = require('../controllers/authorLink.controller');
+} = require("../controllers/authorLink.controller");
 
-router.post('/create', authMiddleware, async (req, res) => {
+router.post("/create", authMiddleware, async (req, res) => {
   const {
     percentage,
     advancePayment,
@@ -36,15 +36,15 @@ router.post('/create', authMiddleware, async (req, res) => {
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
     return res.status(200).json({
-      message: 'Missing parameters for link generation',
-      status: 'warning',
+      message: "Missing parameters for link generation",
+      status: "warning",
     });
   }
 
   if (!exclusivity && !advancePayment && !percentage) {
     return res.status(200).json({
-      message: 'The percent/advance cannot be empty in this case',
-      status: 'warning',
+      message: "The percent/advance cannot be empty in this case",
+      status: "warning",
     });
   }
 
@@ -53,8 +53,8 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     if (!user) {
       return res.status(200).json({
-        message: 'User not found',
-        status: 'warning',
+        message: "User not found",
+        status: "warning",
       });
     }
 
@@ -76,15 +76,15 @@ router.post('/create', authMiddleware, async (req, res) => {
     //    .json({ message: 'Link is invalid', status: 'warning' });
     //}
 
-    const link = await findLinkBy({ searchBy: 'link', value: convertedLink });
+    const link = await findLinkBy({ searchBy: "link", value: convertedLink });
 
     if (!link) {
       if (confirmIncorrect === false) {
         return res.status(200).json({
           message:
-            'There is no Trello card for this video. Are you sure that this link is correct?',
-          status: 'await',
-          type: 'incorrect',
+            "There is no Trello card for this video. Are you sure that this link is correct?",
+          status: "await",
+          type: "incorrect",
         });
       }
     }
@@ -95,9 +95,9 @@ router.post('/create', authMiddleware, async (req, res) => {
       if (confirmDeletion === false) {
         return res.status(200).json({
           message:
-            'A unique form has already been generated for this video. Generate a new one?',
-          status: 'await',
-          type: 'repeat',
+            "A unique form has already been generated for this video. Generate a new one?",
+          status: "await",
+          type: "repeat",
         });
       }
     }
@@ -109,7 +109,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       advancePayment: advancePayment ? advancePayment : 0,
       researcher: user._id,
       formHash,
-      formLink: `${process.env.CLIENT_URI}/submitVideo?unq=${formHash}`,
+      formLink: `${process.env.CLIENT_URI}/submit/referral/${formHash}`,
       videoLink: convertedLink,
       convertedLink,
       exclusivity,
@@ -122,27 +122,27 @@ router.post('/create', authMiddleware, async (req, res) => {
     const newAuthorLink = await createNewAuthorLink(bodyForNewAuthorLink);
 
     res.status(200).json({
-      message: 'The link was successfully generated',
-      status: 'success',
+      message: "The link was successfully generated",
+      status: "success",
       apiData: newAuthorLink,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'authorLink.create' }));
+    console.log(errorsHandler({ err, trace: "authorLink.create" }));
     return res.status(500).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.get('/findOne/:value', async (req, res) => {
+router.get("/findOne/:value", async (req, res) => {
   const { value } = req.params;
   const { searchBy } = req.query;
 
   if (!value || !searchBy) {
     return res.status(200).json({
       message: `Missing parameters for form search`,
-      status: 'warning',
+      status: "warning",
     });
   }
 
@@ -152,21 +152,21 @@ router.get('/findOne/:value', async (req, res) => {
     if (!authorLinkForm) {
       return res.status(200).json({
         message: `Form not found in the database`,
-        status: 'warning',
+        status: "warning",
         code: 404,
       });
     }
 
     return res.status(200).json({
       message: `The referral form data is obtained from the database`,
-      status: 'success',
+      status: "success",
       apiData: authorLinkForm,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'authorLink.findOne' }));
+    console.log(errorsHandler({ err, trace: "authorLink.findOne" }));
     return res.status(500).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
