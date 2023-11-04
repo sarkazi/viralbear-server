@@ -165,8 +165,6 @@ router.post(
         refHash,
       } = req?.body;
 
-    
-
       const isPaidParsed = JSON.parse(isPaid);
       const isReferralParsed = JSON.parse(isReferral);
 
@@ -334,7 +332,7 @@ router.post(
 
       let agreementLink = null;
 
-      if (process.env.mode === "production") {
+      if (process.env.MODE === "production") {
         const resAfterPdfGenerate = await new Promise(
           async (resolve, reject) => {
             socketInstance

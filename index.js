@@ -20,7 +20,7 @@ app.use(express.static(path.join(__dirname, "build")));
 
 const videoRouter = require("./routes/video.routes");
 const uploadInfoRouter = require("./routes/uploadInfo.routes");
-const sendMailRouter = require("./routes/sendEmail.routes");
+const sendMailRouter = require("./routes/email.routes");
 const userRouter = require("./routes/user.routes");
 const LinksRouter = require("./routes/links.routes");
 const trelloRouter = require("./routes/trello.routes");
@@ -34,6 +34,7 @@ const publicUsersRouter = require("./routes/public.users.routes");
 const publicVideosRouter = require("./routes/public.videos.routes");
 const commonRouter = require("./routes/common.routes");
 const transactionsRouter = require("./routes/transactions.routes");
+const emailRouter = require("./routes/email.routes");
 
 const socketServer = require("http").createServer(app);
 
@@ -68,6 +69,7 @@ app.use("/transactions", transactionsRouter);
 app.use("/webhook", webhookRouter);
 app.use("/public/users", publicUsersRouter);
 app.use("/public/videos", publicVideosRouter);
+app.use("/email", emailRouter);
 
 let PORT = process.env.PORT || 8888;
 

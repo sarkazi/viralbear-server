@@ -1,17 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const multer = require('multer');
-const xlsx = require('xlsx');
-const { errorsHandler } = require('../handlers/error.handler');
+const multer = require("multer");
+const xlsx = require("xlsx");
+const { errorsHandler } = require("../handlers/error.handler");
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const fs = require('fs');
+const fs = require("fs");
 
 const { ObjectId } = mongoose.Types;
 
-var Mutex = require('async-mutex').Mutex;
+var Mutex = require("async-mutex").Mutex;
 const mutex = new Mutex();
 
 const {
@@ -21,7 +21,7 @@ const {
   findSaleById,
   getSaleBy,
   getCountSales,
-} = require('../controllers/sales.controller');
+} = require("../controllers/sales.controller");
 
 const {
   findUsersByEmails,
@@ -30,13 +30,13 @@ const {
   findUsersByValueList,
   updateUser,
   updateUserBy,
-} = require('../controllers/user.controller');
+} = require("../controllers/user.controller");
 
-const { findOne } = require('../controllers/uploadInfo.controller');
+const { findOne } = require("../controllers/uploadInfo.controller");
 
-const pullOutProcessingDataFromPairedReport = require('../utils/pullOutProcessingDataFromPairedReport');
-const definitionThePartnerCompanyByFileHeader = require('../utils/definitionThePartnerCompanyByFileHeader');
-const removeValuesWithoutKeyFieldInPairedReport = require('../utils/removeValuesWithoutKeyFieldInPairedReport');
+const pullOutProcessingDataFromPairedReport = require("../utils/pullOutProcessingDataFromPairedReport");
+const definitionThePartnerCompanyByFileHeader = require("../utils/definitionThePartnerCompanyByFileHeader");
+const removeValuesWithoutKeyFieldInPairedReport = require("../utils/removeValuesWithoutKeyFieldInPairedReport");
 
 const storage = multer.memoryStorage();
 
@@ -44,33 +44,33 @@ const {
   findById,
   updateVideoBy,
   findVideoBy,
-} = require('../controllers/video.controller');
+} = require("../controllers/video.controller");
 
-const moment = require('moment');
+const moment = require("moment");
 
-const authMiddleware = require('../middleware/auth.middleware');
-const Sales = require('../entities/Sales');
+const authMiddleware = require("../middleware/auth.middleware");
+const Sales = require("../entities/Sales");
 
-router.post('/manualAddition', authMiddleware, async (req, res) => {
+router.post("/manualAddition", authMiddleware, async (req, res) => {
   try {
     const { company, videoId, amount: reqAmount, usage } = req.body;
 
     if (!company || !videoId || !reqAmount || !usage) {
       return res.status(200).json({
-        status: 'warning',
-        message: 'Missing parameter',
+        status: "warning",
+        message: "Missing parameter",
       });
     }
 
     const videoDb = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: videoId,
     });
 
     if (!videoDb) {
       return res.status(200).json({
-        status: 'warning',
-        message: 'Video not found',
+        status: "warning",
+        message: "Video not found",
       });
     }
 
@@ -98,9 +98,9 @@ router.post('/manualAddition', authMiddleware, async (req, res) => {
       videoResearchers = await Promise.all(
         videoResearchers.map(async (dataResearcherInVideoDB) => {
           return await getUserBy({
-            searchBy: 'email',
+            searchBy: "email",
             value: dataResearcherInVideoDB.researcher.email,
-            fieldsInTheResponse: ['balance', 'nickname', 'name', 'email'],
+            fieldsInTheResponse: ["balance", "nickname", "name", "email"],
           });
         })
       );
@@ -143,7 +143,7 @@ router.post('/manualAddition', authMiddleware, async (req, res) => {
         //если список ресечеров у видео равно 1
       } else {
         const researcher = await getUserBy({
-          searchBy: 'email',
+          searchBy: "email",
           value: videoResearchers[0].email,
         });
 
@@ -244,40 +244,40 @@ router.post('/manualAddition', authMiddleware, async (req, res) => {
             : videoDb.vbForm.refFormId.percentage,
           repaymentOfNegativeBalance:
             videoDb.balance < 0 && videoDb.balance + reqAmount > 0
-              ? 'partially'
+              ? "partially"
               : videoDb.balance >= 0 && videoDb.balance + reqAmount > 0
-              ? 'none'
-              : 'fully',
+              ? "none"
+              : "fully",
         },
       ],
       storageInfo: {
         userBalanceStorage,
         videoBalanceStorage,
       },
-      type: 'manual',
+      type: "manual",
     };
 
     return res.status(200).json({
       apiData,
-      status: 'success',
-      message: 'The data has been processed successfully',
+      status: "success",
+      message: "The data has been processed successfully",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'sale.manualAddition' }));;
+    console.log(errorsHandler({ err, trace: "sale.manualAddition" }));
 
     return res.status(500).json({
-      status: 'error',
-      message: err?.message ? err.message : 'Server side error',
+      status: "error",
+      message: err?.message ? err.message : "Server side error",
     });
   }
 });
 
 router.post(
-  '/parsingFromFile',
+  "/parsingFromFile",
   authMiddleware,
   multer({ storage: storage }).fields([
     {
-      name: 'csv',
+      name: "csv",
       maxCount: 1,
     },
   ]),
@@ -288,28 +288,28 @@ router.post(
 
     if (!csv) {
       return res.status(200).json({
-        status: 'warning',
-        message: 'The file for parsing was not found',
+        status: "warning",
+        message: "The file for parsing was not found",
       });
     }
 
     try {
       const sellingThisReport = await getSaleBy({
-        searchBy: 'report',
+        searchBy: "report",
         value: csv[0].originalname,
       });
 
       if (sellingThisReport && !JSON.parse(confirmDownload)) {
         return res.status(200).json({
           message:
-            'You already ingested this report before. Are you sure you want to proceed?',
-          status: 'await',
-          awaitReason: 'already loaded',
+            "You already ingested this report before. Are you sure you want to proceed?",
+          status: "await",
+          awaitReason: "already loaded",
         });
       }
 
       const workbook = xlsx.read(csv[0].buffer, {
-        type: 'buffer',
+        type: "buffer",
         sheetStubs: true,
       });
 
@@ -328,17 +328,17 @@ router.post(
 
       if (!companyName) {
         return res.status(200).json({
-          status: 'warning',
+          status: "warning",
           message:
-            'It was not possible to determine which partner company owns the report',
+            "It was not possible to determine which partner company owns the report",
         });
       }
 
-      if (companyName === 'kameraone' && !revShare) {
+      if (companyName === "kameraone" && !revShare) {
         return res.status(200).json({
-          status: 'await',
+          status: "await",
           message: 'Missing value for the kameraone report: "rev share"',
-          awaitReason: 'missing value',
+          awaitReason: "missing value",
         });
       }
 
@@ -348,20 +348,20 @@ router.post(
 
       const parseReport = xlsx.utils.sheet_to_row_object_array(
         workbook.Sheets[
-          companyName === 'kameraone' ? sheetNameList[1] : sheetNameList[0]
+          companyName === "kameraone" ? sheetNameList[1] : sheetNameList[0]
         ]
       );
 
-      if (companyName === 'kameraone') {
+      if (companyName === "kameraone") {
         totalSumFromKameraOne =
-          parseReport[parseReport.length - 1][' EUR/clip'];
+          parseReport[parseReport.length - 1][" EUR/clip"];
       }
 
-      if (companyName === 'kameraone' && totalSumFromKameraOne === null) {
+      if (companyName === "kameraone" && totalSumFromKameraOne === null) {
         return res.status(200).json({
-          status: 'warning',
+          status: "warning",
           message:
-            'The total amount for the month for the kameraone report was not found',
+            "The total amount for the month for the kameraone report was not found",
         });
       }
 
@@ -370,14 +370,19 @@ router.post(
         companyName,
       });
 
-      const processingData = await pullOutProcessingDataFromPairedReport({
+      let processingData = await pullOutProcessingDataFromPairedReport({
         parseReport: filterParseReport,
         companyName,
-        ...(companyName === 'kameraone' && {
+        ...(companyName === "kameraone" && {
           revShare: +revShare,
           totalSumFromKameraOne,
         }),
       });
+
+      processingData = {
+        ...processingData,
+        data: processingData.data.filter((value) => value.amount >= 1),
+      };
 
       // массив для определения актуального баланса видео
       let videoBalanceStorage = [];
@@ -392,11 +397,11 @@ router.post(
               if (obj.videoId < 1460) {
                 return {
                   videoId: obj.videoId,
-                  status: 'lessThen1460',
+                  status: "lessThen1460",
                 };
               } else {
                 const videoDb = await findVideoBy({
-                  searchBy: 'videoData.videoId',
+                  searchBy: "videoData.videoId",
                   value: obj.videoId,
                 });
 
@@ -405,7 +410,7 @@ router.post(
 
                   return {
                     videoId: obj.videoId,
-                    status: 'notFound',
+                    status: "notFound",
                   };
                 } else {
                   let amountToResearcher = 0;
@@ -419,13 +424,13 @@ router.post(
                     videoResearchers = await Promise.all(
                       videoResearchers.map(async (dataResearcherInVideoDB) => {
                         return await getUserBy({
-                          searchBy: 'email',
+                          searchBy: "email",
                           value: dataResearcherInVideoDB.researcher.email,
                           fieldsInTheResponse: [
-                            'balance',
-                            'nickname',
-                            'name',
-                            'email',
+                            "balance",
+                            "nickname",
+                            "name",
+                            "email",
                           ],
                         });
                       })
@@ -534,7 +539,7 @@ router.post(
                       //если список ресечеров у видео равно 1
                     } else {
                       const researcher = await getUserBy({
-                        searchBy: 'email',
+                        searchBy: "email",
                         value: videoResearchers[0].email,
                       });
 
@@ -660,8 +665,8 @@ router.post(
                     videoTitle: videoDb.videoData.title,
                     company: processingData.company,
 
-                    date: moment().format('ll'),
-                    status: 'found',
+                    date: moment().format("ll"),
+                    status: "found",
                     authorEmail: videoDb?.vbForm?.sender?.email
                       ? videoDb.vbForm.sender.email
                       : null,
@@ -678,29 +683,29 @@ router.post(
                     saleIdForClient: index + 1,
                     report: csv[0].originalname,
                     repaymentOfNegativeBalance: containsRemainderInArray
-                      ? 'partially'
+                      ? "partially"
                       : thereIsPositiveBalanceInArray
-                      ? 'none'
-                      : 'fully',
+                      ? "none"
+                      : "fully",
                   };
                 }
               }
               //если это продажи, определенные по videoTitle
             } else {
               const videoDb = await findVideoBy({
-                searchBy: 'videoData.title',
+                searchBy: "videoData.title",
                 value: obj.title,
               });
               if (!videoDb) {
                 return {
                   videoId: obj.title,
-                  status: 'notFound',
+                  status: "notFound",
                 };
               } else {
                 if (videoDb.videoData.videoId < 1460) {
                   return {
                     videoId: obj.videoId,
-                    status: 'lessThen1460',
+                    status: "lessThen1460",
                   };
                 } else {
                   let amountToResearcher = 0;
@@ -714,13 +719,13 @@ router.post(
                     videoResearchers = await Promise.all(
                       videoResearchers.map(async (dataResearcherInVideoDB) => {
                         return await getUserBy({
-                          searchBy: 'email',
+                          searchBy: "email",
                           value: dataResearcherInVideoDB.researcher.email,
                           fieldsInTheResponse: [
-                            'balance',
-                            'nickname',
-                            'name',
-                            'email',
+                            "balance",
+                            "nickname",
+                            "name",
+                            "email",
                           ],
                         });
                       })
@@ -822,7 +827,7 @@ router.post(
                       //если список ресечеров у видео равно 1
                     } else {
                       const researcher = await getUserBy({
-                        searchBy: 'email',
+                        searchBy: "email",
                         value: videoResearchers[0].email,
                       });
 
@@ -947,8 +952,8 @@ router.post(
                     },
                     amountToResearcher,
                     amountToAuthor,
-                    date: moment().format('ll'),
-                    status: 'found',
+                    date: moment().format("ll"),
+                    status: "found",
                     authorEmail: videoDb?.vbForm?.sender?.email
                       ? videoDb.vbForm.sender.email
                       : null,
@@ -964,10 +969,10 @@ router.post(
                       : videoDb.vbForm.refFormId.percentage,
                     saleIdForClient: index + 1,
                     repaymentOfNegativeBalance: containsRemainderInArray
-                      ? 'partially'
+                      ? "partially"
                       : thereIsPositiveBalanceInArray
-                      ? 'none'
-                      : 'fully',
+                      ? "none"
+                      : "fully",
                   };
                 }
               }
@@ -979,11 +984,11 @@ router.post(
       newReport = newReport.reduce(
         (res, item) => {
           res[
-            item.status === 'found'
-              ? 'suitable'
-              : item.status === 'lessThen1460'
-              ? 'lessThen1460'
-              : 'notFounded'
+            item.status === "found"
+              ? "suitable"
+              : item.status === "lessThen1460"
+              ? "lessThen1460"
+              : "notFounded"
           ].push(item);
           return res;
         },
@@ -995,7 +1000,7 @@ router.post(
         idLess1460: newReport.lessThen1460.length,
         suitable: newReport.suitable,
         notFounded: newReport.notFounded.length,
-        type: 'file',
+        type: "file",
         storageInfo: {
           videoBalanceStorage,
           userBalanceStorage,
@@ -1003,31 +1008,31 @@ router.post(
       };
 
       return res.status(200).json({
-        status: 'success',
-        message: 'The data has been processed successfully',
+        status: "success",
+        message: "The data has been processed successfully",
         apiData,
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'sale.parsingFromFile' }));;
+      console.log(errorsHandler({ err, trace: "sale.parsingFromFile" }));
 
       const message =
-        typeof err === 'string'
+        typeof err === "string"
           ? err
-          : typeof err?.message === 'string'
+          : typeof err?.message === "string"
           ? err.message
-          : typeof err?.response?.data?.message === 'string'
+          : typeof err?.response?.data?.message === "string"
           ? err.response.data.message
-          : 'Server side error';
+          : "Server side error";
 
       return res.status(500).json({
-        status: 'error',
+        status: "error",
         message,
       });
     }
   }
 );
 
-router.post('/ingestInSystem', authMiddleware, async (req, res) => {
+router.post("/ingestInSystem", authMiddleware, async (req, res) => {
   try {
     const { suitable, storageInfo } = req.body;
 
@@ -1044,7 +1049,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
                   name: researcher.name,
                   paidFor: researcher.paidFor
                     ? true
-                    : obj.repaymentOfNegativeBalance === 'fully'
+                    : obj.repaymentOfNegativeBalance === "fully"
                     ? true
                     : false,
                 };
@@ -1055,14 +1060,14 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
             vbFormInfo: {
               uid: obj.vbForm,
               paidFor:
-                obj.repaymentOfNegativeBalance === 'fully' ? true : false,
+                obj.repaymentOfNegativeBalance === "fully" ? true : false,
               amount: obj?.amountToAuthor,
             },
           }),
           amount,
           report: obj.report,
           amountToResearcher,
-          date: moment().format('ll'),
+          date: moment().format("ll"),
           ...(obj.usage && { usage: obj.usage }),
           manual: obj.saleId ? false : true,
           videoTitle: obj.videoTitle,
@@ -1094,7 +1099,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
     await Promise.all(
       Object.entries(newReport).map(async ([key, value]) => {
         await updateVideoBy({
-          searchBy: 'videoData.videoId',
+          searchBy: "videoData.videoId",
           searchValue: +key,
           dataToUpdate: { balance: +value },
         });
@@ -1112,7 +1117,7 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
           await createNewSale({
             amountToResearcher: userBalanceInfo.left,
             amount: 0,
-            date: moment().format('ll'),
+            date: moment().format("ll"),
             toOverlapTheRemainder: true,
             researchers: [
               {
@@ -1127,19 +1132,19 @@ router.post('/ingestInSystem', authMiddleware, async (req, res) => {
     );
 
     return res.status(200).json({
-      status: 'success',
-      message: 'sales have been successfully added to the system',
+      status: "success",
+      message: "sales have been successfully added to the system",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'sale.ingestInSystem' }));;
+    console.log(errorsHandler({ err, trace: "sale.ingestInSystem" }));
     return res.status(500).json({
-      status: 'error',
-      message: err?.message ? err.message : 'Server side error',
+      status: "error",
+      message: err?.message ? err.message : "Server side error",
     });
   }
 });
 
-router.get('/getAll', authMiddleware, async (req, res) => {
+router.get("/getAll", authMiddleware, async (req, res) => {
   try {
     const {
       count,
@@ -1155,11 +1160,11 @@ router.get('/getAll', authMiddleware, async (req, res) => {
 
     if (
       relatedToTheVbForm &&
-      typeof JSON.parse(relatedToTheVbForm) === 'boolean' &&
+      typeof JSON.parse(relatedToTheVbForm) === "boolean" &&
       !videoId
     ) {
       return res.status(200).json({
-        status: 'warning',
+        status: "warning",
         message: 'missing parameter "videoId"',
       });
     }
@@ -1167,7 +1172,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     let userId = null;
 
     if (researcher) {
-      const user = await getUserBy({ searchBy: 'name', value: researcher });
+      const user = await getUserBy({ searchBy: "name", value: researcher });
 
       userId = user._id;
     }
@@ -1185,11 +1190,11 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       ...(videoId && { videoId }),
       ...(userId && { userId }),
       ...(date && {
-        date: date[0] === 'null' || date[1] === 'null' ? null : date,
+        date: date[0] === "null" || date[1] === "null" ? null : date,
       }),
       ...(forLastDays && { forLastDays }),
       ...(relatedToTheVbForm &&
-        typeof JSON.parse(relatedToTheVbForm) === 'boolean' && {
+        typeof JSON.parse(relatedToTheVbForm) === "boolean" && {
           relatedToTheVbForm: JSON.parse(relatedToTheVbForm),
         }),
     });
@@ -1210,26 +1215,26 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       sales,
       sumAmount: +sumAmount.toFixed(2),
       sumAmountResearcher: +sumAmountResearcher.toFixed(2),
-      ...(typeof salesCount === 'number' && { salesCount }),
+      ...(typeof salesCount === "number" && { salesCount }),
     };
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       message: count
         ? `The last ${count} sales have been received`
-        : 'All sales have been received',
+        : "All sales have been received",
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'sale.getAll' }));;
+    console.log(errorsHandler({ err, trace: "sale.getAll" }));
     return res.status(500).json({
-      status: 'error',
-      message: err?.message ? err.message : 'Server side error',
+      status: "error",
+      message: err?.message ? err.message : "Server side error",
     });
   }
 });
 
-router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
+router.get("/getStatisticsOnAuthors", authMiddleware, async (req, res) => {
   const { group } = req.query;
 
   try {
@@ -1241,12 +1246,12 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
       let authorsSalesStatistics = await Promise.all(
         salesRelatedToTheVbForm.map(async (sale) => {
           const vbForm = await findOne({
-            searchBy: '_id',
+            searchBy: "_id",
             param: sale.vbFormInfo.uid,
           });
 
           const authorRelatedWithVbForm = await getUserBy({
-            searchBy: '_id',
+            searchBy: "_id",
             value: vbForm.sender,
           });
 
@@ -1255,7 +1260,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
             ...(authorRelatedWithVbForm.percentage && {
               percentage: authorRelatedWithVbForm.percentage,
             }),
-            ...(typeof vbForm.advancePaymentReceived === 'boolean' &&
+            ...(typeof vbForm.advancePaymentReceived === "boolean" &&
               authorRelatedWithVbForm.advancePayment && {
                 advance: authorRelatedWithVbForm.advancePayment,
                 advancePaymentReceived: vbForm.advancePaymentReceived,
@@ -1289,7 +1294,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
             percentage: saleData.percentage ? saleData.percentage : 0,
             advance: {
               value: saleData.advance ? saleData.advance : 0,
-              ...(typeof saleData.advancePaymentReceived === 'boolean' && {
+              ...(typeof saleData.advancePaymentReceived === "boolean" && {
                 paid: saleData.advancePaymentReceived,
               }),
             },
@@ -1332,7 +1337,7 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
               videoSaleData.advance.paid === false) ||
               videoSaleData.amount > 75)
           ) {
-            res['ready'].push(videoSaleData);
+            res["ready"].push(videoSaleData);
           }
           if (
             !videoSaleData.paymentInfo &&
@@ -1340,10 +1345,10 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
               videoSaleData.advance.paid === false) ||
               videoSaleData.amount > 75)
           ) {
-            res['noPayment'].push(videoSaleData);
+            res["noPayment"].push(videoSaleData);
           }
           if (videoSaleData.advance.value === 0 || videoSaleData.amount <= 75) {
-            res['other'].push(videoSaleData);
+            res["other"].push(videoSaleData);
           }
           return res;
         },
@@ -1351,39 +1356,39 @@ router.get('/getStatisticsOnAuthors', authMiddleware, async (req, res) => {
       );
 
       return res.status(200).json({
-        status: 'success',
+        status: "success",
         message: "authors' sales statistics are obtained",
         apiData:
-          group === 'ready'
+          group === "ready"
             ? groupedStatisticsByAuthor.ready
-            : group === 'noPayment'
+            : group === "noPayment"
             ? groupedStatisticsByAuthor.noPayment
             : groupedStatisticsByAuthor.other,
       });
     } else {
       return res.status(200).json({
-        status: 'success',
+        status: "success",
         message: "authors' sales statistics are obtained",
         apiData: [],
       });
     }
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'sale.getStatisticsOnAuthors' }));;
+    console.log(errorsHandler({ err, trace: "sale.getStatisticsOnAuthors" }));
     return res.status(500).json({
-      status: 'error',
-      message: err?.message ? err.message : 'Server side error',
+      status: "error",
+      message: err?.message ? err.message : "Server side error",
     });
   }
 });
 
-router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
+router.delete("/deleteOne/:saleId", authMiddleware, async (req, res) => {
   const { saleId } = req.params;
 
   const { count, company, date, videoId, researcher } = req.query;
 
   if (!saleId) {
     return res.status(200).json({
-      status: 'warning',
+      status: "warning",
       message: `Missing value: "saleId"`,
     });
   }
@@ -1393,7 +1398,7 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
 
     if (!sale) {
       return res.status(200).json({
-        status: 'warning',
+        status: "warning",
         message: `Sales with id ${saleId} not found in the database`,
       });
     }
@@ -1407,7 +1412,7 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
       ...(videoId && { videoId }),
       ...(researcher && { researcher }),
       ...(date && {
-        date: date[0] === 'null' || date[1] === 'null' ? null : date,
+        date: date[0] === "null" || date[1] === "null" ? null : date,
       }),
     });
 
@@ -1426,20 +1431,20 @@ router.delete('/deleteOne/:saleId', authMiddleware, async (req, res) => {
     };
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       message: `The sale with id ${saleId} has been deleted`,
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'sale.deleteOne' }));;
+    console.log(errorsHandler({ err, trace: "sale.deleteOne" }));
     return res.status(500).json({
-      status: 'error',
-      message: err?.message ? err.message : 'Server side error',
+      status: "error",
+      message: err?.message ? err.message : "Server side error",
     });
   }
 });
 
-router.get('/getTop', authMiddleware, async (req, res) => {
+router.get("/getTop", authMiddleware, async (req, res) => {
   const { forLastDays, limit } = req.query;
 
   try {
@@ -1449,7 +1454,7 @@ router.get('/getTop', authMiddleware, async (req, res) => {
           ...(forLastDays && {
             createdAt: {
               $gte: new Date(
-                moment().subtract(forLastDays, 'd').startOf('d').toISOString()
+                moment().subtract(forLastDays, "d").startOf("d").toISOString()
               ),
             },
           }),
@@ -1458,13 +1463,13 @@ router.get('/getTop', authMiddleware, async (req, res) => {
 
       {
         $group: {
-          _id: '$videoId',
-          amount: { $sum: '$amount' },
+          _id: "$videoId",
+          amount: { $sum: "$amount" },
           numberOfSales: { $sum: 1 },
-          videoId: { $first: '$videoId' },
-          title: { $first: '$videoTitle' },
-          researchers: { $first: '$researchers' },
-          vbForm: { $first: '$vbFormInfo' },
+          videoId: { $first: "$videoId" },
+          title: { $first: "$videoTitle" },
+          researchers: { $first: "$researchers" },
+          vbForm: { $first: "$vbFormInfo" },
         },
       },
 
@@ -1472,7 +1477,7 @@ router.get('/getTop', authMiddleware, async (req, res) => {
         $sort: { amount: -1 },
       },
       {
-        $limit: typeof JSON.parse(limit) === 'number' ? JSON.parse(limit) : 10,
+        $limit: typeof JSON.parse(limit) === "number" ? JSON.parse(limit) : 10,
       },
     ];
 
@@ -1488,17 +1493,17 @@ router.get('/getTop', authMiddleware, async (req, res) => {
       salesGroup.map(async (obj) => {
         if (obj.vbForm) {
           const vbForm = await findOne({
-            searchBy: '_id',
+            searchBy: "_id",
             param: obj.vbForm.uid,
           });
 
           return {
             ...obj,
             ...(vbForm?.sender?.email && { authorEmail: vbForm.sender.email }),
-            ...(typeof vbForm?.refFormId?.percentage === 'number' && {
+            ...(typeof vbForm?.refFormId?.percentage === "number" && {
               percentage: vbForm.refFormId.percentage,
             }),
-            ...(typeof vbForm?.refFormId?.advancePayment === 'number' && {
+            ...(typeof vbForm?.refFormId?.advancePayment === "number" && {
               advancePayment: vbForm.refFormId.advancePayment,
             }),
             amount: Math.round(obj.amount),
@@ -1513,15 +1518,15 @@ router.get('/getTop', authMiddleware, async (req, res) => {
     );
 
     return res.status(200).json({
-      status: 'success',
-      message: 'List of top sales received',
+      status: "success",
+      message: "List of top sales received",
       apiData: salesGroup,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'sale.getTop' }));;
+    console.log(errorsHandler({ err, trace: "sale.getTop" }));
     return res.status(500).json({
-      status: 'error',
-      message: err?.message ? err.message : 'Server side error',
+      status: "error",
+      message: err?.message ? err.message : "Server side error",
     });
   }
 });

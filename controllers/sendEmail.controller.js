@@ -1,11 +1,11 @@
-const mailTransporter = require('../nodemailer.instance');
+const mailTransporter = require("../nodemailer.instance");
 
 const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
   const { vbForm, accountActivationLink } = dataForSendingMessage;
 
   const defineMailRecipients = () => {
-    if (process.env.MODE === 'development') {
-      return ['nikemorozow@gmail.com'];
+    if (process.env.MODE === "development") {
+      return ["nikemorozow@gmail.com"];
     } else {
       if (!vbForm?.refFormId) {
         return [process.env.SERVICE_LICENSING_EMAIL];
@@ -22,20 +22,20 @@ const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
     .map((link) => {
       return `<li>${link}</li>,`;
     })
-    .join(', ');
+    .join(", ");
 
   const resourcesMarkup = vbForm.resources
     ?.map((site) => {
       return `<li style="color: #DC143C; text-decoration: none">${site}</li>,`;
     })
-    .join(', ');
+    .join(", ");
 
   mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
     to: defineMailRecipients(),
     subject: `New video was submitted! VB code: ${vbForm.formId.replace(
-      'VB',
-      ''
+      "VB",
+      ""
     )}`,
     html: `
 
@@ -82,31 +82,31 @@ const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
    ${
      !!vbForm?.refFormId?.advancePayment
        ? `<b>Advance payment: ${vbForm.refFormId.advancePayment}</b><br></br>`
-       : ''
+       : ""
    }
    ${
      !!vbForm?.refFormId?.percentage
        ? `<b>Percentage: ${vbForm.refFormId.percentage}</b><br></br>`
-       : ''
+       : ""
    }
    ${
      !!vbForm?.refFormId?.researcher?.email
        ? `<b>Researcher email: ${vbForm.refFormId.researcher.email}</b><br>`
-       : ''
+       : ""
    }
    ${
      !!vbForm?.refFormId?.trelloCardUrl
        ? `<b>Trello card URL: ${vbForm.refFormId.trelloCardUrl}</b><br>`
-       : ''
+       : ""
    }
    <b>IP: ${vbForm.ip}</b><br>
    <b>Submitted date: ${vbForm.createdAt}</b><br>
    <b>Contract: ${vbForm.agreementLink}</b><br>
-   <b>Form VB code: ${vbForm.formId.replace('VB', '')}</b><br>
+   <b>Form VB code: ${vbForm.formId.replace("VB", "")}</b><br>
    ${
      !!accountActivationLink
        ? `<b>Link to the personal account of the author ${vbForm.sender.name}: ${accountActivationLink}</b>`
-       : ''
+       : ""
    }
    `,
   });
@@ -122,7 +122,7 @@ const sendAgreementToClientMail = async (dataForSendingAgreement) => {
     html: text,
     attachments: [
       {
-        filename: 'agreement.pdf',
+        filename: "agreement.pdf",
         path: agreementLink,
       },
     ],
@@ -142,8 +142,8 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
   } = dataForSendingSurveyInfo;
 
   const defineMailRecipients = () => {
-    if (process.env.MODE === 'development') {
-      return ['nikemorozow@gmail.com'];
+    if (process.env.MODE === "development") {
+      return ["nikemorozow@gmail.com"];
     } else {
       if (!!refForm && !!researcherEmail) {
         return [process.env.SERVICE_INFO_EMAIL, researcherEmail];
@@ -157,47 +157,44 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
     to: defineMailRecipients(),
     subject: `Information from the survey! VB code: ${formId.replace(
-      'VB',
-      ''
+      "VB",
+      ""
     )}`,
     html: `
          <b>Where was this video filmed (city): ${
-           whereFilmed ? whereFilmed : '-'
+           whereFilmed ? whereFilmed : "-"
          }</b><br>
          <b>When was this video filmed (date): ${
-           whenFilmed ? whenFilmed : '-'
+           whenFilmed ? whenFilmed : "-"
          }</b><br>
          <b>Who appears in the video? Their names and ages?: ${
-           whoAppears ? whoAppears : '-'
+           whoAppears ? whoAppears : "-"
          }</b><br>
          <b>Why did you decide to film this video: ${
-           whyDecide ? whyDecide : '-'
+           whyDecide ? whyDecide : "-"
          }</b><br>
          <b>What is happening on the video: ${
-           whatHappen ? whatHappen : '-'
+           whatHappen ? whatHappen : "-"
          }</b><br>
-         <b>Form VB code: ${formId.replace('VB', '')}</b><br>
+         <b>Form VB code: ${formId.replace("VB", "")}</b><br>
          `,
   });
 };
 
-const sendEmail = ({ emailFrom, emailTo, subject, html }) => {
-  return new Promise((resolve, reject) => {
-    mailTransporter.sendMail(
-      {
-        from: emailFrom,
-        to: emailTo,
-        subject,
-        html,
-      },
-      (error, info) => {
-        if (error) {
-          resolve({ status: 'error', info: error });
-        } else {
-          resolve({ status: 'success', info });
-        }
-      }
-    );
+const sendEmail = ({ emailFrom, emailTo, subject, html, attachment }) => {
+  mailTransporter.sendMail({
+    from: emailFrom,
+    to: emailTo,
+    subject,
+    ...(html && { html }),
+    ...(attachment && {
+      attachments: [
+        {
+          filename: "errors.json",
+          content: attachment,
+        },
+      ],
+    }),
   });
 };
 

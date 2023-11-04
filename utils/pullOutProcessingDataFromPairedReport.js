@@ -1,4 +1,4 @@
-const { calcOfCurrencyRatio } = require('../controllers/common.controller');
+const { calcOfCurrencyRatio } = require("../controllers/common.controller");
 
 const pullOutProcessingDataFromPairedReport = async ({
   parseReport,
@@ -7,60 +7,62 @@ const pullOutProcessingDataFromPairedReport = async ({
   totalSumFromKameraOne,
 }) => {
   return await new Promise(async (resolve, reject) => {
-    if (companyName === 'newsflare') {
+    if (companyName === "newsflare") {
       const currencyRatio = await calcOfCurrencyRatio({
-        fromCur: 'GBP',
-        toCur: 'USD',
+        fromCur: "GBP",
+        toCur: "USD",
       });
 
       resolve({
         company: companyName,
-        searchBy: 'videoId',
+        searchBy: "videoId",
         data: await Promise.all(
           parseReport.map(async (obj) => {
             return {
-              videoId: obj['Partner Video Id'],
-              usage: obj['Sale Type'],
+              videoId: obj["Partner Video Id"],
+              usage: obj["Sale Type"],
               amount:
-                obj['Your Earnings'] && obj['Your Earnings'] > 0
-                  ? currencyRatio * obj['Your Earnings']
+                obj["Your Earnings"] && obj["Your Earnings"] > 0
+                  ? currencyRatio * obj["Your Earnings"]
                   : 0,
             };
           })
         ),
       });
-    } else if (companyName === 'videoelephant') {
+    } else if (companyName === "videoelephant") {
       resolve({
         company: companyName,
-        searchBy: 'title',
+        searchBy: "title",
         data: parseReport.map((obj) => {
+          const amount = obj["Content Provider Revenue"];
+
           return {
             usage: null,
-            amount: obj['Content Provider Revenue'],
-            title: obj['Title'],
+            amount: obj["Content Provider Revenue"],
+            title: obj["Title"],
           };
         }),
       });
-    } else if (companyName === 'aflo') {
+    } else if (companyName === "aflo") {
       const currencyRatio = await calcOfCurrencyRatio({
-        fromCur: 'JPY',
-        toCur: 'USD',
+        fromCur: "JPY",
+        toCur: "USD",
       });
 
       resolve({
         company: companyName,
-        searchBy: 'videoId',
+        searchBy: "videoId",
 
         data: await Promise.all(
           parseReport.map(async (obj) => {
             return {
               videoId:
-                obj['Supplier Ref:'] &&
-                obj['Supplier Ref:'].toString().includes('_tv')
-                  ? +obj['Supplier Ref:'].replace('_tv', '')
-                  : !obj['Supplier Ref:'].includes(' ')
-                  ? +obj['Supplier Ref:']
-                  : obj['Supplier Ref:'],
+                obj["Supplier Ref:"] &&
+                obj["Supplier Ref:"].toString().includes("_tv")
+                  ? +obj["Supplier Ref:"].replace("_tv", "")
+                  : !obj["Supplier Ref:"].includes(" ")
+                  ? +obj["Supplier Ref:"]
+                  : obj["Supplier Ref:"],
               usage: null,
               amount:
                 obj.TOTAL && obj.TOTAL > 0 ? currencyRatio * obj.TOTAL : 0,
@@ -68,55 +70,55 @@ const pullOutProcessingDataFromPairedReport = async ({
           })
         ),
       });
-    } else if (companyName === 'tmb') {
+    } else if (companyName === "tmb") {
       resolve({
         company: companyName,
-        searchBy: 'title',
+        searchBy: "title",
         data: parseReport.map((obj) => {
           return {
-            usage: obj['Client'],
-            amount: obj['Amount'],
-            title: obj['Title'],
+            usage: obj["Client"],
+            amount: obj["Amount"],
+            title: obj["Title"],
           };
         }),
       });
-    } else if (companyName === 'kameraone') {
+    } else if (companyName === "kameraone") {
       const currencyRatio = await calcOfCurrencyRatio({
-        fromCur: 'EUR',
-        toCur: 'USD',
+        fromCur: "EUR",
+        toCur: "USD",
       });
 
       resolve({
         company: companyName,
-        searchBy: 'videoId',
+        searchBy: "videoId",
         data: await Promise.all(
           parseReport.map(async (obj) => {
             return {
               videoId:
-                typeof obj['Video_ref_ID'] === 'string' &&
-                obj['Video_ref_ID'].includes(' ')
-                  ? +obj['Video_ref_ID'].split(' ')[1]
-                  : obj['Video_ref_ID'],
+                typeof obj["Video_ref_ID"] === "string" &&
+                obj["Video_ref_ID"].includes(" ")
+                  ? +obj["Video_ref_ID"].split(" ")[1]
+                  : obj["Video_ref_ID"],
               usage: null,
-              amount: !!obj[' EUR/clip']
+              amount: !!obj[" EUR/clip"]
                 ? (revShare / totalSumFromKameraOne) *
-                  (currencyRatio * obj[' EUR/clip'])
+                  (currencyRatio * obj[" EUR/clip"])
                 : 0,
             };
           })
         ),
       });
-    } else if (companyName === 'stringershub') {
+    } else if (companyName === "stringershub") {
       resolve({
         company: companyName,
-        searchBy: 'videoId',
+        searchBy: "videoId",
         data: await Promise.all(
           parseReport.map(async (obj, index) => {
             return {
-              videoId: obj['ViralBear ID'],
+              videoId: obj["ViralBear ID"],
               usage: null,
               amount:
-                obj[Object.keys(obj).find((key) => key.includes('Net sales'))],
+                obj[Object.keys(obj).find((key) => key.includes("Net sales"))],
             };
           })
         ),
