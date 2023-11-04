@@ -1,10 +1,10 @@
-const User = require('../entities/User');
-const RecoveryLinks = require('../entities/RecoveryLinks');
-const md5 = require('md5');
-const moment = require('moment');
-const { genSalt, hash: hashBcrypt } = require('bcryptjs');
+const User = require("../entities/User");
+const RecoveryLinks = require("../entities/RecoveryLinks");
+const md5 = require("md5");
+const moment = require("moment");
+const { genSalt, hash: hashBcrypt } = require("bcryptjs");
 
-const mailTransporter = require('../nodemailer.instance');
+const mailTransporter = require("../nodemailer.instance");
 
 const sendEmailPassword = async (email, subjectText, textEmail, htmlText) => {
   await mailTransporter.sendMail({
@@ -29,22 +29,34 @@ const getAllUsers = async ({
   limit,
   hiddenForEditor,
   sort,
+  test,
 }) => {
   return await User.find(
     {
       inTheArchive: { $ne: true },
       ...(me && JSON.parse(me) === false && { _id: { $ne: userId } }),
       ...(roles?.length && { role: { $in: roles } }),
+      ...(test && {
+        $or: [
+          {
+            email: { $regex: test, $options: "i" },
+          },
+          {
+            name: { $regex: test, $options: "i" },
+          },
+        ],
+      }),
+
       ...(exist?.length &&
         exist.reduce((a, v) => ({ ...a, [v]: { $exists: true } }), {})),
       ...(canBeAssigned &&
-        typeof JSON.parse(canBeAssigned) === 'boolean' && {
+        typeof JSON.parse(canBeAssigned) === "boolean" && {
           canBeAssigned: JSON.parse(canBeAssigned),
         }),
       ...(displayOnTheSite && {
         displayOnTheSite,
       }),
-      ...(typeof hiddenForEditor === 'boolean' && {
+      ...(typeof hiddenForEditor === "boolean" && {
         hiddenForEditor,
       }),
       ...(members && { [members.searchBy]: { $in: members.value } }),
@@ -55,11 +67,12 @@ const getAllUsers = async ({
     }
   )
     .collation(
-      skip && limit ? { locale: 'en_US', numericOrdering: true } : null
+      skip && limit ? { locale: "en_US", numericOrdering: true } : null
     )
     .limit(limit ? limit : null)
     .skip(skip ? skip : null)
-    .sort(sort === 'desc' ? { _id: -1 } : sort === 'asc' ? { _id: 1 } : null);
+    .sort(sort === "desc" ? { _id: -1 } : sort === "asc" ? { _id: 1 } : null);
+  // .count((err, count) => {console.log(err, count)})
 };
 
 const getUserById = async (userId) => {
@@ -105,13 +118,13 @@ const sendPassword = async (req, res) => {
     if (!user) {
       return res
         .status(200)
-        .json({ message: 'User is not found', status: 'warning' });
+        .json({ message: "User is not found", status: "warning" });
     }
 
     if (!!user.inTheArchive) {
       return res.status(200).json({
-        message: 'Your account is blocked. Contact the administrator',
-        status: 'warning',
+        message: "Your account is blocked. Contact the administrator",
+        status: "warning",
       });
     }
 
@@ -129,12 +142,12 @@ const sendPassword = async (req, res) => {
       `<a href="${process.env.CLIENT_URI}/login?rec_hash=${tailHashLink}">Follow the link</a> to set a new password to log in to viralbear.media`
     );
 
-    res.status(200).json({ message: 'Check your mailbox', status: 'success' });
+    res.status(200).json({ message: "Check your mailbox", status: "success" });
   } catch (err) {
     console.log(err);
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 };
@@ -145,7 +158,7 @@ const recoveryPassword = async (req, res) => {
   if (!hash) {
     return res
       .status(200)
-      .json({ message: 'The link is invalid', status: 'warning' });
+      .json({ message: "The link is invalid", status: "warning" });
   }
 
   try {
@@ -154,7 +167,7 @@ const recoveryPassword = async (req, res) => {
     if (!recoveryData) {
       return res
         .status(200)
-        .json({ message: 'The link is invalid', status: 'warning' });
+        .json({ message: "The link is invalid", status: "warning" });
     }
 
     const timeHasPassedInMinutes = moment(
@@ -166,19 +179,19 @@ const recoveryPassword = async (req, res) => {
 
       return res
         .status(200)
-        .json({ message: 'The link is invalid', status: 'warning' });
+        .json({ message: "The link is invalid", status: "warning" });
     }
 
     const worker = await User.findOne({ email: recoveryData.email });
 
     if (!worker) {
-      return res.status(200).json({ message: 'No access', status: 'warning' });
+      return res.status(200).json({ message: "No access", status: "warning" });
     }
 
     if (!!worker.inTheArchive) {
       return res.status(200).json({
-        message: 'Your account is blocked. Contact the administrator',
-        status: 'warning',
+        message: "Your account is blocked. Contact the administrator",
+        status: "warning",
       });
     }
 
@@ -189,15 +202,15 @@ const recoveryPassword = async (req, res) => {
     await RecoveryLinks.deleteOne({ hash });
 
     return res.status(200).json({
-      message: 'Password has been successfully updated',
-      status: 'success',
+      message: "Password has been successfully updated",
+      status: "success",
     });
   } catch (err) {
     console.log(err);
 
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 };
@@ -245,7 +258,7 @@ const updateUsersBy = async ({ updateBy, userList, objDBForSet }) => {
 };
 
 const findWorkerEmailByWorkerName = async (decodeResearchers) => {
-  const workers = await User.find({ role: 'researcher' });
+  const workers = await User.find({ role: "researcher" });
 
   const workersEmailsList = decodeResearchers
     .map((el) => {

@@ -847,7 +847,7 @@ router.get("/findAll", authMiddleware, async (req, res) => {
     isApproved,
     limit,
     wasRemovedFromPublication,
-    personal,
+        personal,
     forLastDays,
   } = req.query;
 

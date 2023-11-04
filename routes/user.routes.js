@@ -1,19 +1,19 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { genSalt, hash: hashBcrypt } = require('bcryptjs');
-const moment = require('moment');
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
-const path = require('path');
-const mongoose = require('mongoose');
+const { genSalt, hash: hashBcrypt } = require("bcryptjs");
+const moment = require("moment");
+const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
+const mongoose = require("mongoose");
 
-const { errorsHandler } = require('../handlers/error.handler');
+const { errorsHandler } = require("../handlers/error.handler");
 
-const fs = require('fs');
+const fs = require("fs");
 
-const authMiddleware = require('../middleware/auth.middleware');
+const authMiddleware = require("../middleware/auth.middleware");
 
-const validationForRequiredInputDataInUserModel = require('../utils/validationForRequiredInputDataInUserModel');
+const validationForRequiredInputDataInUserModel = require("../utils/validationForRequiredInputDataInUserModel");
 
 const {
   getAllUsers,
@@ -28,23 +28,23 @@ const {
   findUsersByValueList,
   getUserBy,
   updateUsersBy,
-} = require('../controllers/user.controller.js');
+} = require("../controllers/user.controller.js");
 
-const { createNewPayment } = require('../controllers/payment.controller');
+const { createNewPayment } = require("../controllers/payment.controller");
 
-const { generateTokens } = require('../controllers/auth.controllers');
+const { generateTokens } = require("../controllers/auth.controllers");
 
 const {
   findOne,
   updateVbFormByFormId,
   updateVbFormBy,
-} = require('../controllers/uploadInfo.controller');
+} = require("../controllers/uploadInfo.controller");
 
 const {
   getCountLinksBy,
   getCountLinks,
   getLinks,
-} = require('../controllers/links.controller');
+} = require("../controllers/links.controller");
 
 const {
   getSalesByUserId,
@@ -53,11 +53,11 @@ const {
   updateSaleBy,
   findSaleById,
   markEmployeeOnSalesHavingReceivePercentage,
-} = require('../controllers/sales.controller');
+} = require("../controllers/sales.controller");
 
-const { sendEmail } = require('../controllers/sendEmail.controller');
+const { sendEmail } = require("../controllers/sendEmail.controller");
 
-const { findAllAuthorLinks } = require('../controllers/authorLink.controller');
+const { findAllAuthorLinks } = require("../controllers/authorLink.controller");
 
 const {
   getCountAcquiredVideoByUserEmail,
@@ -69,23 +69,23 @@ const {
   markVideoEmployeeAsHavingReceivedAnAdvance,
   getCountVideos,
   findVideoBy,
-} = require('../controllers/video.controller');
+} = require("../controllers/video.controller");
 
 const {
   getCountApprovedTrelloCardBy,
   getApprovedTrelloCardBy,
-} = require('../controllers/movedFromReviewList.controller');
+} = require("../controllers/movedFromReviewList.controller");
 
 const {
   inviteMemberOnBoard,
   getCardDataByCardId,
-} = require('../controllers/trello.controller');
+} = require("../controllers/trello.controller");
 
-const { uploadFileToStorage } = require('../controllers/storage.controller');
+const { uploadFileToStorage } = require("../controllers/storage.controller");
 
 const storage = multer.memoryStorage();
 
-router.get('/getAll', authMiddleware, async (req, res) => {
+router.get("/getAll", authMiddleware, async (req, res) => {
   try {
     const {
       me,
@@ -96,6 +96,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       page,
       limit,
       sort,
+      test,
     } = req.query;
 
     const userId = req.user.id;
@@ -107,6 +108,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
       me,
       userId,
       roles: roles ? roles : [],
+      ...(test && { test }),
       canBeAssigned,
       ...(fieldsInTheResponse && {
         fieldsInTheResponse,
@@ -115,18 +117,18 @@ router.get('/getAll', authMiddleware, async (req, res) => {
 
     if (sortByPosition && typeof JSON.parse(sortByPosition)) {
       const defineDescForUsers = ({ position, country }) => {
-        if (position.includes('owner') || position.includes('ceo')) {
-          return 'Owner and CEO';
+        if (position.includes("owner") || position.includes("ceo")) {
+          return "Owner and CEO";
         } else if (
-          position.includes('researcher') &&
-          !position.includes('senior')
+          position.includes("researcher") &&
+          !position.includes("senior")
         ) {
-          return `Researcher${country ? ` | ${country}` : ''}`;
+          return `Researcher${country ? ` | ${country}` : ""}`;
         } else if (
-          position.includes('researcher') &&
-          position.includes('senior')
+          position.includes("researcher") &&
+          position.includes("senior")
         ) {
-          return `Senior researcher${country ? ` | ${country}` : ''}`;
+          return `Senior researcher${country ? ` | ${country}` : ""}`;
         } else {
           return position;
         }
@@ -136,11 +138,11 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         .reduce(
           (res, item) => {
             res[
-              !item.position.includes('ceo') || !item.position.includes('owner')
-                ? 'first'
-                : !item.position.includes('researcher')
-                ? 'third'
-                : 'second'
+              !item.position.includes("ceo") || !item.position.includes("owner")
+                ? "first"
+                : !item.position.includes("researcher")
+                ? "third"
+                : "second"
             ].push(item);
             return res;
           },
@@ -163,7 +165,7 @@ router.get('/getAll', authMiddleware, async (req, res) => {
         first: users.first,
         second: users.second,
         third: users.third.sort(cur, (next) => {
-          if (cur.position.includes('senior')) {
+          if (cur.position.includes("senior")) {
             return cur - next;
           }
         }),
@@ -202,34 +204,34 @@ router.get('/getAll', authMiddleware, async (req, res) => {
     };
 
     return res.status(200).json({
-      status: 'success',
-      message: 'The list of employees has been received',
+      status: "success",
+      message: "The list of employees has been received",
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.getAll' }));
+    console.log(errorsHandler({ err, trace: "user.getAll" }));
     return res
       .status(400)
-      .json({ status: 'error', message: 'Server side error' });
+      .json({ status: "error", message: "Server side error" });
   }
 });
 
-router.get('/findToDisplayOnTheSite', async (req, res) => {
+router.get("/findToDisplayOnTheSite", async (req, res) => {
   try {
     let users = await getAllUsers({
-      exist: ['position'],
+      exist: ["position"],
       displayOnTheSite: true,
     });
 
     users = users.reduce(
       (res, item) => {
         res[
-          item.position.toLowerCase().includes('ceo') ||
-          item.position.toLowerCase().includes('owner')
-            ? 'first'
-            : item.position.toLowerCase().includes('researcher')
-            ? 'third'
-            : 'second'
+          item.position.toLowerCase().includes("ceo") ||
+          item.position.toLowerCase().includes("owner")
+            ? "first"
+            : item.position.toLowerCase().includes("researcher")
+            ? "third"
+            : "second"
         ].push(item);
         return res;
       },
@@ -260,7 +262,7 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
 
       third: users.third
         .sort((cur, next) => {
-          if (cur.position.toLowerCase().includes('senior')) {
+          if (cur.position.toLowerCase().includes("senior")) {
             return cur - next;
           }
         })
@@ -277,19 +279,19 @@ router.get('/findToDisplayOnTheSite', async (req, res) => {
     };
 
     return res.status(200).json({
-      status: 'success',
-      message: 'The list of employees has been received',
+      status: "success",
+      message: "The list of employees has been received",
       apiData: users,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.findToDisplayOnSite' }));
+    console.log(errorsHandler({ err, trace: "user.findToDisplayOnSite" }));
     return res
       .status(400)
-      .json({ status: 'error', message: 'Server side error' });
+      .json({ status: "error", message: "Server side error" });
   }
 });
 
-router.get('/getById/:userId', async (req, res) => {
+router.get("/getById/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -298,20 +300,20 @@ router.get('/getById/:userId', async (req, res) => {
     if (!user) {
       return res
         .status(200)
-        .json({ message: 'User is not found', status: 'warning' });
+        .json({ message: "User is not found", status: "warning" });
     }
 
-    return res.status(200).json({ apiData: user, status: 'success' });
+    return res.status(200).json({ apiData: user, status: "success" });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.getById' }));
+    console.log(errorsHandler({ err, trace: "user.getById" }));
 
     return res
       .status(400)
-      .json({ message: 'Server side error', status: 'error' });
+      .json({ message: "Server side error", status: "error" });
   }
 });
 
-router.get('/getBy', authMiddleware, async (req, res) => {
+router.get("/getBy", authMiddleware, async (req, res) => {
   try {
     const { searchBy, fieldsInTheResponse, value } = req.query;
 
@@ -323,8 +325,8 @@ router.get('/getBy', authMiddleware, async (req, res) => {
 
     if (!searchBy || (!userId && !value)) {
       return res.status(200).json({
-        message: 'Missing parameter for user search',
-        status: 'warning',
+        message: "Missing parameter for user search",
+        status: "warning",
       });
     }
 
@@ -339,20 +341,20 @@ router.get('/getBy', authMiddleware, async (req, res) => {
     if (!user) {
       return res
         .status(200)
-        .json({ message: 'User is not found', status: 'warning' });
+        .json({ message: "User is not found", status: "warning" });
     }
 
-    return res.status(200).json({ apiData: user, status: 'success' });
+    return res.status(200).json({ apiData: user, status: "success" });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.getBy' }));
+    console.log(errorsHandler({ err, trace: "user.getBy" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.post('/createOne', authMiddleware, async (req, res) => {
+router.post("/createOne", authMiddleware, async (req, res) => {
   try {
     const body = req.body;
 
@@ -368,10 +370,10 @@ router.post('/createOne', authMiddleware, async (req, res) => {
     //    .json({ message: 'Missing data to create a user', status: 'warning' });
     //}
 
-    if (body?.nickname?.includes('@')) {
+    if (body?.nickname?.includes("@")) {
       return res.status(200).json({
         message: 'Nickname must not contain the "@" character',
-        status: 'warning',
+        status: "warning",
       });
     }
 
@@ -379,15 +381,15 @@ router.post('/createOne', authMiddleware, async (req, res) => {
 
     if (candidate) {
       return res.status(200).json({
-        message: 'A user with this email already exists',
-        status: 'warning',
+        message: "A user with this email already exists",
+        status: "warning",
       });
     }
 
     let paymentInfo = null;
 
     if (body?.paymentMethod) {
-      if (body.paymentMethod === 'bankTransfer') {
+      if (body.paymentMethod === "bankTransfer") {
         if (
           !body?.phoneBankTransfer ||
           !body?.emailBankTransfer ||
@@ -398,8 +400,8 @@ router.post('/createOne', authMiddleware, async (req, res) => {
           !body?.accountNumberBankTransfer
         ) {
           return res.status(200).json({
-            message: 'Missing parameters for changing payment data',
-            status: 'warning',
+            message: "Missing parameters for changing payment data",
+            status: "warning",
           });
         }
 
@@ -417,11 +419,11 @@ router.post('/createOne', authMiddleware, async (req, res) => {
         };
       }
 
-      if (body.paymentMethod === 'payPal') {
+      if (body.paymentMethod === "payPal") {
         if (!body?.payPalEmail) {
           return res.status(200).json({
-            message: 'Missing parameters for changing payment data',
-            status: 'warning',
+            message: "Missing parameters for changing payment data",
+            status: "warning",
           });
         }
 
@@ -433,11 +435,11 @@ router.post('/createOne', authMiddleware, async (req, res) => {
         };
       }
 
-      if (body.paymentMethod === 'other') {
+      if (body.paymentMethod === "other") {
         if (!body?.textFieldOther) {
           return res.status(200).json({
-            message: 'Missing parameters for changing payment data',
-            status: 'warning',
+            message: "Missing parameters for changing payment data",
+            status: "warning",
           });
         }
 
@@ -464,15 +466,15 @@ router.post('/createOne', authMiddleware, async (req, res) => {
       ...(body?.country && { country: body.country }),
       ...(paymentInfo && paymentInfo),
 
-      ...(typeof body?.canBeAssigned === 'boolean' && {
+      ...(typeof body?.canBeAssigned === "boolean" && {
         canBeAssigned: body.canBeAssigned,
       }),
-      ...(typeof body?.displayOnTheSite === 'boolean' && {
+      ...(typeof body?.displayOnTheSite === "boolean" && {
         displayOnTheSite: body.displayOnTheSite,
       }),
-      ...((body.role === 'author' ||
-        body.role === 'researcher' ||
-        body.role === 'stringer') && {
+      ...((body.role === "author" ||
+        body.role === "researcher" ||
+        body.role === "stringer") && {
         balance: 0,
       }),
     };
@@ -480,28 +482,28 @@ router.post('/createOne', authMiddleware, async (req, res) => {
     await createUser(objDB);
 
     return res.status(200).json({
-      message: 'A new user has been successfully created',
-      status: 'success',
+      message: "A new user has been successfully created",
+      status: "success",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.createOne' }));
+    console.log(errorsHandler({ err, trace: "user.createOne" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.post('/sendPassword', sendPassword);
+router.post("/sendPassword", sendPassword);
 
-router.post('/recoveryPassword', recoveryPassword);
+router.post("/recoveryPassword", recoveryPassword);
 
 router.patch(
-  '/updateOne',
+  "/updateOne",
   authMiddleware,
   multer({ storage: storage }).fields([
     {
-      name: 'avatarFile',
+      name: "avatarFile",
       maxCount: 1,
     },
   ]),
@@ -515,8 +517,8 @@ router.patch(
 
       if (!userIdToUpdate) {
         return res.status(200).json({
-          message: 'Empty user ID',
-          status: 'warning',
+          message: "Empty user ID",
+          status: "warning",
         });
       }
 
@@ -524,14 +526,12 @@ router.patch(
 
       if (!user) {
         return res.status(200).json({
-          message: 'User not found',
-          status: 'warning',
+          message: "User not found",
+          status: "warning",
         });
       }
 
       const body = req.body;
-
-      console.log(body, 77);
 
       if (!body?.paymentInfo?.paymentMethod && !!user?.paymentInfo) {
         await updateUser({
@@ -543,7 +543,7 @@ router.patch(
       let paymentInfo = null;
 
       if (!!body?.paymentInfo) {
-        if (body.paymentInfo.paymentMethod === 'bankTransfer') {
+        if (body.paymentInfo.paymentMethod === "bankTransfer") {
           const {
             phoneNumber,
             email,
@@ -565,8 +565,8 @@ router.patch(
             !iban
           ) {
             return res.status(200).json({
-              message: 'Missing parameters for changing payment data',
-              status: 'warning',
+              message: "Missing parameters for changing payment data",
+              status: "warning",
             });
           }
 
@@ -584,13 +584,13 @@ router.patch(
           };
         }
 
-        if (body.paymentInfo.paymentMethod === 'payPal') {
+        if (body.paymentInfo.paymentMethod === "payPal") {
           const { payPalEmail, paymentMethod } = body?.paymentInfo;
 
           if (!payPalEmail) {
             return res.status(200).json({
-              message: 'Missing parameters for changing payment data',
-              status: 'warning',
+              message: "Missing parameters for changing payment data",
+              status: "warning",
             });
           }
 
@@ -602,13 +602,13 @@ router.patch(
           };
         }
 
-        if (body.paymentInfo.paymentMethod === 'other') {
+        if (body.paymentInfo.paymentMethod === "other") {
           const { value, paymentMethod } = body?.paymentInfo;
 
           if (!value) {
             return res.status(200).json({
-              message: 'Missing parameters for changing payment data',
-              status: 'warning',
+              message: "Missing parameters for changing payment data",
+              status: "warning",
             });
           }
 
@@ -623,17 +623,17 @@ router.patch(
 
       console.log(paymentInfo, 77);
 
-      if (user.role === 'author') {
+      if (user.role === "author") {
         const isValidate = validationForRequiredInputDataInUserModel(
           user.role,
           body,
-          'update'
+          "update"
         );
 
         if (!isValidate) {
           return res.status(200).json({
-            message: 'Missing value for update payment information',
-            status: 'warning',
+            message: "Missing value for update payment information",
+            status: "warning",
           });
         }
       }
@@ -643,7 +643,7 @@ router.patch(
       if (files?.avatarFile) {
         const { response } = await new Promise(async (resolve, reject) => {
           await uploadFileToStorage({
-            folder: 'avatarsOfUsers',
+            folder: "avatarsOfUsers",
             name: `avatar-${userId}`,
             buffer: files.avatarFile[0].buffer,
             type: files.avatarFile[0].mimetype,
@@ -669,13 +669,13 @@ router.patch(
         }),
         ...(!!paymentInfo && paymentInfo),
         ...(!!avatarUrl && { avatarUrl }),
-        ...(typeof body?.canBeAssigned === 'boolean' && {
+        ...(typeof body?.canBeAssigned === "boolean" && {
           canBeAssigned: body.canBeAssigned,
         }),
-        ...(typeof body?.hideForEditor === 'boolean' && {
+        ...(typeof body?.hideForEditor === "boolean" && {
           hideForEditor: body.hideForEditor,
         }),
-        ...(typeof body?.displayOnTheSite === 'boolean' && {
+        ...(typeof body?.displayOnTheSite === "boolean" && {
           displayOnTheSite: body.displayOnTheSite,
         }),
         ...(!!body?.balance && { lastPaymentDate: moment().toDate() }),
@@ -693,21 +693,21 @@ router.patch(
       });
 
       return res.status(200).json({
-        message: 'User data has been successfully updated',
-        status: 'success',
+        message: "User data has been successfully updated",
+        status: "success",
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'user.updateOne' }));
+      console.log(errorsHandler({ err, trace: "user.updateOne" }));
       return res.status(400).json({
-        message: 'Server side error',
-        status: 'error',
+        message: "Server side error",
+        status: "error",
       });
     }
   }
 );
 
 router.patch(
-  '/updateMany',
+  "/updateMany",
   authMiddleware,
 
   async (req, res) => {
@@ -728,27 +728,27 @@ router.patch(
       }
 
       return res.status(200).json({
-        message: 'Users data has been successfully updated',
-        status: 'success',
+        message: "Users data has been successfully updated",
+        status: "success",
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'user.updateMany' }));
+      console.log(errorsHandler({ err, trace: "user.updateMany" }));
       return res.status(400).json({
-        message: 'Server side error',
-        status: 'error',
+        message: "Server side error",
+        status: "error",
       });
     }
   }
 );
 
 router.get(
-  '/collectStatForEmployees/enlarged',
+  "/collectStatForEmployees/enlarged",
   authMiddleware,
   async (req, res) => {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== "admin") {
       return res.status(200).json({
-        message: 'Access denied',
-        status: 'warning',
+        message: "Access denied",
+        status: "warning",
       });
     }
 
@@ -818,7 +818,7 @@ router.get(
             user: {
               value: user._id,
               purchased: true,
-              searchBy: 'researcher',
+              searchBy: "researcher",
             },
           });
 
@@ -829,7 +829,7 @@ router.get(
               user: {
                 value: user._id,
                 purchased: false,
-                searchBy: 'researcher',
+                searchBy: "researcher",
               },
             });
 
@@ -839,7 +839,7 @@ router.get(
             user: {
               value: user._id,
               purchased: true,
-              searchBy: 'researcher',
+              searchBy: "researcher",
             },
           });
 
@@ -850,7 +850,7 @@ router.get(
               user: {
                 value: user._id,
                 purchased: false,
-                searchBy: 'researcher',
+                searchBy: "researcher",
               },
             }
           );
@@ -860,7 +860,7 @@ router.get(
             user: {
               value: user._id,
               purchased: true,
-              searchBy: 'researcher',
+              searchBy: "researcher",
             },
           });
 
@@ -869,7 +869,7 @@ router.get(
             user: {
               value: user._id,
               purchased: false,
-              searchBy: 'researcher',
+              searchBy: "researcher",
             },
           });
 
@@ -880,7 +880,7 @@ router.get(
               exclusivity: true,
               user: {
                 value: user._id,
-                searchBy: 'researcher',
+                searchBy: "researcher",
                 purchased: true,
               },
             });
@@ -890,32 +890,32 @@ router.get(
             exclusivity: true,
             user: {
               value: user._id,
-              searchBy: 'researcher',
+              searchBy: "researcher",
               purchased: true,
             },
           });
 
           const videosCountReviewedLast30Days =
             await getCountApprovedTrelloCardBy({
-              searchBy: 'researcherId',
+              searchBy: "researcherId",
               value: user._id,
               forLastDays: 30,
             });
 
           const videosCountReviewed = await getCountApprovedTrelloCardBy({
-            searchBy: 'researcherId',
+            searchBy: "researcherId",
             value: user._id,
             forLastDays: null,
           });
 
           const videosCountSentToReview = await getCountLinks({
             researcherId: user._id,
-            listInTrello: 'Review',
+            listInTrello: "Review",
           });
 
           const videosCountSentToReviewLast30Days = await getCountLinks({
             researcherId: user._id,
-            listInTrello: 'Review',
+            listInTrello: "Review",
             forLastDays: 30,
           });
 
@@ -930,7 +930,7 @@ router.get(
             await Promise.all(
               referralFormsUsed.map(async (refForm) => {
                 const vbForm = await findOne({
-                  searchBy: 'refFormId',
+                  searchBy: "refFormId",
                   param: refForm._id,
                 });
 
@@ -954,7 +954,7 @@ router.get(
 
             researcher: {
               value: user._id,
-              searchBy: 'researcher',
+              searchBy: "researcher",
               isAcquirer: true,
             },
           });
@@ -985,14 +985,14 @@ router.get(
             user: {
               value: user._id,
               purchased: true,
-              searchBy: 'researcher',
+              searchBy: "researcher",
               advanceHasBeenPaid: false,
             },
           });
 
           //--------------------------------------------------------
 
-          if (user.name === 'Kirill') {
+          if (user.name === "Kirill") {
             //const test = await getAllVideos({
             //  isApproved: true,
             //  researcher: {
@@ -1378,8 +1378,8 @@ router.get(
       );
 
       return res.status(200).json({
-        message: 'Users with updated statistics received',
-        status: 'success',
+        message: "Users with updated statistics received",
+        status: "success",
         apiData: {
           users: employeeStat.sort((prev, next) => {
             return (
@@ -1420,18 +1420,18 @@ router.get(
       });
     } catch (err) {
       console.log(
-        errorsHandler({ err, trace: 'user.collectStatForEmployees.enlarged' })
+        errorsHandler({ err, trace: "user.collectStatForEmployees.enlarged" })
       );
       return res.status(400).json({
-        message: 'Server side error',
-        status: 'error',
+        message: "Server side error",
+        status: "error",
       });
     }
   }
 );
 
 router.get(
-  '/collectStatForEmployees/shorten',
+  "/collectStatForEmployees/shorten",
   authMiddleware,
   async (req, res) => {
     const { roles } = req.query;
@@ -1461,7 +1461,7 @@ router.get(
             user: {
               value: user._id,
               purchased: true,
-              searchBy: 'researcher',
+              searchBy: "researcher",
             },
           });
 
@@ -1471,7 +1471,7 @@ router.get(
             user: {
               value: user._id,
               purchased: true,
-              searchBy: 'researcher',
+              searchBy: "researcher",
             },
           });
 
@@ -1480,7 +1480,7 @@ router.get(
             user: {
               value: user._id,
               purchased: true,
-              searchBy: 'researcher',
+              searchBy: "researcher",
             },
           });
 
@@ -1491,7 +1491,7 @@ router.get(
           const acquiredVideosMainRole = await getAllVideos({
             isApproved: true,
             researcher: {
-              searchBy: 'researcher',
+              searchBy: "researcher",
               value: user._id,
               isAcquirer: true,
             },
@@ -1560,8 +1560,8 @@ router.get(
       );
 
       return res.status(200).json({
-        message: 'Team statistics received',
-        status: 'success',
+        message: "Team statistics received",
+        status: "success",
         apiData: {
           users: employeeStat.sort((prev, next) => {
             return next?.average - prev?.average;
@@ -1576,25 +1576,25 @@ router.get(
       });
     } catch (err) {
       console.log(
-        errorsHandler({ err, trace: 'user.collectStatForEmployees.shorten' })
+        errorsHandler({ err, trace: "user.collectStatForEmployees.shorten" })
       );
       return res.status(400).json({
-        message: 'Server side error',
-        status: 'error',
+        message: "Server side error",
+        status: "error",
       });
     }
   }
 );
 
-router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
+router.get("/collectStatForEmployee", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await getUserById(userId);
 
     if (!user) {
       return res.status(200).json({
-        message: 'The user with this id was not found',
-        status: 'warning',
+        message: "The user with this id was not found",
+        status: "warning",
       });
     }
 
@@ -1634,7 +1634,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       user: {
         value: user._id,
         purchased: true,
-        searchBy: 'researcher',
+        searchBy: "researcher",
       },
     });
 
@@ -1644,7 +1644,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       user: {
         value: user._id,
         purchased: false,
-        searchBy: 'researcher',
+        searchBy: "researcher",
       },
     });
 
@@ -1653,7 +1653,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       user: {
         value: user._id,
         purchased: true,
-        searchBy: 'researcher',
+        searchBy: "researcher",
       },
     });
 
@@ -1662,7 +1662,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       user: {
         value: user._id,
         purchased: false,
-        searchBy: 'researcher',
+        searchBy: "researcher",
       },
     });
 
@@ -1672,7 +1672,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       exclusivity: true,
       user: {
         value: user._id,
-        searchBy: 'researcher',
+        searchBy: "researcher",
         purchased: true,
       },
     });
@@ -1682,30 +1682,30 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
       exclusivity: true,
       user: {
         value: user._id,
-        searchBy: 'researcher',
+        searchBy: "researcher",
         purchased: true,
       },
     });
 
     const videosCountReviewed = await getCountApprovedTrelloCardBy({
-      searchBy: 'researcherId',
+      searchBy: "researcherId",
       value: user._id,
     });
 
     const videosCountSentToReview = await getCountLinks({
       researcherId: user._id,
-      listInTrello: 'Review',
+      listInTrello: "Review",
     });
 
     const videosCountReviewedLast30Days = await getCountApprovedTrelloCardBy({
-      searchBy: 'researcherId',
+      searchBy: "researcherId",
       value: user._id,
       forLastDays: 30,
     });
 
     const videosCountSentToReviewLast30Days = await getCountLinks({
       researcherId: user._id,
-      listInTrello: 'Review',
+      listInTrello: "Review",
       forLastDays: 30,
     });
 
@@ -1716,7 +1716,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     const acquiredVideosMainRole = await getAllVideos({
       isApproved: true,
       researcher: {
-        searchBy: 'researcher',
+        searchBy: "researcher",
         value: user._id,
         isAcquirer: true,
       },
@@ -1752,7 +1752,7 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
         user: {
           value: user._id,
           purchased: true,
-          searchBy: 'researcher',
+          searchBy: "researcher",
           advanceHasBeenPaid: false,
         },
       });
@@ -1879,38 +1879,38 @@ router.get('/collectStatForEmployee', authMiddleware, async (req, res) => {
     };
 
     return res.status(200).json({
-      message: 'User statistics updated',
-      status: 'success',
+      message: "User statistics updated",
+      status: "success",
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.collectStatForEmployee' }));
+    console.log(errorsHandler({ err, trace: "user.collectStatForEmployee" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.delete('/deleteUser/:userId', authMiddleware, async (req, res) => {
+router.delete("/deleteUser/:userId", authMiddleware, async (req, res) => {
   const { userId } = req.params;
   try {
     await deleteUser(userId);
 
     return res.status(200).json({
-      message: 'The user has been successfully deleted',
-      status: 'success',
+      message: "The user has been successfully deleted",
+      status: "success",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.deleteUser' }));
+    console.log(errorsHandler({ err, trace: "user.deleteUser" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
+router.post("/topUpEmployeeBalance", authMiddleware, async (req, res) => {
   try {
     const { userId, amountToBePaid, extraPayment, notePayment } = req.body;
 
@@ -1923,7 +1923,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     ) {
       return res.status(200).json({
         message: "Missing parameter for adding funds to the user's balance",
-        status: 'warning',
+        status: "warning",
       });
     }
 
@@ -1931,8 +1931,8 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
 
     if (!user) {
       return res.status(200).json({
-        message: 'The user with this id was not found',
-        status: 'warning',
+        message: "The user with this id was not found",
+        status: "warning",
       });
     }
 
@@ -1946,21 +1946,21 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
         user: {
           value: user._id,
           purchased: true,
-          searchBy: 'researcher',
+          searchBy: "researcher",
           advanceHasBeenPaid: false,
         },
       });
 
       if (
-        (typeof user?.advancePayment === 'number' &&
+        (typeof user?.advancePayment === "number" &&
           videosCountWithUnpaidAdvance * user.advancePayment !==
             amountToBePaid.advance) ||
-        (typeof user?.advancePayment !== 'number' &&
+        (typeof user?.advancePayment !== "number" &&
           videosCountWithUnpaidAdvance * 10 !== amountToBePaid.advance)
       ) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -1992,7 +1992,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
       if (percentage !== amountToBePaid.percentage) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -2038,10 +2038,10 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     await createNewPayment({
       user: userId,
       purpose: [
-        ...(!!amountToBePaid?.advance ? ['advance'] : []),
-        ...(!!amountToBePaid?.percentage ? ['percent'] : []),
-        ...(!!notePayment ? ['note'] : []),
-        ...(!!extraPayment ? ['extra'] : []),
+        ...(!!amountToBePaid?.advance ? ["advance"] : []),
+        ...(!!amountToBePaid?.percentage ? ["percent"] : []),
+        ...(!!notePayment ? ["note"] : []),
+        ...(!!extraPayment ? ["extra"] : []),
       ],
       amount: {
         ...(!!amountToBePaid?.advance && {
@@ -2062,7 +2062,7 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
     const bodyForEmail = {
       emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
       emailTo: user.email,
-      subject: 'Payment of the amount',
+      subject: "Payment of the amount",
       html: `
       Hello ${user.name}.<br/>
       ViralBear just paid your monthly income: ${finalSum}$!<br/>
@@ -2074,41 +2074,41 @@ router.post('/topUpEmployeeBalance', authMiddleware, async (req, res) => {
 
     return res.status(200).json({
       message: `The employee was paid $${finalSum}`,
-      status: 'success',
+      status: "success",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.topUpEmployeeBalance' }));
+    console.log(errorsHandler({ err, trace: "user.topUpEmployeeBalance" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.post('/findByValueList', async (req, res) => {
+router.post("/findByValueList", async (req, res) => {
   try {
     const { emailList } = req.body;
 
     const users = await findUsersByValueList({
-      param: 'email',
+      param: "email",
       valueList: emailList,
     });
 
     return res.status(200).json({
       message: 'The workers"s balance has been successfully replenished',
-      status: 'success',
+      status: "success",
       apiData: users,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.findByValueList' }));
+    console.log(errorsHandler({ err, trace: "user.findByValueList" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
+router.get("/authors/collectStatOnVideo", authMiddleware, async (req, res) => {
   try {
     const { group } = req.query;
 
@@ -2121,7 +2121,7 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
       let authorsVideoStatistics = await Promise.all(
         videosWithVbCode.map(async (video) => {
           const vbForm = await findOne({
-            searchBy: '_id',
+            searchBy: "_id",
             param: video.vbForm,
           });
 
@@ -2139,7 +2139,7 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
 
                 if (
                   vbForm.refFormId?.advancePayment &&
-                  typeof vbForm.advancePaymentReceived === 'boolean' &&
+                  typeof vbForm.advancePaymentReceived === "boolean" &&
                   !vbForm.advancePaymentReceived
                 ) {
                   advanceAmount = vbForm.refFormId.advancePayment;
@@ -2148,7 +2148,7 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
 
                 if (
                   vbForm.refFormId?.advancePayment &&
-                  typeof vbForm.advancePaymentReceived === 'boolean' &&
+                  typeof vbForm.advancePaymentReceived === "boolean" &&
                   vbForm.advancePaymentReceived
                 ) {
                   totalBalance = vbForm.refFormId.advancePayment * -1;
@@ -2169,19 +2169,19 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                 }
 
                 return {
-                  status: 'All right',
+                  status: "All right",
                   authorEmail: vbForm.sender.email,
                   percentage: vbForm.refFormId.percentage
                     ? vbForm.refFormId.percentage
                     : 0,
                   advance: {
                     value:
-                      typeof vbForm.advancePaymentReceived === 'boolean' &&
+                      typeof vbForm.advancePaymentReceived === "boolean" &&
                       vbForm.refFormId.advancePayment
                         ? vbForm.refFormId.advancePayment
                         : 0,
                     paid:
-                      typeof vbForm.advancePaymentReceived !== 'boolean' &&
+                      typeof vbForm.advancePaymentReceived !== "boolean" &&
                       !vbForm.refFormId?.advancePayment
                         ? null
                         : vbForm.advancePaymentReceived === true
@@ -2207,13 +2207,13 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                         .map((obj) => {
                           return obj.researcher.name;
                         })
-                        .join(', ')
+                        .join(", ")
                     : null,
                   salesCount: salesOfThisVideo.length,
                 };
               } else {
                 return {
-                  status: 'VB form without referral link',
+                  status: "VB form without referral link",
                   authorEmail: null,
                   percentage: null,
                   advance: {
@@ -2235,14 +2235,14 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                         .map((obj) => {
                           return obj.researcher.name;
                         })
-                        .join(', ')
+                        .join(", ")
                     : null,
                   salesCount: salesOfThisVideo.length,
                 };
               }
             } else {
               return {
-                status: 'VB form without sender',
+                status: "VB form without sender",
                 authorEmail: null,
                 percentage: null,
                 advance: {
@@ -2264,14 +2264,14 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                       .map((obj) => {
                         return obj.researcher.name;
                       })
-                      .join(', ')
+                      .join(", ")
                   : null,
                 salesCount: salesOfThisVideo.length,
               };
             }
           } else {
             return {
-              status: 'VB form not found',
+              status: "VB form not found",
               authorEmail: null,
               percentage: null,
               advance: {
@@ -2293,7 +2293,7 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
                     .map((obj) => {
                       return obj.researcher.name;
                     })
-                    .join(', ')
+                    .join(", ")
                 : null,
               salesCount: salesOfThisVideo.length,
             };
@@ -2304,19 +2304,19 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
       authorsVideoStatistics = authorsVideoStatistics.reduce(
         (res, videoData) => {
           if (!!videoData.amount.percent && videoData.amount.percent < 75) {
-            res['other'].push(videoData);
+            res["other"].push(videoData);
           }
           if (
             (videoData.paymentInfo === false && !!videoData.amount.advance) ||
             (videoData.paymentInfo === false && videoData.amount.percent >= 75)
           ) {
-            res['noPayment'].push(videoData);
+            res["noPayment"].push(videoData);
           }
           if (
             (!!videoData.paymentInfo && !!videoData.amount.advance) ||
             (!!videoData.paymentInfo && videoData.amount.percent >= 75)
           ) {
-            res['ready'].push(videoData);
+            res["ready"].push(videoData);
           }
           return res;
         },
@@ -2324,42 +2324,42 @@ router.get('/authors/collectStatOnVideo', authMiddleware, async (req, res) => {
       );
 
       const defineApiData = () => {
-        if (group === 'ready') {
+        if (group === "ready") {
           return authorsVideoStatistics.ready;
         }
-        if (group === 'noPayment') {
+        if (group === "noPayment") {
           return authorsVideoStatistics.noPayment;
         }
-        if (group === 'other') {
+        if (group === "other") {
           return authorsVideoStatistics.other;
         }
       };
 
       return res.status(200).json({
-        status: 'success',
-        message: 'Statistics on authors have been successfully collected',
+        status: "success",
+        message: "Statistics on authors have been successfully collected",
         apiData: defineApiData(),
       });
     } else {
       return res.status(200).json({
-        status: 'success',
-        message: 'Statistics on authors have been successfully collected',
+        status: "success",
+        message: "Statistics on authors have been successfully collected",
         apiData: [],
       });
     }
   } catch (err) {
     console.log(
-      errorsHandler({ err, trace: 'user.authors.collectStatOnVideo' })
+      errorsHandler({ err, trace: "user.authors.collectStatOnVideo" })
     );
 
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.get('/authors/getPaymentDetails', authMiddleware, async (req, res) => {
+router.get("/authors/getPaymentDetails", authMiddleware, async (req, res) => {
   try {
     const { searchBy, value } = req.query;
 
@@ -2367,29 +2367,29 @@ router.get('/authors/getPaymentDetails', authMiddleware, async (req, res) => {
 
     if (!author) {
       return res.status(200).json({
-        status: 'warning',
-        message: 'Author not found',
+        status: "warning",
+        message: "Author not found",
       });
     }
 
     return res.status(200).json({
-      status: 'success',
-      message: 'Statistics on authors have been successfully collected',
+      status: "success",
+      message: "Statistics on authors have been successfully collected",
       apiData: author?.paymentInfo ? author.paymentInfo : {},
     });
   } catch (err) {
     console.log(
-      errorsHandler({ err, trace: 'user.authors.getPaymentDetails' })
+      errorsHandler({ err, trace: "user.authors.getPaymentDetails" })
     );
 
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
+router.post("/authors/topUpBalance", authMiddleware, async (req, res) => {
   try {
     const { videoId, amountToTopUp } = req.body;
     const { paymentFor } = req.query;
@@ -2397,53 +2397,53 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
     if (!paymentFor) {
       return res.status(200).json({
         message: 'missing parameter "paymentFor"',
-        status: 'warning',
+        status: "warning",
       });
     }
 
     if (!videoId) {
       return res.status(200).json({
         message: "Missing parameter to top up the author's balance",
-        status: 'warning',
+        status: "warning",
       });
     }
 
     const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: videoId,
     });
 
     if (!video) {
       return res.status(200).json({
         message: `Video with id "${videoId}" not found`,
-        status: 'warning',
+        status: "warning",
       });
     }
     if (!video.vbForm) {
       return res.status(200).json({
         message: `The video has no VB form`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
     if (!video?.vbForm?.sender?.email) {
       return res.status(200).json({
         message: `Author not found`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
     if (!video?.vbForm?.refFormId) {
       return res.status(200).json({
         message: `Referral form not found`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
     const bodyForEmail = {
       emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
       emailTo: video?.vbForm?.sender?.email,
-      subject: 'Payment of the amount',
+      subject: "Payment of the amount",
       html: `
       Hello ${video.vbForm.sender.name}.<br/>
       ViralBear just paid you: ${amountToTopUp}$!<br/>
@@ -2454,24 +2454,24 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
     let advanceAmount = 0;
     let percentAmount = 0;
 
-    if (paymentFor === 'advance') {
+    if (paymentFor === "advance") {
       if (
         video.vbForm.refFormId.advancePayment &&
         video.vbForm.advancePaymentReceived === true
       ) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       if (
         !video.vbForm.refFormId?.advancePayment ||
-        typeof video.vbForm.advancePaymentReceived !== 'boolean'
+        typeof video.vbForm.advancePaymentReceived !== "boolean"
       ) {
         return res.status(200).json({
           message: `There is no advance payment for this vb form`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -2480,18 +2480,18 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       if (Math.ceil(advanceAmount) !== Math.ceil(amountToTopUp)) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       await updateVbFormBy({
-        updateBy: '_id',
+        updateBy: "_id",
         value: video.vbForm._id,
         dataForUpdate: { advancePaymentReceived: true },
       });
 
       await updateVideoBy({
-        searchBy: '_id',
+        searchBy: "_id",
         searchValue: video._id,
         dataToInc: { balance: -amountToTopUp },
       });
@@ -2514,27 +2514,27 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       return res.status(200).json({
         message: `Advance payment of $${advanceAmount} was credited to the author's balance`,
-        status: 'success',
+        status: "success",
       });
     }
 
-    if (paymentFor === 'percent') {
+    if (paymentFor === "percent") {
       const salesWithThisVideoId = await getAllSales({
         videoId,
-        paidFor: { 'vbFormInfo.paidFor': false },
+        paidFor: { "vbFormInfo.paidFor": false },
       });
 
       if (!salesWithThisVideoId.length) {
         return res.status(200).json({
           message: `The video sales list is empty`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       if (!video.vbForm.refFormId.percentage) {
         return res.status(200).json({
           message: `There is no percentage provided for this vb form`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -2547,16 +2547,16 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       if (Math.ceil(percentAmount) !== Math.ceil(amountToTopUp)) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       const dataForUpdateSales = {
-        $set: { 'vbFormInfo.paidFor': true },
+        $set: { "vbFormInfo.paidFor": true },
       };
 
       await updateSalesBy({
-        updateBy: 'videoId',
+        updateBy: "videoId",
         value: videoId,
         dataForUpdate: dataForUpdateSales,
       });
@@ -2579,27 +2579,27 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       return res.status(200).json({
         message: `Percentage of $${percentAmount} was credited to the author's balance`,
-        status: 'success',
+        status: "success",
       });
     }
 
-    if (paymentFor === 'mixed') {
+    if (paymentFor === "mixed") {
       const salesWithThisVideoId = await getAllSales({
         videoId,
-        paidFor: { 'vbFormInfo.paidFor': false },
+        paidFor: { "vbFormInfo.paidFor": false },
       });
 
       if (!salesWithThisVideoId.length) {
         return res.status(200).json({
           message: `The video sales list is empty`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       if (!video.vbForm.refFormId.percentage) {
         return res.status(200).json({
           message: `There is no percentage provided for this vb form`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -2609,17 +2609,17 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       ) {
         return res.status(200).json({
           message: `An advance has already been paid for this vb form`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       if (
         !video.vbForm.refFormId.advancePayment ||
-        typeof video.vbForm.advancePaymentReceived !== 'boolean'
+        typeof video.vbForm.advancePaymentReceived !== "boolean"
       ) {
         return res.status(200).json({
           message: `There is no advance payment for this vb form`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -2636,18 +2636,18 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       ) {
         return res.status(200).json({
           message: `The totals for the payment do not converge`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       await updateVbFormBy({
-        updateBy: '_id',
+        updateBy: "_id",
         value: video.vbForm._id,
         dataForUpdate: { advancePaymentReceived: true },
       });
 
       await updateVideoBy({
-        searchBy: '_id',
+        searchBy: "_id",
         searchValue: video._id,
         dataToInc: { balance: -advanceAmount },
       });
@@ -2668,11 +2668,11 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
       });
 
       const dataForUpdateSales = {
-        $set: { 'vbFormInfo.paidFor': true },
+        $set: { "vbFormInfo.paidFor": true },
       };
 
       await updateSalesBy({
-        updateBy: 'videoId',
+        updateBy: "videoId",
         value: videoId,
         dataForUpdate: dataForUpdateSales,
       });
@@ -2681,53 +2681,53 @@ router.post('/authors/topUpBalance', authMiddleware, async (req, res) => {
 
       return res.status(200).json({
         message: `An advance of $${advanceAmount} and a percentage of $${percentAmount} was credited to the author's balance`,
-        status: 'success',
+        status: "success",
       });
     }
 
     await createNewPayment({
       user: video?.vbForm?.sender?._id,
       purpose: [
-        ...(paymentFor === 'advance' ? ['advance'] : []),
-        ...(paymentFor === 'percent' ? ['percent'] : []),
-        ...(paymentFor === 'mixed' ? ['advance', 'percent'] : []),
+        ...(paymentFor === "advance" ? ["advance"] : []),
+        ...(paymentFor === "percent" ? ["percent"] : []),
+        ...(paymentFor === "mixed" ? ["advance", "percent"] : []),
       ],
       amount: {
-        ...(paymentFor === 'advance' && {
+        ...(paymentFor === "advance" && {
           advance: advanceAmount,
         }),
-        ...(paymentFor === 'percent' && {
+        ...(paymentFor === "percent" && {
           percentage: percentAmount,
         }),
-        ...(paymentFor === 'mixed' && {
+        ...(paymentFor === "mixed" && {
           advance: advanceAmount,
           percentage: percentAmount,
         }),
       },
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.authors.topUpBalance' }));
+    console.log(errorsHandler({ err, trace: "user.authors.topUpBalance" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
-router.post('/authors/register', async (req, res) => {
+router.post("/authors/register", async (req, res) => {
   try {
     const { authorRegHash, password: reqPassword } = req.body;
 
     if (!authorRegHash) {
       return res.status(200).json({
         message:
-          'There is no referral hash. Contact your administrator or try again',
-        status: 'warning',
+          "There is no referral hash. Contact your administrator or try again",
+        status: "warning",
       });
     }
 
     const objToSearchVbForm = {
-      searchBy: '_id',
+      searchBy: "_id",
       param: authorRegHash,
     };
 
@@ -2736,8 +2736,8 @@ router.post('/authors/register', async (req, res) => {
     if (!vbForm) {
       return res.status(200).json({
         message:
-          'The form was not found. Contact your administrator or try again',
-        status: 'warning',
+          "The form was not found. Contact your administrator or try again",
+        status: "warning",
       });
     }
 
@@ -2745,8 +2745,8 @@ router.post('/authors/register', async (req, res) => {
 
     if (!candidate) {
       return res.status(200).json({
-        message: 'A user with this email not found',
-        status: 'warning',
+        message: "A user with this email not found",
+        status: "warning",
       });
     }
 
@@ -2775,20 +2775,20 @@ router.post('/authors/register', async (req, res) => {
         userId: candidate._id,
         name: candidate.name,
       },
-      status: 'success',
-      message: 'Congratulations on registering on the service!',
+      status: "success",
+      message: "Congratulations on registering on the service!",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'user.authors.register' }));
+    console.log(errorsHandler({ err, trace: "user.authors.register" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });
 
 router.get(
-  '/researchers/collectStatOnAcquiredVideos',
+  "/researchers/collectStatOnAcquiredVideos",
   authMiddleware,
   async (req, res) => {
     const userId = req.user.id;
@@ -2802,7 +2802,7 @@ router.get(
         vbFormExists: true,
         isApproved: true,
         researcher: {
-          searchBy: 'researcher',
+          searchBy: "researcher",
           value: mongoose.Types.ObjectId(userId),
         },
         ...(forLastDays && { forLastDays }),
@@ -2812,7 +2812,7 @@ router.get(
         acquiredVideosStat = await Promise.all(
           videosWithVbCode.map(async (video) => {
             const vbForm = await findOne({
-              searchBy: '_id',
+              searchBy: "_id",
               param: video.vbForm,
             });
 
@@ -2820,7 +2820,7 @@ router.get(
               if (vbForm?.sender) {
                 if (vbForm?.refFormId) {
                   return {
-                    status: 'All right',
+                    status: "All right",
                     authorData: {
                       id: vbForm.sender._id,
                       email: vbForm.sender.email,
@@ -2830,12 +2830,12 @@ router.get(
                       : 0,
                     advance: {
                       value:
-                        typeof vbForm.advancePaymentReceived === 'boolean' &&
+                        typeof vbForm.advancePaymentReceived === "boolean" &&
                         vbForm.refFormId.advancePayment
                           ? vbForm.refFormId.advancePayment
                           : 0,
                       paid:
-                        typeof vbForm.advancePaymentReceived !== 'boolean' &&
+                        typeof vbForm.advancePaymentReceived !== "boolean" &&
                         !vbForm.refFormId.advancePayment
                           ? null
                           : vbForm.advancePaymentReceived === true
@@ -2852,7 +2852,7 @@ router.get(
                   };
                 } else {
                   return {
-                    status: 'VB form without referral link',
+                    status: "VB form without referral link",
                     authorData: {
                       id: vbForm.sender._id,
                       email: vbForm.sender.email,
@@ -2873,7 +2873,7 @@ router.get(
                 }
               } else {
                 return {
-                  status: 'VB form without sender',
+                  status: "VB form without sender",
                   authorData: {
                     id: null,
                     email: null,
@@ -2891,7 +2891,7 @@ router.get(
               }
             } else {
               return {
-                status: 'VB form not found',
+                status: "VB form not found",
                 authorData: {
                   id: null,
                   email: null,
@@ -2912,21 +2912,21 @@ router.get(
       }
 
       return res.status(200).json({
-        status: 'success',
-        message: 'Employee statistics on purchased videos received',
+        status: "success",
+        message: "Employee statistics on purchased videos received",
         apiData: acquiredVideosStat,
       });
     } catch (err) {
       console.log(
         errorsHandler({
           err,
-          trace: 'user.researchers.collectStatOnAcquiredVideos',
+          trace: "user.researchers.collectStatOnAcquiredVideos",
         })
       );
 
       return res.status(400).json({
-        message: 'Server side error',
-        status: 'error',
+        message: "Server side error",
+        status: "error",
       });
     }
   }
