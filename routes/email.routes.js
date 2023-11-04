@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/auth.middleware");
 const { sendEmail } = require("../controllers/sendEmail.controller");
-const { Buffer } = require("node:buffer");
 
 const {
   sendAgreementToClientMail,
@@ -17,21 +16,29 @@ router.post("/", authMiddleware, async (req, res) => {
     let buffer = null;
 
     if (attachment) {
-      buffer = Buffer.from(JSON.parse(attachment));
+      buffer = Buffer.from(attachment);
     }
 
-    console.log(buffer);
-
     sendEmail({
-      emailFrom,
+      emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
       emailTo: bugInfo ? process.env.DEVELOPER_EMAIL : emailTo,
       subject,
       ...(buffer && {
         attachment: buffer,
       }),
     });
+
+    return res.status(200).json({
+      status: "success",
+      message: "The error message was sent to the developer's email",
+    });
   } catch (err) {
     console.log(err);
+
+    return res.status(400).json({
+      status: "error",
+      message: "Server-side error",
+    });
   }
 });
 
