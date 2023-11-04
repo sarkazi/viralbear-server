@@ -1,63 +1,63 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const multer = require('multer');
+const multer = require("multer");
 
-const fs = require('fs');
-const path = require('path');
-const request = require('request');
+const fs = require("fs");
+const path = require("path");
+const request = require("request");
 
-const Video = require('../entities/Video');
+const Video = require("../entities/Video");
 
-const { google } = require('googleapis');
+const { google } = require("googleapis");
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const trelloInstance = require('../api/trello.instance');
+const trelloInstance = require("../api/trello.instance");
 
-const axios = require('axios');
+const axios = require("axios");
 
-const streamifier = require('streamifier');
+const streamifier = require("streamifier");
 
-const { errorsHandler } = require('../handlers/error.handler');
+const { errorsHandler } = require("../handlers/error.handler");
 
-const socketInstance = require('../socket.instance');
-const googleApiOAuth2Instance = require('../googleApiOAuth2.instance');
+const socketInstance = require("../socket.instance");
+const googleApiOAuth2Instance = require("../googleApiOAuth2.instance");
 
-const moment = require('moment');
+const moment = require("moment");
 
-const Sales = require('../entities/Sales');
+const Sales = require("../entities/Sales");
 
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
-const fbUpload = require('facebook-api-video-upload');
+const fbUpload = require("facebook-api-video-upload");
 
-const authMiddleware = require('../middleware/auth.middleware');
+const authMiddleware = require("../middleware/auth.middleware");
 
-const { generateVideoId } = require('../utils/generateVideoId');
-const { findTimestampsBySearch } = require('../utils/findTimestampsBySearch');
-const { convertInMongoIdFormat } = require('../utils/convertInMongoIdFormat');
+const { generateVideoId } = require("../utils/generateVideoId");
+const { findTimestampsBySearch } = require("../utils/findTimestampsBySearch");
+const { convertInMongoIdFormat } = require("../utils/convertInMongoIdFormat");
 const {
   definingDescriptionForYoutube,
-} = require('../utils/videos/definingDescriptionForYoutube');
+} = require("../utils/videos/definingDescriptionForYoutube");
 
-const { getDurationFromBuffer } = require('fancy-video-duration');
+const { getDurationFromBuffer } = require("fancy-video-duration");
 
 const {
   findStartEndPointOfDuration,
-} = require('../utils/findStartEndPointOfDuration');
+} = require("../utils/findStartEndPointOfDuration");
 
-const { findOne } = require('../controllers/uploadInfo.controller');
+const { findOne } = require("../controllers/uploadInfo.controller");
 
 const {
   findOneRefFormByParam,
   markRefFormAsUsed,
-} = require('../controllers/authorLink.controller');
+} = require("../controllers/authorLink.controller");
 
-var Mutex = require('async-mutex').Mutex;
+var Mutex = require("async-mutex").Mutex;
 const mutex = new Mutex();
 
 const {
@@ -89,7 +89,7 @@ const {
   findVideoBy,
   markResearcherAdvanceForOneVideoAsPaid,
   updateVideosBy,
-} = require('../controllers/video.controller');
+} = require("../controllers/video.controller");
 
 const {
   findUsersByValueList,
@@ -97,48 +97,48 @@ const {
   updateUser,
   getAllUsers,
   updateUserBy,
-} = require('../controllers/user.controller');
+} = require("../controllers/user.controller");
 
-const { sendEmail } = require('../controllers/sendEmail.controller');
+const { sendEmail } = require("../controllers/sendEmail.controller");
 
 const {
   uploadFileToStorage,
   removeFileFromStorage,
-} = require('../controllers/storage.controller');
+} = require("../controllers/storage.controller");
 
 const {
   deleteLabelFromTrelloCard,
   updateCustomFieldByTrelloCard,
-} = require('../controllers/trello.controller');
+} = require("../controllers/trello.controller");
 
 const {
   findTheRecordOfTheCardMovedToDone,
-} = require('../controllers/movedToDoneList.controller');
+} = require("../controllers/movedToDoneList.controller");
 
-const { updateVbFormBy } = require('../controllers/uploadInfo.controller');
+const { updateVbFormBy } = require("../controllers/uploadInfo.controller");
 
 const {
   defineResearchersListForCreatingVideo,
-} = require('../utils/defineResearchersListForCreatingVideo');
+} = require("../utils/defineResearchersListForCreatingVideo");
 
-const { getAllSales } = require('../controllers/sales.controller');
-const { createNewPayment } = require('../controllers/payment.controller');
-const storageInstance = require('../storage.instance');
-const { resolveCname } = require('dns');
+const { getAllSales } = require("../controllers/sales.controller");
+const { createNewPayment } = require("../controllers/payment.controller");
+const storageInstance = require("../storage.instance");
+const { resolveCname } = require("dns");
 
 const storage = multer.memoryStorage();
 
 router.post(
-  '/addVideo',
+  "/addVideo",
   authMiddleware,
 
   multer({ storage: storage }).fields([
     {
-      name: 'video',
+      name: "video",
       maxCount: 1,
     },
     {
-      name: 'screen',
+      name: "screen",
       maxCount: 1,
     },
   ]),
@@ -192,24 +192,24 @@ router.post(
         !screen
       ) {
         return res.status(200).json({
-          message: 'Missing values for adding a new video',
-          status: 'warning',
+          message: "Missing values for adding a new video",
+          status: "warning",
         });
       }
 
       if (
-        path.extname(video[0].originalname) !== '.mp4' ||
-        path.extname(screen[0].originalname) !== '.jpg'
+        path.extname(video[0].originalname) !== ".mp4" ||
+        path.extname(screen[0].originalname) !== ".jpg"
       ) {
         return res
           .status(200)
-          .json({ message: 'Invalid file/s extension', status: 'warning' });
+          .json({ message: "Invalid file/s extension", status: "warning" });
       }
 
       if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
         return res.status(200).json({
-          message: 'The acquirer is not added to the list',
-          status: 'warning',
+          message: "The acquirer is not added to the list",
+          status: "warning",
         });
       }
 
@@ -219,8 +219,8 @@ router.post(
       ) {
         return res.status(200).json({
           message:
-            'The video cannot be added without confirmation of the advance payment by the employee to the author',
-          status: 'warning',
+            "The video cannot be added without confirmation of the advance payment by the employee to the author",
+          status: "warning",
         });
       }
 
@@ -228,17 +228,17 @@ router.post(
         let vbForm = null;
 
         if (vbCode) {
-          vbForm = await findOne({ searchBy: 'formId', param: `VB${vbCode}` });
+          vbForm = await findOne({ searchBy: "formId", param: `VB${vbCode}` });
 
           if (!vbForm) {
             return res.status(200).json({
               message: `The form with the vb code ${vbCode} was not found in the database`,
-              status: 'warning',
+              status: "warning",
             });
           }
 
           const videoWithVBForm = await findVideoBy({
-            searchBy: 'vbForm',
+            searchBy: "vbForm",
             value: vbForm._id,
           });
 
@@ -246,7 +246,7 @@ router.post(
             return res.status(200).json({
               message:
                 'a video with such a "VB code" is already in the database',
-              status: 'warning',
+              status: "warning",
             });
           }
         }
@@ -255,8 +255,8 @@ router.post(
 
         if (!countryCode) {
           return res.status(200).json({
-            message: 'Could not determine the country code',
-            status: 'warning',
+            message: "Could not determine the country code",
+            status: "warning",
           });
         }
 
@@ -281,12 +281,12 @@ router.post(
                 if (err) {
                   console.log(err);
                   resolve({
-                    status: 'error',
-                    message: 'Error when reading a file from disk',
+                    status: "error",
+                    message: "Error when reading a file from disk",
                   });
                 } else {
                   await uploadFileToStorage({
-                    folder: 'converted-videos',
+                    folder: "converted-videos",
                     name: videoId,
                     buffer,
                     type: video[0].mimetype,
@@ -294,9 +294,9 @@ router.post(
                     resolve,
                     socketInfo: {
                       userId: req.user.id,
-                      socketEmitName: 'progressOfRequestInPublishing',
+                      socketEmitName: "progressOfRequestInPublishing",
                       fileName: video[0].originalname,
-                      eventName: 'Uploading the converted video to the bucket',
+                      eventName: "Uploading the converted video to the bucket",
                     },
                   });
                 }
@@ -305,17 +305,17 @@ router.post(
           }
         );
 
-        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+        if (bucketResponseByConvertedVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByConvertedVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'videos',
+              folder: "videos",
               name: videoId,
               buffer: video[0].buffer,
               type: video[0].mimetype,
@@ -323,25 +323,25 @@ router.post(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: video[0].originalname,
-                eventName: 'Uploading video to the bucket',
+                eventName: "Uploading video to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByVideoUpload.status === 'error') {
+        if (bucketResponseByVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'screens',
+              folder: "screens",
               name: videoId,
               buffer: screen[0].buffer,
               type: screen[0].mimetype,
@@ -349,31 +349,31 @@ router.post(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: screen[0].originalname,
-                eventName: 'Uploading screen to the bucket',
+                eventName: "Uploading screen to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByScreenUpload.status === 'error') {
+        if (bucketResponseByScreenUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByScreenUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         socketInstance
           .io()
           .sockets.in(req.user.id)
-          .emit('progressOfRequestInPublishing', {
-            event: 'Just a little bit left',
+          .emit("progressOfRequestInPublishing", {
+            event: "Just a little bit left",
             file: null,
           });
 
         const researchersList = await findUsersByValueList({
-          param: 'name',
+          param: "name",
           valueList: JSON.parse(researchers),
         });
 
@@ -381,7 +381,7 @@ router.post(
 
         if (acquirerName) {
           acquirer = await getUserBy({
-            searchBy: 'name',
+            searchBy: "name",
             value: acquirerName,
           });
         }
@@ -435,22 +435,22 @@ router.post(
         if (!!JSON.parse(checkPaymentToTheAuthor)) {
           if (!vbForm?.sender) {
             return res.status(200).json({
-              message: 'This video has no author',
-              status: 'warning',
+              message: "This video has no author",
+              status: "warning",
             });
           }
 
           if (!!vbForm?.advancePaymentReceived) {
             return res.status(200).json({
-              message: 'The author has already been paid an advance',
-              status: 'warning',
+              message: "The author has already been paid an advance",
+              status: "warning",
             });
           }
 
           if (!acquirerName) {
             return res.status(200).json({
-              message: 'No acquirer found to record a note',
-              status: 'warning',
+              message: "No acquirer found to record a note",
+              status: "warning",
             });
           }
 
@@ -462,20 +462,20 @@ router.post(
           });
 
           await updateVbFormBy({
-            updateBy: '_id',
+            updateBy: "_id",
             value: vbForm._id,
             dataForUpdate: { advancePaymentReceived: true },
           });
 
           await updateVideoBy({
-            searchBy: '_id',
+            searchBy: "_id",
             searchValue: newVideo._id,
             dataToInc: { balance: -vbForm.refFormId.advancePayment },
           });
 
           await createNewPayment({
             user: vbForm.sender._id,
-            purpose: ['advance'],
+            purpose: ["advance"],
             amount: {
               advance: +vbForm.refFormId.advancePayment,
             },
@@ -484,7 +484,7 @@ router.post(
           const bodyForEmail = {
             emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
             emailTo: vbForm.sender.email,
-            subject: 'Payment of the amount',
+            subject: "Payment of the amount",
             html: `
             Hello ${vbForm.sender.name}.<br/>
             ViralBear just paid you: ${vbForm.refFormId.advancePayment}$!<br/>
@@ -495,29 +495,29 @@ router.post(
           sendEmail(bodyForEmail);
         }
 
-        socketInstance.io().emit('triggerForAnUpdateInPublishing', {
-          event: 'ready for publication',
+        socketInstance.io().emit("triggerForAnUpdateInPublishing", {
+          event: "ready for publication",
           priority: null,
         });
 
         return res.status(200).json({
           apiData: newVideo,
-          status: 'success',
-          message: 'Video successfully added',
+          status: "success",
+          message: "Video successfully added",
         });
       } catch (err) {
-        console.log(errorsHandler({ err, trace: 'video.addVideo' }));
+        console.log(errorsHandler({ err, trace: "video.addVideo" }));
 
         return res.status(400).json({
-          message: err?.message ? err?.message : 'Server side error',
-          status: 'error',
+          message: err?.message ? err?.message : "Server side error",
+          status: "error",
         });
       }
     });
   }
 );
 
-router.post('/convert', authMiddleware, async (req, res) => {
+router.post("/convert", authMiddleware, async (req, res) => {
   await mutex.runExclusive(async () => {
     try {
       const { videoId } = req.query;
@@ -526,18 +526,18 @@ router.post('/convert', authMiddleware, async (req, res) => {
       if (!videoId) {
         return res
           .status(200)
-          .json({ message: 'Missing videoId', status: 'warning' });
+          .json({ message: "Missing videoId", status: "warning" });
       }
 
       const video = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
       if (!video) {
         return res.status(200).json({
           message: `Video with id ${+videoId} not found`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -552,23 +552,23 @@ router.post('/convert', authMiddleware, async (req, res) => {
       );
 
       const { data: stream } = await axios.get(video.bucket.cloudVideoLink, {
-        responseType: 'stream',
+        responseType: "stream",
       });
 
       await new Promise((resolve, reject) => {
         stream.pipe(writer);
         let error = null;
-        writer.on('error', (err) => {
+        writer.on("error", (err) => {
           error = err;
           writer.close();
           reject(err);
 
           return res.status(200).json({
             message: `Error when downloading a file`,
-            status: 'warning',
+            status: "warning",
           });
         });
-        writer.on('close', () => {
+        writer.on("close", () => {
           if (!error) {
             resolve(true);
           }
@@ -589,22 +589,22 @@ router.post('/convert', authMiddleware, async (req, res) => {
               if (err) {
                 console.log(err);
                 resolve({
-                  status: 'error',
-                  message: 'Error when reading a file from disk',
+                  status: "error",
+                  message: "Error when reading a file from disk",
                 });
               } else {
                 await uploadFileToStorage({
-                  folder: 'converted-videos',
+                  folder: "converted-videos",
                   name: video.videoData.videoId,
                   buffer,
-                  type: 'video/mp4',
-                  extension: '.mp4',
+                  type: "video/mp4",
+                  extension: ".mp4",
                   resolve,
                   socketInfo: {
                     userId: userId,
-                    socketEmitName: 'progressOfRequestInPublishing',
+                    socketEmitName: "progressOfRequestInPublishing",
                     fileName: video.videoData.videoId,
-                    eventName: 'Uploading the converted video to the bucket',
+                    eventName: "Uploading the converted video to the bucket",
                   },
                 });
               }
@@ -613,65 +613,65 @@ router.post('/convert', authMiddleware, async (req, res) => {
         }
       );
 
-      if (bucketResponseByConvertedVideoUpload.status === 'error') {
+      if (bucketResponseByConvertedVideoUpload.status === "error") {
         return res.status(200).json({
           message: bucketResponseByConvertedVideoUpload.message,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       socketInstance
         .io()
         .sockets.in(userId)
-        .emit('progressOfRequestInPublishing', {
-          event: 'Just a little bit left',
+        .emit("progressOfRequestInPublishing", {
+          event: "Just a little bit left",
           file: null,
         });
 
       await updateVideosBy({
-        updateBy: '_id',
+        updateBy: "_id",
         value: video._id,
         objForSet: {
-          'bucket.cloudConversionVideoLink':
+          "bucket.cloudConversionVideoLink":
             bucketResponseByConvertedVideoUpload.response.Location,
-          'bucket.cloudConversionVideoPath':
+          "bucket.cloudConversionVideoPath":
             bucketResponseByConvertedVideoUpload.response.Key,
-          'videoData.hasAudioTrack': responseAfterConversion.data.hasAudioTrack,
+          "videoData.hasAudioTrack": responseAfterConversion.data.hasAudioTrack,
           apVideoHubArchive: true,
         },
       });
 
       const updatedVideo = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
       await refreshMrssFiles();
 
       return res.status(200).json({
-        message: 'The video has been successfully converted',
-        status: 'success',
+        message: "The video has been successfully converted",
+        status: "success",
         apiData: updatedVideo,
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'video.convert' }));
+      console.log(errorsHandler({ err, trace: "video.convert" }));
       return res
         .status(400)
-        .json({ message: 'Server side error', status: 'error' });
+        .json({ message: "Server side error", status: "error" });
     }
   });
 });
 
-router.post('/generateExcelFile', authMiddleware, generateExcelFile);
+router.post("/generateExcelFile", authMiddleware, generateExcelFile);
 
-router.get('/findOneBy', async (req, res) => {
+router.get("/findOneBy", async (req, res) => {
   try {
     const { searchBy, searchValue, lastAdded } = req.query;
 
     const apiData = await findVideoBy({
       ...(searchBy && { searchBy }),
       ...(searchValue && {
-        value: searchBy === 'videoData.videoId' ? +searchValue : searchValue,
+        value: searchBy === "videoData.videoId" ? +searchValue : searchValue,
       }),
       ...(lastAdded &&
         JSON.parse(lastAdded) === true && { lastAdded: JSON.parse(lastAdded) }),
@@ -679,7 +679,7 @@ router.get('/findOneBy', async (req, res) => {
 
     if (!apiData) {
       return res.status(200).json({
-        status: 'warning',
+        status: "warning",
         message: `No such video was found`,
       });
     }
@@ -695,20 +695,20 @@ router.get('/findOneBy', async (req, res) => {
           ).researcher.name,
         }),
       },
-      status: 'success',
-      message: 'Detailed video information received',
+      status: "success",
+      message: "Detailed video information received",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findOneBy' }));
+    console.log(errorsHandler({ err, trace: "video.findOneBy" }));
 
     return res.status(400).json({
-      status: 'error',
-      message: 'Server side error',
+      status: "error",
+      message: "Server side error",
     });
   }
 });
 
-router.get('/findCountByGroups', async (req, res) => {
+router.get("/findCountByGroups", async (req, res) => {
   try {
     const brandSafeVideosCount30Days = await Video.aggregate([
       {
@@ -718,13 +718,13 @@ router.get('/findCountByGroups', async (req, res) => {
           pubDate: {
             $exists: true,
             $gte: new Date(
-              moment().subtract(30, 'd').startOf('d').toISOString()
+              moment().subtract(30, "d").startOf("d").toISOString()
             ),
           },
         },
       },
       {
-        $count: 'brandSafeVideosCount',
+        $count: "brandSafeVideosCount",
       },
     ]);
 
@@ -736,14 +736,14 @@ router.get('/findCountByGroups', async (req, res) => {
           pubDate: {
             $exists: true,
             $gte: new Date(
-              moment().subtract(30, 'd').startOf('d').toISOString()
+              moment().subtract(30, "d").startOf("d").toISOString()
             ),
           },
         },
       },
 
       {
-        $count: 'socialMediaVideosCount',
+        $count: "socialMediaVideosCount",
       },
     ]);
 
@@ -755,13 +755,13 @@ router.get('/findCountByGroups', async (req, res) => {
           pubDate: {
             $exists: true,
             $gte: new Date(
-              moment().subtract(30, 'd').startOf('d').toISOString()
+              moment().subtract(30, "d").startOf("d").toISOString()
             ),
           },
         },
       },
       {
-        $count: 'reutersVideosCount',
+        $count: "reutersVideosCount",
       },
     ]);
 
@@ -773,13 +773,13 @@ router.get('/findCountByGroups', async (req, res) => {
           pubDate: {
             $exists: true,
             $gte: new Date(
-              moment().subtract(30, 'd').startOf('d').toISOString()
+              moment().subtract(30, "d").startOf("d").toISOString()
             ),
           },
         },
       },
       {
-        $count: 'apVideoHubVideosCount30Days',
+        $count: "apVideoHubVideosCount30Days",
       },
     ]);
 
@@ -791,13 +791,13 @@ router.get('/findCountByGroups', async (req, res) => {
           pubDate: {
             $exists: true,
             $gte: new Date(
-              moment().subtract(24, 'h').startOf('d').toISOString()
+              moment().subtract(24, "h").startOf("d").toISOString()
             ),
           },
         },
       },
       {
-        $count: 'apVideoHubVideosCount24Hours',
+        $count: "apVideoHubVideosCount24Hours",
       },
     ]);
 
@@ -824,21 +824,21 @@ router.get('/findCountByGroups', async (req, res) => {
     };
 
     return res.status(200).json({
-      status: 'success',
-      message: 'Count videos successfully received',
+      status: "success",
+      message: "Count videos successfully received",
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findCountByGroups' }));
+    console.log(errorsHandler({ err, trace: "video.findCountByGroups" }));
 
     return res.status(400).json({
-      status: 'error',
-      message: 'Server side error',
+      status: "error",
+      message: "Server side error",
     });
   }
 });
 
-router.get('/findAll', authMiddleware, async (req, res) => {
+router.get("/findAll", authMiddleware, async (req, res) => {
   const {
     category,
     tag,
@@ -854,7 +854,7 @@ router.get('/findAll', authMiddleware, async (req, res) => {
   if ((limit && !page) || (!limit && page)) {
     return res
       .status(200)
-      .json({ message: 'Missing parameter for pagination', status: 'warning' });
+      .json({ message: "Missing parameter for pagination", status: "warning" });
   }
 
   try {
@@ -863,17 +863,17 @@ router.get('/findAll', authMiddleware, async (req, res) => {
       ...(tag && { tag }),
       ...(location && { location }),
       ...(forLastDays && { forLastDays: +forLastDays }),
-      ...(typeof JSON.parse(isApproved) === 'boolean' && {
+      ...(typeof JSON.parse(isApproved) === "boolean" && {
         isApproved: JSON.parse(isApproved),
       }),
-      ...(typeof JSON.parse(personal) === 'boolean' && {
+      ...(typeof JSON.parse(personal) === "boolean" && {
         researcher: {
-          searchBy: 'researcher',
+          searchBy: "researcher",
           value: convertInMongoIdFormat({ string: req.user.id }),
         },
       }),
       ...(wasRemovedFromPublication &&
-        typeof JSON.parse(wasRemovedFromPublication) === 'boolean' && {
+        typeof JSON.parse(wasRemovedFromPublication) === "boolean" && {
           wasRemovedFromPublication: JSON.parse(wasRemovedFromPublication),
         }),
     });
@@ -891,23 +891,23 @@ router.get('/findAll', authMiddleware, async (req, res) => {
         tag,
         location,
         ...(isApproved &&
-          typeof JSON.parse(isApproved) === 'boolean' && {
+          typeof JSON.parse(isApproved) === "boolean" && {
             isApproved: JSON.parse(isApproved),
           }),
         ...(personal &&
-          typeof JSON.parse(personal) === 'boolean' && {
+          typeof JSON.parse(personal) === "boolean" && {
             researcher: {
-              searchBy: 'researcher',
+              searchBy: "researcher",
               value: convertInMongoIdFormat({ string: req.user.id }),
             },
           }),
         ...(wasRemovedFromPublication &&
-          typeof JSON.parse(wasRemovedFromPublication) === 'boolean' && {
+          typeof JSON.parse(wasRemovedFromPublication) === "boolean" && {
             wasRemovedFromPublication: JSON.parse(wasRemovedFromPublication),
           }),
         limit,
         skip,
-        sort: { 'videoData.videoId': -1 },
+        sort: { "videoData.videoId": -1 },
       });
     }
 
@@ -924,20 +924,20 @@ router.get('/findAll', authMiddleware, async (req, res) => {
 
     return res.status(200).json({
       apiData,
-      status: 'success',
-      message: 'The list of videos is received',
+      status: "success",
+      message: "The list of videos is received",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findAll' }));
+    console.log(errorsHandler({ err, trace: "video.findAll" }));
 
     return res.status(400).json({
-      status: 'error',
-      message: 'Server side error',
+      status: "error",
+      message: "Server side error",
     });
   }
 });
 
-router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
+router.get("/findReadyForPublication", authMiddleware, async (req, res) => {
   try {
     const videosReadyForPublication = await findReadyForPublication();
 
@@ -949,7 +949,7 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
         videoId: video.videoData.videoId,
         name:
           video.trelloData.trelloCardName.length >= 20
-            ? video.trelloData.trelloCardName.substring(0, 20) + '...'
+            ? video.trelloData.trelloCardName.substring(0, 20) + "..."
             : video.trelloData.trelloCardName,
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
@@ -961,35 +961,35 @@ router.get('/findReadyForPublication', authMiddleware, async (req, res) => {
     });
 
     return res.status(200).json({
-      status: 'success',
-      message: 'The list of videos ready for publication has been received',
+      status: "success",
+      message: "The list of videos ready for publication has been received",
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findReadyForPublication' }));
+    console.log(errorsHandler({ err, trace: "video.findReadyForPublication" }));
 
     return res.status(400).json({
-      message: 'Server-side error',
-      status: 'error',
+      message: "Server-side error",
+      status: "error",
     });
   }
 });
 
-router.get('/findByIsBrandSafe', authMiddleware, async (req, res) => {
+router.get("/findByIsBrandSafe", authMiddleware, async (req, res) => {
   try {
     const videosForSocialMedia = await findByIsBrandSafe();
 
     return res.status(200).json(videosForSocialMedia);
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findByIsBrandSafe' }));
+    console.log(errorsHandler({ err, trace: "video.findByIsBrandSafe" }));
 
     return res.status(400).json({
-      message: 'server side error',
+      message: "server side error",
     });
   }
 });
 
-router.get('/findByFixed', authMiddleware, async (req, res) => {
+router.get("/findByFixed", authMiddleware, async (req, res) => {
   try {
     const videoPendingChanges = await findByFixed();
 
@@ -1001,7 +1001,7 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
         videoId: video.videoData.videoId,
         name:
           video.trelloData.trelloCardName.length >= 20
-            ? video.trelloData.trelloCardName.substring(0, 20) + '...'
+            ? video.trelloData.trelloCardName.substring(0, 20) + "..."
             : video.trelloData.trelloCardName,
         priority: video.trelloData.priority,
         hasAdvance: video?.vbForm?.refFormId?.advancePayment ? true : false,
@@ -1013,21 +1013,21 @@ router.get('/findByFixed', authMiddleware, async (req, res) => {
     });
 
     return res.status(200).json({
-      status: 'success',
-      message: 'The list of videos awaiting editing has been received',
+      status: "success",
+      message: "The list of videos awaiting editing has been received",
       apiData,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findByFixed' }));
+    console.log(errorsHandler({ err, trace: "video.findByFixed" }));
 
     res.status(400).json({
-      status: 'error',
-      message: 'server side error',
+      status: "error",
+      message: "server side error",
     });
   }
 });
 
-router.get('/findByAuthor', authMiddleware, async (req, res) => {
+router.get("/findByAuthor", authMiddleware, async (req, res) => {
   try {
     const { authorId } = req.query;
 
@@ -1043,9 +1043,9 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
       vbFormExists: true,
       isApproved: true,
       fieldsInTheResponse: [
-        'videoData.title',
-        'videoData.videoId',
-        'bucket.cloudScreenLink',
+        "videoData.title",
+        "videoData.videoId",
+        "bucket.cloudScreenLink",
       ],
     });
 
@@ -1069,7 +1069,7 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
             videoId: video.videoData.videoId,
             screenPath: video.bucket.cloudScreenLink,
             agreementDate: moment(video?.vbForm?.createdAt).format(
-              'D MMMM YYYY, HH:mm:ss Z'
+              "D MMMM YYYY, HH:mm:ss Z"
             ),
             videoByThisAuthor: true,
             revenue: +revenue.toFixed(2),
@@ -1089,9 +1089,9 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
     videos = videos.reduce(
       (res, videoData) => {
         if (videoData.videoByThisAuthor) {
-          res['videosByThisAuthor'].push(videoData);
+          res["videosByThisAuthor"].push(videoData);
         } else {
-          res['videosIsNotByThisAuthor'].push(videoData);
+          res["videosIsNotByThisAuthor"].push(videoData);
         }
         return res;
       },
@@ -1100,51 +1100,51 @@ router.get('/findByAuthor', authMiddleware, async (req, res) => {
 
     return res.status(200).json({
       message: `Videos with statistics received`,
-      status: 'success',
+      status: "success",
       apiData: videos.videosByThisAuthor,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findByAuthor' }));
+    console.log(errorsHandler({ err, trace: "video.findByAuthor" }));
     return res.status(400).json({
       message: `Server side error`,
-      status: 'error',
+      status: "error",
     });
   }
 });
 
-router.get('/findRelated', findRelated);
+router.get("/findRelated", findRelated);
 
-router.get('/findOneById/:videoId', async (req, res) => {
+router.get("/findOneById/:videoId", async (req, res) => {
   try {
     const { videoId } = req.params;
 
     const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: +videoId,
     });
 
     if (!video) {
       return res.status(200).json({
         message: `Video with id "${videoId}" was not found`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
     return res.status(200).json({
       message: `Video with id "${videoId}" was found`,
-      status: 'success',
+      status: "success",
       apiData: video,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findOneById' }));
+    console.log(errorsHandler({ err, trace: "video.findOneById" }));
     return res.status(400).json({
       message: `Server side error`,
-      status: 'error',
+      status: "error",
     });
   }
 });
 
-router.get('/findNext/:id', async (req, res) => {
+router.get("/findNext/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1154,27 +1154,27 @@ router.get('/findNext/:id', async (req, res) => {
 
     if (!video.length) {
       return res.status(200).json({
-        status: 'warning',
-        message: 'This is the last video',
+        status: "warning",
+        message: "This is the last video",
       });
     }
 
     return res.status(200).json({
       apiData: video[0],
-      status: 'success',
-      message: 'Video successfully received',
+      status: "success",
+      message: "Video successfully received",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findNext' }));
+    console.log(errorsHandler({ err, trace: "video.findNext" }));
 
     return res.status(400).json({
-      status: 'error',
-      message: 'Server side error',
+      status: "error",
+      message: "Server side error",
     });
   }
 });
 
-router.get('/findPrev/:id', async (req, res) => {
+router.get("/findPrev/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1182,37 +1182,37 @@ router.get('/findPrev/:id', async (req, res) => {
 
     if (!video.length) {
       return res.status(200).json({
-        status: 'warning',
-        message: 'This is the very first video',
+        status: "warning",
+        message: "This is the very first video",
       });
     }
 
     return res.status(200).json({
       apiData: video[0],
-      status: 'success',
-      message: 'Video successfully received',
+      status: "success",
+      message: "Video successfully received",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.findPrev' }));
+    console.log(errorsHandler({ err, trace: "video.findPrev" }));
 
     return res.status(400).json({
-      status: 'error',
-      message: 'Server side error',
+      status: "error",
+      message: "Server side error",
     });
   }
 });
 
 router.patch(
-  '/update/:id',
+  "/update/:id",
   authMiddleware,
 
   multer({ storage: storage }).fields([
     {
-      name: 'video',
+      name: "video",
       maxCount: 1,
     },
     {
-      name: 'screen',
+      name: "screen",
       maxCount: 1,
     },
   ]),
@@ -1223,7 +1223,7 @@ router.patch(
     if (!videoId) {
       return res
         .status(200)
-        .json({ message: 'missing "video id" parameter', status: 'warning' });
+        .json({ message: 'missing "video id" parameter', status: "warning" });
     }
 
     const {
@@ -1261,15 +1261,15 @@ router.patch(
       !date
     ) {
       return res.status(200).json({
-        message: 'Missing values for adding a new video',
-        status: 'warning',
+        message: "Missing values for adding a new video",
+        status: "warning",
       });
     }
 
     if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
       return res.status(200).json({
-        message: 'The acquirer is not added to the list',
-        status: 'warning',
+        message: "The acquirer is not added to the list",
+        status: "warning",
       });
     }
 
@@ -1277,14 +1277,14 @@ router.patch(
 
     try {
       const video = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
       if (!video) {
         return res.status(200).json({
           message: `video with id "${videoId}" not found`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -1294,7 +1294,7 @@ router.patch(
           dataToDelete: {
             needToBeFixed: 1,
             vbForm: 1,
-            ...(!creditTo && { 'videoData.creditTo': 1 }),
+            ...(!creditTo && { "videoData.creditTo": 1 }),
           },
           dataToUpdate: {
             exclusivity: false,
@@ -1304,19 +1304,19 @@ router.patch(
 
       if (vbCode) {
         const vbForm = await findOne({
-          searchBy: 'formId',
+          searchBy: "formId",
           param: `VB${vbCode}`,
         });
 
         if (!vbForm) {
           return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const videoWithVBForm = await findVideoBy({
-          searchBy: 'vbForm',
+          searchBy: "vbForm",
           value: vbForm._id,
         });
 
@@ -1326,7 +1326,7 @@ router.patch(
         ) {
           return res.status(200).json({
             message: 'a video with such a "VB code" is already in the database',
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -1344,10 +1344,10 @@ router.patch(
       }
 
       if (reqVideo) {
-        if (path.extname(reqVideo[0].originalname) !== '.mp4') {
+        if (path.extname(reqVideo[0].originalname) !== ".mp4") {
           return res.status(200).json({
             message: `Incorrect video extension`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -1366,12 +1366,12 @@ router.patch(
                 if (err) {
                   console.log(err);
                   resolve({
-                    status: 'error',
-                    message: 'Error when reading a file from disk',
+                    status: "error",
+                    message: "Error when reading a file from disk",
                   });
                 } else {
                   await uploadFileToStorage({
-                    folder: 'converted-videos',
+                    folder: "converted-videos",
                     name: videoId,
                     buffer,
                     type: reqVideo[0].mimetype,
@@ -1379,9 +1379,9 @@ router.patch(
                     resolve,
                     socketInfo: {
                       userId: req.user.id,
-                      socketEmitName: 'progressOfRequestInPublishing',
+                      socketEmitName: "progressOfRequestInPublishing",
                       fileName: reqVideo[0].originalname,
-                      eventName: 'Uploading the converted video to the bucket',
+                      eventName: "Uploading the converted video to the bucket",
                     },
                   });
                 }
@@ -1390,17 +1390,17 @@ router.patch(
           }
         );
 
-        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+        if (bucketResponseByConvertedVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByConvertedVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'videos',
+              folder: "videos",
               name: videoId,
               buffer: reqVideo[0].buffer,
               type: reqVideo[0].mimetype,
@@ -1408,18 +1408,18 @@ router.patch(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: reqVideo[0].originalname,
-                eventName: 'Uploading video to the bucket',
+                eventName: "Uploading video to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByVideoUpload.status === 'error') {
+        if (bucketResponseByVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -1428,32 +1428,32 @@ router.patch(
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'bucket.cloudVideoLink':
+            "bucket.cloudVideoLink":
               bucketResponseByVideoUpload.response.Location,
-            'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
-            'bucket.cloudConversionVideoLink':
+            "bucket.cloudVideoPath": bucketResponseByVideoUpload.response.Key,
+            "bucket.cloudConversionVideoLink":
               bucketResponseByConvertedVideoUpload.response.Location,
-            'bucket.cloudConversionVideoPath':
+            "bucket.cloudConversionVideoPath":
               bucketResponseByConvertedVideoUpload.response.Key,
-            'videoData.duration': duration,
-            'videoData.hasAudioTrack':
+            "videoData.duration": duration,
+            "videoData.hasAudioTrack":
               responseAfterConversion.data.hasAudioTrack,
           },
         });
       }
 
       if (reqScreen) {
-        if (path.extname(reqScreen[0].originalname) !== '.jpg') {
+        if (path.extname(reqScreen[0].originalname) !== ".jpg") {
           return res.status(400).json({
             message: `Incorrect screen extension`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'screens',
+              folder: "screens",
               name: videoId,
               buffer: reqScreen[0].buffer,
               type: reqScreen[0].mimetype,
@@ -1461,27 +1461,27 @@ router.patch(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: reqScreen[0].originalname,
-                eventName: 'Uploading screen to the bucket',
+                eventName: "Uploading screen to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByScreenUpload.status === 'error') {
+        if (bucketResponseByScreenUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByScreenUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'bucket.cloudScreenLink':
+            "bucket.cloudScreenLink":
               bucketResponseByScreenUpload.response.Location,
-            'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
+            "bucket.cloudScreenPath": bucketResponseByScreenUpload.response.Key,
           },
         });
       }
@@ -1489,8 +1489,8 @@ router.patch(
       socketInstance
         .io()
         .sockets.in(req.user.id)
-        .emit('progressOfRequestInPublishing', {
-          event: 'Just a little bit left',
+        .emit("progressOfRequestInPublishing", {
+          event: "Just a little bit left",
           file: null,
         });
 
@@ -1501,15 +1501,15 @@ router.patch(
 
         if (!countryCode) {
           return res.status(400).json({
-            message: 'Error when searching for the country code',
-            status: 'error',
+            message: "Error when searching for the country code",
+            status: "error",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'videoData.countryCode': countryCode,
+            "videoData.countryCode": countryCode,
           },
         });
       }
@@ -1519,16 +1519,16 @@ router.patch(
 
         if (!countryCode) {
           return res.status(200).json({
-            message: 'Error when searching for the country code',
-            status: 'warning',
+            message: "Error when searching for the country code",
+            status: "warning",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'videoData.country': country,
-            'videoData.countryCode': countryCode,
+            "videoData.country": country,
+            "videoData.countryCode": countryCode,
           },
         });
       }
@@ -1551,7 +1551,7 @@ router.patch(
       }
 
       const researchersList = await findUsersByValueList({
-        param: 'name',
+        param: "name",
         valueList: JSON.parse(researchers),
       });
 
@@ -1559,7 +1559,7 @@ router.patch(
 
       if (acquirerName) {
         acquirer = await getUserBy({
-          searchBy: 'name',
+          searchBy: "name",
           value: acquirerName,
         });
       }
@@ -1574,8 +1574,8 @@ router.patch(
           acquirer._id.toString()
       ) {
         return res.status(200).json({
-          message: 'You cannot change the acquirer for this video.',
-          status: 'warning',
+          message: "You cannot change the acquirer for this video.",
+          status: "warning",
         });
       }
 
@@ -1589,19 +1589,19 @@ router.patch(
       await updateVideoById({
         videoId: +videoId,
         dataToUpdate: {
-          'videoData.originalVideoLink': originalLink,
-          'videoData.title': title,
-          'videoData.description': desc,
-          ...(creditTo && { 'videoData.creditTo': creditTo }),
-          'videoData.tags': JSON.parse(tags).map((el) => {
+          "videoData.originalVideoLink": originalLink,
+          "videoData.title": title,
+          "videoData.description": desc,
+          ...(creditTo && { "videoData.creditTo": creditTo }),
+          "videoData.tags": JSON.parse(tags).map((el) => {
             return el.trim();
           }),
-          'videoData.category': JSON.parse(category),
-          'videoData.categoryReuters': categoryReuters,
-          'videoData.city': city,
+          "videoData.category": JSON.parse(category),
+          "videoData.categoryReuters": categoryReuters,
+          "videoData.city": city,
           ...(commentToAdmin && { commentToAdmin }),
-          'videoData.date': JSON.parse(date),
-          'trelloData.researchers': researchersListForCreatingVideo,
+          "videoData.date": JSON.parse(date),
+          "trelloData.researchers": researchersListForCreatingVideo,
           ...(video.isApproved && { lastChange: new Date().toGMTString() }),
           reuters: JSON.parse(reuters),
           apVideoHub: JSON.parse(apVideoHub),
@@ -1610,29 +1610,29 @@ router.patch(
       });
 
       const updatedVideo = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
       if (!!acquirerPaidAdvance) {
         if (!updatedVideo?.vbForm?.sender) {
           return res.status(200).json({
-            message: 'This video has no author',
-            status: 'warning',
+            message: "This video has no author",
+            status: "warning",
           });
         }
 
         if (!!updatedVideo?.vbForm?.advancePaymentReceived) {
           return res.status(200).json({
-            message: 'The author has already been paid an advance',
-            status: 'warning',
+            message: "The author has already been paid an advance",
+            status: "warning",
           });
         }
 
         if (!acquirerName) {
           return res.status(200).json({
-            message: 'No acquirer found to record a note',
-            status: 'warning',
+            message: "No acquirer found to record a note",
+            status: "warning",
           });
         }
 
@@ -1640,8 +1640,8 @@ router.patch(
           +acquirerPaidAdvance !== updatedVideo.vbForm.refFormId.advancePayment
         ) {
           return res.status(200).json({
-            message: 'The amount does not match the advance for the author',
-            status: 'warning',
+            message: "The amount does not match the advance for the author",
+            status: "warning",
           });
         }
 
@@ -1652,8 +1652,8 @@ router.patch(
         if (!acquirerInTheVideoList) {
           return res.status(200).json({
             message:
-              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
-            status: 'warning',
+              "This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount",
+            status: "warning",
           });
         }
 
@@ -1665,20 +1665,20 @@ router.patch(
         });
 
         await updateVbFormBy({
-          updateBy: '_id',
+          updateBy: "_id",
           value: updatedVideo.vbForm._id,
           dataForUpdate: { advancePaymentReceived: true },
         });
 
         await updateVideoBy({
-          searchBy: '_id',
+          searchBy: "_id",
           searchValue: updatedVideo._id,
           dataToInc: { balance: -acquirerPaidAdvance },
         });
 
         await createNewPayment({
           user: updatedVideo.vbForm.sender._id,
-          purpose: ['advance'],
+          purpose: ["advance"],
           amount: {
             advance: +acquirerPaidAdvance,
           },
@@ -1687,7 +1687,7 @@ router.patch(
         const bodyForEmail = {
           emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
           emailTo: updatedVideo.vbForm.sender.email,
-          subject: 'Payment of the amount',
+          subject: "Payment of the amount",
           html: `
           Hello ${updatedVideo.vbForm.sender.name}.<br/>
           ViralBear just paid you: ${acquirerPaidAdvance}$!<br/>
@@ -1699,7 +1699,7 @@ router.patch(
       }
 
       if (video.isApproved && video.brandSafe !== JSON.parse(brandSafe)) {
-        console.log('change');
+        console.log("change");
 
         //меняем кастомное поле "brand safe" в карточке trello
         await updateCustomFieldByTrelloCard(
@@ -1707,8 +1707,8 @@ router.patch(
           process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
           {
             idValue: JSON.parse(brandSafe)
-              ? '6363888c65a44802954d88e5'
-              : '6363888c65a44802954d88e4',
+              ? "6363888c65a44802954d88e5"
+              : "6363888c65a44802954d88e4",
           }
         );
       }
@@ -1721,7 +1721,7 @@ router.patch(
 
       return res.status(200).json({
         message: `Video with id "${videoId}" has been successfully updated`,
-        status: 'success',
+        status: "success",
         apiData: {
           ...data,
           ...(data.trelloData.researchers.find(
@@ -1734,17 +1734,17 @@ router.patch(
         },
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'video.update' }));
+      console.log(errorsHandler({ err, trace: "video.update" }));
 
       return res.status(400).json({
-        message: err?.message ? err?.message : 'Server side error',
-        status: 'error',
+        message: err?.message ? err?.message : "Server side error",
+        status: "error",
       });
     }
   }
 );
 
-router.patch('/updateByValue', authMiddleware, async (req, res) => {
+router.patch("/updateByValue", authMiddleware, async (req, res) => {
   try {
     const { searchBy, searchValue, refreshFeeds } = req.query;
     const { isApproved, wasRemovedFromPublication } = req.body;
@@ -1753,8 +1753,8 @@ router.patch('/updateByValue', authMiddleware, async (req, res) => {
       searchBy,
       searchValue,
       dataToUpdate: {
-        ...(typeof isApproved === 'boolean' && { isApproved }),
-        ...(typeof wasRemovedFromPublication === 'boolean' && {
+        ...(typeof isApproved === "boolean" && { isApproved }),
+        ...(typeof wasRemovedFromPublication === "boolean" && {
           wasRemovedFromPublication,
         }),
       },
@@ -1766,29 +1766,29 @@ router.patch('/updateByValue', authMiddleware, async (req, res) => {
 
     return res.status(200).json({
       message: `Video has been successfully updated`,
-      status: 'success',
+      status: "success",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.updateByValue' }));
+    console.log(errorsHandler({ err, trace: "video.updateByValue" }));
 
     return res.status(400).json({
-      message: err?.message ? err?.message : 'Server side error',
-      status: 'error',
+      message: err?.message ? err?.message : "Server side error",
+      status: "error",
     });
   }
 });
 
 router.patch(
-  '/fixedVideo/:id',
+  "/fixedVideo/:id",
   authMiddleware,
 
   multer({ storage: storage }).fields([
     {
-      name: 'video',
+      name: "video",
       maxCount: 1,
     },
     {
-      name: 'screen',
+      name: "screen",
       maxCount: 1,
     },
   ]),
@@ -1799,7 +1799,7 @@ router.patch(
     if (!videoId) {
       return res
         .status(200)
-        .json({ message: 'missing "video id" parameter', status: 'warning' });
+        .json({ message: 'missing "video id" parameter', status: "warning" });
     }
 
     const {
@@ -1836,15 +1836,15 @@ router.patch(
       !date
     ) {
       return res.status(200).json({
-        message: 'Missing values for adding a new video',
-        status: 'warning',
+        message: "Missing values for adding a new video",
+        status: "warning",
       });
     }
 
     if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
       return res.status(200).json({
-        message: 'The acquirer is not added to the list',
-        status: 'warning',
+        message: "The acquirer is not added to the list",
+        status: "warning",
       });
     }
 
@@ -1852,14 +1852,14 @@ router.patch(
 
     try {
       const video = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
       if (!video) {
         return res.status(200).json({
           message: `video with id "${videoId}" not found`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -1869,7 +1869,7 @@ router.patch(
           dataToDelete: {
             needToBeFixed: 1,
             vbForm: 1,
-            ...(!creditTo && { 'videoData.creditTo': 1 }),
+            ...(!creditTo && { "videoData.creditTo": 1 }),
           },
           dataToUpdate: {
             exclusivity: false,
@@ -1879,19 +1879,19 @@ router.patch(
 
       if (vbCode) {
         const vbForm = await findOne({
-          searchBy: 'formId',
+          searchBy: "formId",
           param: `VB${vbCode}`,
         });
 
         if (!vbForm) {
           return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const videoWithVBForm = await findVideoBy({
-          searchBy: 'vbForm',
+          searchBy: "vbForm",
           value: vbForm._id,
         });
 
@@ -1901,7 +1901,7 @@ router.patch(
         ) {
           return res.status(200).json({
             message: 'a video with such a "VB code" is already in the database',
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -1919,10 +1919,10 @@ router.patch(
       }
 
       if (reqVideo) {
-        if (path.extname(reqVideo[0].originalname) !== '.mp4') {
+        if (path.extname(reqVideo[0].originalname) !== ".mp4") {
           return res.status(200).json({
             message: `Incorrect video extension`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -1941,12 +1941,12 @@ router.patch(
                 if (err) {
                   console.log(err);
                   resolve({
-                    status: 'error',
-                    message: 'Error when reading a file from disk',
+                    status: "error",
+                    message: "Error when reading a file from disk",
                   });
                 } else {
                   await uploadFileToStorage({
-                    folder: 'converted-videos',
+                    folder: "converted-videos",
                     name: videoId,
                     buffer,
                     type: reqVideo[0].mimetype,
@@ -1954,9 +1954,9 @@ router.patch(
                     resolve,
                     socketInfo: {
                       userId: req.user.id,
-                      socketEmitName: 'progressOfRequestInPublishing',
+                      socketEmitName: "progressOfRequestInPublishing",
                       fileName: reqVideo[0].originalname,
-                      eventName: 'Uploading the converted video to the bucket',
+                      eventName: "Uploading the converted video to the bucket",
                     },
                   });
                 }
@@ -1965,17 +1965,17 @@ router.patch(
           }
         );
 
-        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+        if (bucketResponseByConvertedVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByConvertedVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'videos',
+              folder: "videos",
               name: videoId,
               buffer: reqVideo[0].buffer,
               type: reqVideo[0].mimetype,
@@ -1983,18 +1983,18 @@ router.patch(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: reqVideo[0].originalname,
-                eventName: 'Uploading video to the bucket',
+                eventName: "Uploading video to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByVideoUpload.status === 'error') {
+        if (bucketResponseByVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -2003,32 +2003,32 @@ router.patch(
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'bucket.cloudVideoLink':
+            "bucket.cloudVideoLink":
               bucketResponseByVideoUpload.response.Location,
-            'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
-            'bucket.cloudConversionVideoLink':
+            "bucket.cloudVideoPath": bucketResponseByVideoUpload.response.Key,
+            "bucket.cloudConversionVideoLink":
               bucketResponseByConvertedVideoUpload.response.Location,
-            'bucket.cloudConversionVideoPath':
+            "bucket.cloudConversionVideoPath":
               bucketResponseByConvertedVideoUpload.response.Key,
-            'videoData.duration': duration,
-            'videoData.hasAudioTrack':
+            "videoData.duration": duration,
+            "videoData.hasAudioTrack":
               responseAfterConversion.data.hasAudioTrack,
           },
         });
       }
 
       if (reqScreen) {
-        if (path.extname(reqScreen[0].originalname) !== '.jpg') {
+        if (path.extname(reqScreen[0].originalname) !== ".jpg") {
           return res.status(400).json({
             message: `Incorrect screen extension`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'screens',
+              folder: "screens",
               name: videoId,
               buffer: reqScreen[0].buffer,
               type: reqScreen[0].mimetype,
@@ -2036,27 +2036,27 @@ router.patch(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: reqScreen[0].originalname,
-                eventName: 'Uploading screen to the bucket',
+                eventName: "Uploading screen to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByScreenUpload.status === 'error') {
+        if (bucketResponseByScreenUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByScreenUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'bucket.cloudScreenLink':
+            "bucket.cloudScreenLink":
               bucketResponseByScreenUpload.response.Location,
-            'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
+            "bucket.cloudScreenPath": bucketResponseByScreenUpload.response.Key,
           },
         });
       }
@@ -2064,8 +2064,8 @@ router.patch(
       socketInstance
         .io()
         .sockets.in(req.user.id)
-        .emit('progressOfRequestInPublishing', {
-          event: 'Just a little bit left',
+        .emit("progressOfRequestInPublishing", {
+          event: "Just a little bit left",
           file: null,
         });
 
@@ -2076,15 +2076,15 @@ router.patch(
 
         if (!countryCode) {
           return res.status(400).json({
-            message: 'Error when searching for the country code',
-            status: 'error',
+            message: "Error when searching for the country code",
+            status: "error",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'videoData.countryCode': countryCode,
+            "videoData.countryCode": countryCode,
           },
         });
       }
@@ -2094,16 +2094,16 @@ router.patch(
 
         if (!countryCode) {
           return res.status(400).json({
-            message: 'Error when searching for the country code',
-            status: 'error',
+            message: "Error when searching for the country code",
+            status: "error",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'videoData.country': country,
-            'videoData.countryCode': countryCode,
+            "videoData.country": country,
+            "videoData.countryCode": countryCode,
           },
         });
       }
@@ -2126,7 +2126,7 @@ router.patch(
       }
 
       const researchersList = await findUsersByValueList({
-        param: 'name',
+        param: "name",
         valueList: JSON.parse(researchers),
       });
 
@@ -2134,7 +2134,7 @@ router.patch(
 
       if (acquirerName) {
         acquirer = await getUserBy({
-          searchBy: 'name',
+          searchBy: "name",
           value: acquirerName,
         });
       }
@@ -2149,8 +2149,8 @@ router.patch(
           acquirer._id.toString()
       ) {
         return res.status(200).json({
-          message: 'You cannot change the acquirer for this video.',
-          status: 'warning',
+          message: "You cannot change the acquirer for this video.",
+          status: "warning",
         });
       }
 
@@ -2164,19 +2164,19 @@ router.patch(
       await updateVideoById({
         videoId: +videoId,
         dataToUpdate: {
-          'videoData.originalVideoLink': originalLink,
-          'videoData.title': title,
-          'videoData.description': desc,
-          ...(creditTo && { 'videoData.creditTo': creditTo }),
-          'videoData.tags': JSON.parse(tags).map((el) => {
+          "videoData.originalVideoLink": originalLink,
+          "videoData.title": title,
+          "videoData.description": desc,
+          ...(creditTo && { "videoData.creditTo": creditTo }),
+          "videoData.tags": JSON.parse(tags).map((el) => {
             return el.trim();
           }),
-          'videoData.category': JSON.parse(category),
-          'videoData.categoryReuters': categoryReuters,
-          'videoData.city': city,
+          "videoData.category": JSON.parse(category),
+          "videoData.categoryReuters": categoryReuters,
+          "videoData.city": city,
           ...(commentToAdmin && { commentToAdmin }),
-          'videoData.date': JSON.parse(date),
-          'trelloData.researchers': researchersListForCreatingVideo,
+          "videoData.date": JSON.parse(date),
+          "trelloData.researchers": researchersListForCreatingVideo,
           ...(video.isApproved && { lastChange: new Date().toGMTString() }),
           reuters: JSON.parse(reuters),
           apVideoHub: JSON.parse(apVideoHub),
@@ -2185,12 +2185,12 @@ router.patch(
       });
 
       await Video.updateOne(
-        { 'videoData.videoId': +videoId },
+        { "videoData.videoId": +videoId },
         { $unset: { needToBeFixed: 1 } }
       );
 
       const updatedVideo = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
@@ -2201,8 +2201,8 @@ router.patch(
           process.env.TRELLO_CUSTOM_FIELD_BRAND_SAFE,
           {
             idValue: JSON.parse(brandSafe)
-              ? '6363888c65a44802954d88e5'
-              : '6363888c65a44802954d88e4',
+              ? "6363888c65a44802954d88e5"
+              : "6363888c65a44802954d88e4",
           }
         );
       }
@@ -2215,7 +2215,7 @@ router.patch(
 
       return res.status(200).json({
         message: `Video with id "${videoId}" has been successfully updated`,
-        status: 'success',
+        status: "success",
         apiData: {
           ...data,
           ...(data.trelloData.researchers.find(
@@ -2228,27 +2228,27 @@ router.patch(
         },
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'video.fixedVideo' }));
+      console.log(errorsHandler({ err, trace: "video.fixedVideo" }));
       return res
         .status(400)
-        .json({ message: 'Server side error', status: 'error' });
+        .json({ message: "Server side error", status: "error" });
     }
   }
 );
 
-router.patch('/addCommentForFixed', authMiddleware, async (req, res) => {
+router.patch("/addCommentForFixed", authMiddleware, async (req, res) => {
   try {
     const { comment, videoId } = req.body;
 
     const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: videoId,
     });
 
     if (!video) {
       return res.status(200).json({
         message: `Video with id "${videoId}" was not found`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
@@ -2259,34 +2259,34 @@ router.patch('/addCommentForFixed', authMiddleware, async (req, res) => {
     });
 
     const updatedVideo = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: videoId,
     });
 
     return res.status(200).json({
-      status: 'success',
-      message: 'Edits added to the video',
+      status: "success",
+      message: "Edits added to the video",
       apiData: updatedVideo,
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.addCommentForFixed' }));
+    console.log(errorsHandler({ err, trace: "video.addCommentForFixed" }));
     return res.status(400).json({
-      status: 'success',
-      message: 'Server-side error',
+      status: "success",
+      message: "Server-side error",
     });
   }
 });
 
 router.patch(
-  '/publishing/:id',
+  "/publishing/:id",
   authMiddleware,
   multer({ storage: storage }).fields([
     {
-      name: 'video',
+      name: "video",
       maxCount: 1,
     },
     {
-      name: 'screen',
+      name: "screen",
       maxCount: 1,
     },
   ]),
@@ -2329,15 +2329,15 @@ router.patch(
       !date
     ) {
       return res.status(200).json({
-        message: 'Missing values for adding a new video',
-        status: 'warning',
+        message: "Missing values for adding a new video",
+        status: "warning",
       });
     }
 
     if (!JSON.parse(researchers).find((name) => name === acquirerName)) {
       return res.status(200).json({
-        message: 'The acquirer is not added to the list',
-        status: 'warning',
+        message: "The acquirer is not added to the list",
+        status: "warning",
       });
     }
 
@@ -2347,33 +2347,33 @@ router.patch(
 
     try {
       const authUser = await getUserBy({
-        searchBy: '_id',
+        searchBy: "_id",
         value: mongoose.Types.ObjectId(userId),
       });
 
       const video = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
       if (!video) {
         return res.status(404).json({
           message: `Video with id "${videoId}" was not found`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       if (video.isApproved === true) {
         return res.status(200).json({
           message: `The video with id "${videoId}" has already been published`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       if (video.needToBeFixed) {
         return res.status(200).json({
           message: `Before publishing, you need to make edits!`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
@@ -2451,29 +2451,29 @@ router.patch(
         }
 
         if (!video?.uploadedToYoutube) {
-          const SCOPES = ['https://www.googleapis.com/auth/youtube'];
+          const SCOPES = ["https://www.googleapis.com/auth/youtube"];
 
           const responseAfterUploadOnYoutube = await new Promise(
             (resolve, reject) => {
               if (!authUser.rt) {
                 if (!code) {
                   const authUrl = googleApiOAuth2Instance.generateAuthUrl({
-                    access_type: 'offline',
-                    prompt: 'consent',
+                    access_type: "offline",
+                    prompt: "consent",
                     scope: SCOPES,
                   });
 
                   return res.status(200).json({
-                    status: 'redirect',
+                    status: "redirect",
                     apiData: authUrl,
-                    method: 'publishingInFeeds',
+                    method: "publishingInFeeds",
                   });
                 } else {
                   socketInstance
                     .io()
                     .sockets.in(req.user.id)
-                    .emit('progressOfRequestInPublishing', {
-                      event: 'Uploading video to youtube',
+                    .emit("progressOfRequestInPublishing", {
+                      event: "Uploading video to youtube",
                       file: null,
                     });
 
@@ -2489,7 +2489,7 @@ router.patch(
                       //});
 
                       return res.status(200).json({
-                        status: 'warning',
+                        status: "warning",
                         message: `${err?.response?.data?.error} (Youtube API)`,
                       });
                     }
@@ -2497,17 +2497,17 @@ router.patch(
                       googleApiOAuth2Instance.credentials = token;
 
                       await updateUserBy({
-                        updateBy: '_id',
+                        updateBy: "_id",
                         value: mongoose.Types.ObjectId(userId),
                         objDBForSet: {
                           rt: token.refresh_token,
                         },
                       });
 
-                      google.youtube('v3').videos.insert(
+                      google.youtube("v3").videos.insert(
                         {
                           access_token: token.access_token,
-                          part: 'snippet,status',
+                          part: "snippet,status",
                           requestBody: {
                             snippet: {
                               title: video.videoData.title,
@@ -2517,11 +2517,11 @@ router.patch(
                               }),
                               tags: video.videoData.tags,
                               //categoryId: 28,
-                              defaultLanguage: 'en',
-                              defaultAudioLanguage: 'en',
+                              defaultLanguage: "en",
+                              defaultAudioLanguage: "en",
                             },
                             status: {
-                              privacyStatus: 'public',
+                              privacyStatus: "public",
                             },
                           },
                           media: {
@@ -2538,14 +2538,14 @@ router.patch(
                             //});
 
                             return res.status(200).json({
-                              status: 'warning',
+                              status: "warning",
                               message: `${err?.response?.data?.error?.message} (Youtube API)`,
                             });
                           }
                           if (response) {
                             resolve({
                               message: `Video uploaded to youtube successfully`,
-                              status: 'success',
+                              status: "success",
                               apiData: response.data,
                             });
                           }
@@ -2558,8 +2558,8 @@ router.patch(
                 socketInstance
                   .io()
                   .sockets.in(req.user.id)
-                  .emit('progressOfRequestInPublishing', {
-                    event: 'Uploading video to youtube',
+                  .emit("progressOfRequestInPublishing", {
+                    event: "Uploading video to youtube",
                     file: null,
                   });
 
@@ -2579,16 +2579,16 @@ router.patch(
                     //});
 
                     return res.status(200).json({
-                      status: 'warning',
+                      status: "warning",
 
                       message: `${err?.response?.data?.error} (Youtube API)`,
                     });
                   }
                   if (!!token) {
-                    google.youtube('v3').videos.insert(
+                    google.youtube("v3").videos.insert(
                       {
                         access_token: token.access_token,
-                        part: 'snippet,status',
+                        part: "snippet,status",
                         requestBody: {
                           snippet: {
                             title: video.videoData.title,
@@ -2598,11 +2598,11 @@ router.patch(
                             }),
                             tags: video.videoData.tags,
                             //categoryId: 28,
-                            defaultLanguage: 'en',
-                            defaultAudioLanguage: 'en',
+                            defaultLanguage: "en",
+                            defaultAudioLanguage: "en",
                           },
                           status: {
-                            privacyStatus: 'public',
+                            privacyStatus: "public",
                           },
                         },
                         media: {
@@ -2619,7 +2619,7 @@ router.patch(
                           //});
 
                           return res.status(200).json({
-                            status: 'warning',
+                            status: "warning",
 
                             message: `${err?.response?.data?.error?.message} (Youtube API)`,
                           });
@@ -2627,7 +2627,7 @@ router.patch(
                         if (response) {
                           resolve({
                             message: `Video uploaded to youtube successfully`,
-                            status: 'success',
+                            status: "success",
                             apiData: response.data,
                           });
                         }
@@ -2639,28 +2639,28 @@ router.patch(
             }
           );
 
-          if (responseAfterUploadOnYoutube.status === 'success') {
+          if (responseAfterUploadOnYoutube.status === "success") {
             await updateVideoBy({
-              searchBy: 'videoData.videoId',
+              searchBy: "videoData.videoId",
               searchValue: video.videoData.videoId,
               dataToUpdate: { uploadedToYoutube: true },
             });
           }
         }
 
-        if (!video?.uploadedToFb && process.env.MODE === 'production') {
+        if (!video?.uploadedToFb && process.env.MODE === "production") {
           socketInstance
             .io()
             .sockets.in(req.user.id)
-            .emit('progressOfRequestInPublishing', {
-              event: 'Uploading video to facebook',
+            .emit("progressOfRequestInPublishing", {
+              event: "Uploading video to facebook",
               file: null,
             });
           const { data: pagesResData } = await axios.get(
             `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
             {
               params: {
-                fields: 'name,access_token',
+                fields: "name,access_token",
                 access_token: process.env.FACEBOOK_API_TOKEN,
               },
             }
@@ -2679,28 +2679,28 @@ router.patch(
               })
                 .then((res) => {
                   resolve({
-                    status: 'success',
-                    message: 'Video successfully uploaded on facebook',
+                    status: "success",
+                    message: "Video successfully uploaded on facebook",
                   });
                 })
                 .catch((err) => {
                   resolve({
-                    status: 'error',
+                    status: "error",
                     resErr: err,
                   });
                 });
             }
           );
 
-          if (responseAfterUploadOnFacebook.status === 'success') {
+          if (responseAfterUploadOnFacebook.status === "success") {
             await updateVideoBy({
-              searchBy: '_id',
+              searchBy: "_id",
               searchValue: video._id,
               dataToUpdate: { uploadedToFb: true },
             });
           } else {
             console.log({
-              message: 'Error when uploading to facebook',
+              message: "Error when uploading to facebook",
               error: responseAfterUploadOnFacebook.resErr,
               videoId: video.videoData.videoId,
             });
@@ -2714,7 +2714,7 @@ router.patch(
           dataToDelete: {
             needToBeFixed: 1,
             vbForm: 1,
-            ...(!creditTo && { 'videoData.creditTo': 1 }),
+            ...(!creditTo && { "videoData.creditTo": 1 }),
           },
           dataToUpdate: {
             exclusivity: false,
@@ -2724,19 +2724,19 @@ router.patch(
 
       if (vbCode) {
         const vbForm = await findOne({
-          searchBy: 'formId',
+          searchBy: "formId",
           param: `VB${vbCode}`,
         });
 
         if (!vbForm) {
           return res.status(200).json({
             message: `The form with the vb code ${vbCode} was not found in the database`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const videoWithVBForm = await findVideoBy({
-          searchBy: 'vbForm',
+          searchBy: "vbForm",
           value: vbForm._id,
         });
 
@@ -2746,7 +2746,7 @@ router.patch(
         ) {
           return res.status(200).json({
             message: 'a video with such a "VB code" is already in the database',
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -2764,10 +2764,10 @@ router.patch(
       }
 
       if (reqVideo) {
-        if (path.extname(reqVideo[0].originalname) !== '.mp4') {
+        if (path.extname(reqVideo[0].originalname) !== ".mp4") {
           return res.status(400).json({
             message: `Incorrect video extension`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -2786,12 +2786,12 @@ router.patch(
                 if (err) {
                   console.log(err);
                   resolve({
-                    status: 'error',
-                    message: 'Error when reading a file from disk',
+                    status: "error",
+                    message: "Error when reading a file from disk",
                   });
                 } else {
                   await uploadFileToStorage({
-                    folder: 'converted-videos',
+                    folder: "converted-videos",
                     name: videoId,
                     buffer,
                     type: reqVideo[0].mimetype,
@@ -2799,9 +2799,9 @@ router.patch(
                     resolve,
                     socketInfo: {
                       userId: req.user.id,
-                      socketEmitName: 'progressOfRequestInPublishing',
+                      socketEmitName: "progressOfRequestInPublishing",
                       fileName: reqVideo[0].originalname,
-                      eventName: 'Uploading the converted video to the bucket',
+                      eventName: "Uploading the converted video to the bucket",
                     },
                   });
                 }
@@ -2810,17 +2810,17 @@ router.patch(
           }
         );
 
-        if (bucketResponseByConvertedVideoUpload.status === 'error') {
+        if (bucketResponseByConvertedVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByConvertedVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByVideoUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'videos',
+              folder: "videos",
               name: videoId,
               buffer: reqVideo[0].buffer,
               type: reqVideo[0].mimetype,
@@ -2828,18 +2828,18 @@ router.patch(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: reqVideo[0].originalname,
-                eventName: 'Uploading video to the bucket',
+                eventName: "Uploading video to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByVideoUpload.status === 'error') {
+        if (bucketResponseByVideoUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByVideoUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
@@ -2848,32 +2848,32 @@ router.patch(
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'bucket.cloudVideoLink':
+            "bucket.cloudVideoLink":
               bucketResponseByVideoUpload.response.Location,
-            'bucket.cloudVideoPath': bucketResponseByVideoUpload.response.Key,
-            'bucket.cloudConversionVideoLink':
+            "bucket.cloudVideoPath": bucketResponseByVideoUpload.response.Key,
+            "bucket.cloudConversionVideoLink":
               bucketResponseByConvertedVideoUpload.response.Location,
-            'bucket.cloudConversionVideoPath':
+            "bucket.cloudConversionVideoPath":
               bucketResponseByConvertedVideoUpload.response.Key,
-            'videoData.duration': duration,
-            'videoData.hasAudioTrack':
+            "videoData.duration": duration,
+            "videoData.hasAudioTrack":
               responseAfterConversion.data.hasAudioTrack,
           },
         });
       }
 
       if (reqScreen) {
-        if (path.extname(reqScreen[0].originalname) !== '.jpg') {
+        if (path.extname(reqScreen[0].originalname) !== ".jpg") {
           return res.status(200).json({
             message: `Incorrect screen extension`,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         const bucketResponseByScreenUpload = await new Promise(
           async (resolve, reject) => {
             await uploadFileToStorage({
-              folder: 'screens',
+              folder: "screens",
               name: videoId,
               buffer: reqScreen[0].buffer,
               type: reqScreen[0].mimetype,
@@ -2881,27 +2881,27 @@ router.patch(
               resolve,
               socketInfo: {
                 userId: req.user.id,
-                socketEmitName: 'progressOfRequestInPublishing',
+                socketEmitName: "progressOfRequestInPublishing",
                 fileName: reqScreen[0].originalname,
-                eventName: 'Uploading screen to the bucket',
+                eventName: "Uploading screen to the bucket",
               },
             });
           }
         );
 
-        if (bucketResponseByScreenUpload.status === 'error') {
+        if (bucketResponseByScreenUpload.status === "error") {
           return res.status(200).json({
             message: bucketResponseByScreenUpload.message,
-            status: 'warning',
+            status: "warning",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'bucket.cloudScreenLink':
+            "bucket.cloudScreenLink":
               bucketResponseByScreenUpload.response.Location,
-            'bucket.cloudScreenPath': bucketResponseByScreenUpload.response.Key,
+            "bucket.cloudScreenPath": bucketResponseByScreenUpload.response.Key,
           },
         });
       }
@@ -2909,8 +2909,8 @@ router.patch(
       socketInstance
         .io()
         .sockets.in(req.user.id)
-        .emit('progressOfRequestInPublishing', {
-          event: 'Just a little bit left',
+        .emit("progressOfRequestInPublishing", {
+          event: "Just a little bit left",
           file: null,
         });
 
@@ -2921,15 +2921,15 @@ router.patch(
 
         if (!countryCode) {
           return res.status(400).json({
-            message: 'Error when searching for the country code',
-            status: 'error',
+            message: "Error when searching for the country code",
+            status: "error",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'videoData.countryCode': countryCode,
+            "videoData.countryCode": countryCode,
           },
         });
       }
@@ -2939,16 +2939,16 @@ router.patch(
 
         if (!countryCode) {
           return res.status(400).json({
-            message: 'Error when searching for the country code',
-            status: 'error',
+            message: "Error when searching for the country code",
+            status: "error",
           });
         }
 
         await updateVideoById({
           videoId: +videoId,
           dataToUpdate: {
-            'videoData.country': country,
-            'videoData.countryCode': countryCode,
+            "videoData.country": country,
+            "videoData.countryCode": countryCode,
           },
         });
       }
@@ -2974,7 +2974,7 @@ router.patch(
       }
 
       const researchersList = await findUsersByValueList({
-        param: 'name',
+        param: "name",
         valueList: JSON.parse(researchers),
       });
 
@@ -2982,7 +2982,7 @@ router.patch(
 
       if (acquirerName) {
         acquirer = await getUserBy({
-          searchBy: 'name',
+          searchBy: "name",
           value: acquirerName,
         });
       }
@@ -2997,8 +2997,8 @@ router.patch(
           acquirer._id.toString()
       ) {
         return res.status(200).json({
-          message: 'You cannot change the acquirer for this video.',
-          status: 'warning',
+          message: "You cannot change the acquirer for this video.",
+          status: "warning",
         });
       }
 
@@ -3012,18 +3012,18 @@ router.patch(
       await updateVideoById({
         videoId: +videoId,
         dataToUpdate: {
-          'videoData.originalVideoLink': originalLink,
-          'videoData.title': title,
-          'videoData.description': desc,
-          ...(creditTo && { 'videoData.creditTo': creditTo }),
-          'videoData.tags': JSON.parse(tags).map((el) => {
+          "videoData.originalVideoLink": originalLink,
+          "videoData.title": title,
+          "videoData.description": desc,
+          ...(creditTo && { "videoData.creditTo": creditTo }),
+          "videoData.tags": JSON.parse(tags).map((el) => {
             return el.trim();
           }),
-          'videoData.category': JSON.parse(category),
-          'videoData.categoryReuters': categoryReuters,
-          'videoData.city': city,
-          'videoData.date': JSON.parse(date),
-          'trelloData.researchers': researchersListForCreatingVideo,
+          "videoData.category": JSON.parse(category),
+          "videoData.categoryReuters": categoryReuters,
+          "videoData.city": city,
+          "videoData.date": JSON.parse(date),
+          "trelloData.researchers": researchersListForCreatingVideo,
           apVideoHub: JSON.parse(apVideoHub),
           reuters: JSON.parse(reuters),
           socialMedia: JSON.parse(socialMedia),
@@ -3033,29 +3033,29 @@ router.patch(
       });
 
       const updatedVideo = await findVideoBy({
-        searchBy: 'videoData.videoId',
+        searchBy: "videoData.videoId",
         value: +videoId,
       });
 
       if (!!acquirerPaidAdvance) {
         if (!updatedVideo?.vbForm?.sender) {
           return res.status(200).json({
-            message: 'This video has no author',
-            status: 'warning',
+            message: "This video has no author",
+            status: "warning",
           });
         }
 
         if (!!updatedVideo?.vbForm?.advancePaymentReceived) {
           return res.status(200).json({
-            message: 'The author has already been paid an advance',
-            status: 'warning',
+            message: "The author has already been paid an advance",
+            status: "warning",
           });
         }
 
         if (!acquirerName) {
           return res.status(200).json({
-            message: 'No acquirer found to record a note',
-            status: 'warning',
+            message: "No acquirer found to record a note",
+            status: "warning",
           });
         }
 
@@ -3063,8 +3063,8 @@ router.patch(
           +acquirerPaidAdvance !== updatedVideo.vbForm.refFormId.advancePayment
         ) {
           return res.status(200).json({
-            message: 'The amount does not match the advance for the author',
-            status: 'warning',
+            message: "The amount does not match the advance for the author",
+            status: "warning",
           });
         }
 
@@ -3075,8 +3075,8 @@ router.patch(
         if (!acquirerInTheVideoList) {
           return res.status(200).json({
             message:
-              'This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount',
-            status: 'warning',
+              "This acquirer is not in the list of researchers for this video. Save the acquirer, and then add the amount",
+            status: "warning",
           });
         }
 
@@ -3088,20 +3088,20 @@ router.patch(
         });
 
         await updateVbFormBy({
-          updateBy: '_id',
+          updateBy: "_id",
           value: updatedVideo.vbForm._id,
           dataForUpdate: { advancePaymentReceived: true },
         });
 
         await updateVideoBy({
-          searchBy: '_id',
+          searchBy: "_id",
           searchValue: updatedVideo._id,
           dataToInc: { balance: -acquirerPaidAdvance },
         });
 
         await createNewPayment({
           user: updatedVideo.vbForm.sender._id,
-          purpose: ['advance'],
+          purpose: ["advance"],
           amount: {
             advance: +acquirerPaidAdvance,
           },
@@ -3110,7 +3110,7 @@ router.patch(
         const bodyForEmail = {
           emailFrom: '"«VIRALBEAR» LLC" <info@viralbear.media>',
           emailTo: updatedVideo.vbForm.sender.email,
-          subject: 'Payment of the amount',
+          subject: "Payment of the amount",
           html: `
           Hello ${updatedVideo.vbForm.sender.name}.<br/>
           ViralBear just paid you: ${acquirerPaidAdvance}$!<br/>
@@ -3141,42 +3141,42 @@ router.patch(
       );
 
       return res.status(200).json({
-        status: 'success',
-        message: 'The video was successfully published',
+        status: "success",
+        message: "The video was successfully published",
       });
     } catch (err) {
-      console.log(errorsHandler({ err, trace: 'video.publishing' }));
+      console.log(errorsHandler({ err, trace: "video.publishing" }));
 
       return res
         .status(400)
-        .json({ message: 'Server side error', status: 'error' });
+        .json({ message: "Server side error", status: "error" });
     }
   }
 );
 
 router.post(
-  '/publishingInSocialMedia/:videoId',
+  "/publishingInSocialMedia/:videoId",
   authMiddleware,
   async (req, res) => {
     const { videoId } = req.params;
     const { code } = req.query;
 
     const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: +videoId,
     });
 
     if (!video) {
       return res.status(200).json({
         message: `video with id "${videoId}" not found`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
     if (!!video?.uploadedToFb && !!video?.uploadedToYoutube) {
       return res.status(200).json({
         message: `This video has already been posted on social networks`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
@@ -3184,7 +3184,7 @@ router.post(
 
     try {
       const authUser = await getUserBy({
-        searchBy: '_id',
+        searchBy: "_id",
         value: mongoose.Types.ObjectId(userId),
       });
 
@@ -3197,51 +3197,51 @@ router.post(
           (err, data) => {
             if (err) {
               console.log(err);
-              resolve({ status: 'error' });
+              resolve({ status: "error" });
             }
 
             resolve({
               length: data.ContentLength,
               buffer: data.Body,
-              status: 'success',
+              status: "success",
             });
           }
         );
       });
 
-      if (resBucket.status === 'error') {
+      if (resBucket.status === "error") {
         return res.status(200).json({
           message: `Error when receiving a video from a bucket`,
-          status: 'warning',
+          status: "warning",
         });
       }
 
       const stream = streamifier.createReadStream(resBucket.buffer);
 
       if (!video?.uploadedToYoutube) {
-        const SCOPES = ['https://www.googleapis.com/auth/youtube.upload'];
+        const SCOPES = ["https://www.googleapis.com/auth/youtube.upload"];
 
         const responseAfterUploadOnYoutube = await new Promise(
           (resolve, reject) => {
             if (!authUser.rt) {
               if (!code) {
                 const authUrl = googleApiOAuth2Instance.generateAuthUrl({
-                  access_type: 'offline',
-                  prompt: 'consent',
+                  access_type: "offline",
+                  prompt: "consent",
                   scope: SCOPES,
                 });
 
                 return res.status(200).json({
-                  status: 'redirect',
+                  status: "redirect",
                   apiData: authUrl,
-                  method: 'publishingInSocialMedia',
+                  method: "publishingInSocialMedia",
                 });
               } else {
                 socketInstance
                   .io()
                   .sockets.in(req.user.id)
-                  .emit('progressOfRequestInPublishing', {
-                    event: 'Uploading video to youtube',
+                  .emit("progressOfRequestInPublishing", {
+                    event: "Uploading video to youtube",
                     file: null,
                   });
 
@@ -3253,7 +3253,7 @@ router.post(
                     );
 
                     return res.status(200).json({
-                      status: 'warning',
+                      status: "warning",
                       message: `${err?.response?.data?.error} (Youtube API)`,
                     });
                   }
@@ -3261,17 +3261,17 @@ router.post(
                     googleApiOAuth2Instance.credentials = token;
 
                     await updateUserBy({
-                      updateBy: '_id',
+                      updateBy: "_id",
                       value: mongoose.Types.ObjectId(userId),
                       objDBForSet: {
                         rt: token.refresh_token,
                       },
                     });
 
-                    google.youtube('v3').videos.insert(
+                    google.youtube("v3").videos.insert(
                       {
                         access_token: token.access_token,
-                        part: 'snippet,status',
+                        part: "snippet,status",
                         requestBody: {
                           snippet: {
                             title: video.videoData.title,
@@ -3281,11 +3281,11 @@ router.post(
                             }),
                             tags: video.videoData.tags,
                             //categoryId: 28,
-                            defaultLanguage: 'en',
-                            defaultAudioLanguage: 'en',
+                            defaultLanguage: "en",
+                            defaultAudioLanguage: "en",
                           },
                           status: {
-                            privacyStatus: 'public',
+                            privacyStatus: "public",
                           },
                         },
                         media: {
@@ -3298,14 +3298,14 @@ router.post(
                           console.log(err?.response?.data?.error);
 
                           return res.status(200).json({
-                            status: 'warning',
+                            status: "warning",
                             message: `${err?.response?.data?.error?.message} (Youtube API)`,
                           });
                         }
                         if (response) {
                           resolve({
                             message: `Video uploaded to youtube successfully`,
-                            status: 'success',
+                            status: "success",
                             apiData: response.data,
                           });
                         }
@@ -3318,8 +3318,8 @@ router.post(
               socketInstance
                 .io()
                 .sockets.in(req.user.id)
-                .emit('progressOfRequestInPublishing', {
-                  event: 'Uploading video to youtube',
+                .emit("progressOfRequestInPublishing", {
+                  event: "Uploading video to youtube",
                   file: null,
                 });
 
@@ -3334,16 +3334,16 @@ router.post(
                   console.log(err);
 
                   return res.status(200).json({
-                    status: 'warning',
+                    status: "warning",
 
                     message: `${err?.response?.data?.error} (Youtube API)`,
                   });
                 }
                 if (!!token) {
-                  google.youtube('v3').videos.insert(
+                  google.youtube("v3").videos.insert(
                     {
                       access_token: token.access_token,
-                      part: 'snippet,status',
+                      part: "snippet,status",
                       requestBody: {
                         snippet: {
                           title: video.videoData.title,
@@ -3353,11 +3353,11 @@ router.post(
                           }),
                           tags: video.videoData.tags,
                           //categoryId: 28,
-                          defaultLanguage: 'en',
-                          defaultAudioLanguage: 'en',
+                          defaultLanguage: "en",
+                          defaultAudioLanguage: "en",
                         },
                         status: {
-                          privacyStatus: 'public',
+                          privacyStatus: "public",
                         },
                       },
                       media: {
@@ -3370,7 +3370,7 @@ router.post(
                         console.log(err?.response?.data?.error);
 
                         return res.status(200).json({
-                          status: 'warning',
+                          status: "warning",
 
                           message: `${err?.response?.data?.error?.message} (Youtube API)`,
                         });
@@ -3378,7 +3378,7 @@ router.post(
                       if (response) {
                         resolve({
                           message: `Video uploaded to youtube successfully`,
-                          status: 'success',
+                          status: "success",
                           apiData: response.data,
                         });
                       }
@@ -3390,28 +3390,28 @@ router.post(
           }
         );
 
-        if (responseAfterUploadOnYoutube.status === 'success') {
+        if (responseAfterUploadOnYoutube.status === "success") {
           await updateVideoBy({
-            searchBy: '_id',
+            searchBy: "_id",
             searchValue: video._id,
             dataToUpdate: { uploadedToYoutube: true },
           });
         }
       }
 
-      if (!video?.uploadedToFb && process.env.MODE === 'production') {
+      if (!video?.uploadedToFb && process.env.MODE === "production") {
         socketInstance
           .io()
           .sockets.in(req.user.id)
-          .emit('progressOfRequestInPublishing', {
-            event: 'Uploading video to facebook',
+          .emit("progressOfRequestInPublishing", {
+            event: "Uploading video to facebook",
             file: null,
           });
         const { data: pagesResData } = await axios.get(
           `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
           {
             params: {
-              fields: 'name,access_token',
+              fields: "name,access_token",
               access_token: process.env.FACEBOOK_API_TOKEN,
             },
           }
@@ -3419,7 +3419,7 @@ router.post(
         const pageToken = pagesResData.data.find(
           (page) => page.id === process.env.FACEBOOK_PAGE_ID
         ).access_token;
-        console.log(pageToken);
+
         const responseAfterUploadOnFacebook = await new Promise(
           async (resolve, reject) => {
             fbUpload({
@@ -3431,27 +3431,27 @@ router.post(
             })
               .then((res) => {
                 resolve({
-                  status: 'success',
-                  message: 'Video successfully uploaded on facebook',
+                  status: "success",
+                  message: "Video successfully uploaded on facebook",
                 });
               })
               .catch((err) => {
                 resolve({
-                  status: 'error',
+                  status: "error",
                   resErr: err,
                 });
               });
           }
         );
-        if (responseAfterUploadOnFacebook.status === 'success') {
+        if (responseAfterUploadOnFacebook.status === "success") {
           await updateVideoBy({
-            searchBy: '_id',
+            searchBy: "_id",
             searchValue: video._id,
             dataToUpdate: { uploadedToFb: true },
           });
         } else {
           console.log({
-            message: 'Error when uploading to facebook',
+            message: "Error when uploading to facebook",
             error: responseAfterUploadOnFacebook.resErr,
             videoId: video.videoData.videoId,
           });
@@ -3466,43 +3466,43 @@ router.post(
       }
 
       await updateVideoBy({
-        searchBy: '_id',
+        searchBy: "_id",
         searchValue: video._id,
         dataToUpdate: { socialMedia: true },
       });
 
       return res.status(200).json({
-        status: 'success',
-        message: 'The video was successfully uploaded to social networks',
+        status: "success",
+        message: "The video was successfully uploaded to social networks",
       });
     } catch (err) {
       console.log(
-        errorsHandler({ err, trace: 'video.publishingInSocialMedia' })
+        errorsHandler({ err, trace: "video.publishingInSocialMedia" })
       );
 
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: err?.response?.data?.message
           ? err.response.data.message
-          : 'Server side error',
+          : "Server side error",
       });
     }
   }
 );
 
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res) => {
   const { id: videoId } = req.params;
 
   try {
     const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: +videoId,
     });
 
     if (!video) {
       return res.status(404).json({
         message: `Video with id "${videoId}" was not found`,
-        status: 'warning',
+        status: "warning",
       });
     }
 
@@ -3516,8 +3516,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       bucketPathArr.map(async (path) => {
         if (!path) {
           return {
-            message: 'There is no path to delete',
-            status: 'warning',
+            message: "There is no path to delete",
+            status: "warning",
             response: {},
           };
         } else {
@@ -3535,31 +3535,31 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
     return res.status(200).json({
-      message: 'video successfully deleted',
-      status: 'success',
+      message: "video successfully deleted",
+      status: "success",
       apiData: { trelloCardId: video.trelloData.trelloCardId },
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.delete' }));
+    console.log(errorsHandler({ err, trace: "video.delete" }));
     return res.status(400).json({
-      message: err?.message ? err?.message : 'Server side error',
-      status: 'error',
+      message: err?.message ? err?.message : "Server side error",
+      status: "error",
     });
   }
 });
 
-router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
+router.get("/getSalesAnalytics/:videoId", authMiddleware, async (req, res) => {
   const { videoId } = req.params;
 
   try {
     const video = await findVideoBy({
-      searchBy: 'videoData.videoId',
+      searchBy: "videoData.videoId",
       value: +videoId,
     });
 
     if (!video) {
       return res.status(200).json({
-        status: 'warning',
+        status: "warning",
         message: "Couldn't get analytics on this video",
       });
     }
@@ -3578,8 +3578,8 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       },
       {
         $group: {
-          _id: '$videoId',
-          amount: { $sum: '$amount' },
+          _id: "$videoId",
+          amount: { $sum: "$amount" },
         },
       },
     ];
@@ -3596,13 +3596,13 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       {
         $match: {
           videoId: +video.videoData.videoId,
-          'vbFormInfo.paidFor': true,
+          "vbFormInfo.paidFor": true,
         },
       },
       {
         $group: {
-          _id: '$videoId',
-          amount: { $sum: '$vbFormInfo.amount' },
+          _id: "$videoId",
+          amount: { $sum: "$vbFormInfo.amount" },
         },
       },
     ];
@@ -3615,13 +3615,13 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
       {
         $match: {
           videoId: +video.videoData.videoId,
-          'vbFormInfo.paidFor': false,
+          "vbFormInfo.paidFor": false,
         },
       },
       {
         $group: {
-          _id: '$videoId',
-          amount: { $sum: '$vbFormInfo.amount' },
+          _id: "$videoId",
+          amount: { $sum: "$vbFormInfo.amount" },
         },
       },
     ];
@@ -3676,14 +3676,14 @@ router.get('/getSalesAnalytics/:videoId', authMiddleware, async (req, res) => {
 
     return res.status(200).json({
       apiData,
-      status: 'success',
-      message: 'Video analytics on sales received',
+      status: "success",
+      message: "Video analytics on sales received",
     });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'video.getSalesAnalytics' }));
+    console.log(errorsHandler({ err, trace: "video.getSalesAnalytics" }));
     return res.status(400).json({
-      message: 'Server side error',
-      status: 'error',
+      message: "Server side error",
+      status: "error",
     });
   }
 });

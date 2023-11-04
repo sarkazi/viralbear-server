@@ -109,7 +109,7 @@ router.post("/create", authMiddleware, async (req, res) => {
       advancePayment: advancePayment ? advancePayment : 0,
       researcher: user._id,
       formHash,
-      formLink: `${process.env.CLIENT_URI}/submit/referral/${formHash}`,
+      formLink: `${process.env.CLIENT_URI}/submitVideos/${formHash}`,
       videoLink: convertedLink,
       convertedLink,
       exclusivity,

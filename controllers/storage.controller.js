@@ -1,7 +1,7 @@
-const storageInstance = require('../storage.instance');
-const socketInstance = require('../socket.instance');
-const path = require('path');
-const { v4: createUniqueHash } = require('uuid');
+const storageInstance = require("../storage.instance");
+const socketInstance = require("../socket.instance");
+const path = require("path");
+const { v4: createUniqueHash } = require("uuid");
 
 const uploadFileToStorage = async ({
   socketInfo,
@@ -24,25 +24,23 @@ const uploadFileToStorage = async ({
         if (err) {
           console.log(err);
           resolve({
-            message: 'Error during file upload to storage',
-            status: 'error',
+            message: "Error during file upload to storage",
+            status: "error",
           });
         }
 
         if (data) {
           resolve({
-            message: 'The file has been successfully uploaded to the storage',
-            status: 'success',
+            message: "The file has been successfully uploaded to the storage",
+            status: "success",
             response: data,
           });
         }
       }
     )
-    .on('httpUploadProgress', (progress) => {
+    .on("httpUploadProgress", (progress) => {
       if (!!socketInfo) {
         const loaded = Math.round((progress.loaded * 100) / progress.total);
-
-        console.log(loaded);
 
         socketInstance
           .io()
@@ -68,14 +66,14 @@ const removeFileFromStorage = (path, resolve, reject) => {
       if (err) {
         console.log(err);
         resolve({
-          message: 'Error deleting a file from storage',
-          status: 'error',
+          message: "Error deleting a file from storage",
+          status: "error",
         });
       }
       if (data) {
         resolve({
-          message: 'File successfully deleted from storage',
-          status: 'success',
+          message: "File successfully deleted from storage",
+          status: "success",
           response: data,
         });
       }

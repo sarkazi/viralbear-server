@@ -1,48 +1,48 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const path = require('path');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv').config();
-const cookieParser = require('cookie-parser');
-const socketInstance = require('./socket.instance');
+const path = require("path");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv").config();
+const cookieParser = require("cookie-parser");
+const socketInstance = require("./socket.instance");
 
-mongoose.set('strictQuery', false);
+mongoose.set("strictQuery", false);
 
 app.use(cors());
 
-app.use(express.static('mrssFiles'));
-app.use(express.json({ limit: '50mb', extended: true }));
-app.use(express.urlencoded({ limit: '50mb' }));
-app.set('view engine', 'ejs');
-app.set('views', path.resolve(__dirname, 'ejs'));
-app.use(express.static(path.join(__dirname, 'build')));
+app.use(express.static("mrssFiles"));
+app.use(express.json({ limit: "50mb", extended: true }));
+app.use(express.urlencoded({ limit: "50mb" }));
+app.set("view engine", "ejs");
+app.set("views", path.resolve(__dirname, "ejs"));
+app.use(express.static(path.join(__dirname, "build")));
 
-const videoRouter = require('./routes/video.routes');
-const uploadInfoRouter = require('./routes/uploadInfo.routes');
-const sendMailRouter = require('./routes/sendEmail.routes');
-const userRouter = require('./routes/user.routes');
-const LinksRouter = require('./routes/links.routes');
-const trelloRouter = require('./routes/trello.routes');
-const authRouter = require('./routes/auth.routes');
-const viewedMentionsRouter = require('./routes/viewedMention.routes');
-const authorLinkRouter = require('./routes/authorLink.routes');
-const salesRouter = require('./routes/sales.routes');
-const locationRouter = require('./routes/location.routes');
-const webhookRouter = require('./routes/webhook.routes');
-const publicUsersRouter = require('./routes/public.users.routes');
-const publicVideosRouter = require('./routes/public.videos.routes');
-const commonRouter = require('./routes/common.routes');
-const transactionsRouter = require('./routes/transactions.routes');
+const videoRouter = require("./routes/video.routes");
+const uploadInfoRouter = require("./routes/uploadInfo.routes");
+const sendMailRouter = require("./routes/sendEmail.routes");
+const userRouter = require("./routes/user.routes");
+const LinksRouter = require("./routes/links.routes");
+const trelloRouter = require("./routes/trello.routes");
+const authRouter = require("./routes/auth.routes");
+const viewedMentionsRouter = require("./routes/viewedMention.routes");
+const authorLinkRouter = require("./routes/authorLink.routes");
+const salesRouter = require("./routes/sales.routes");
+const locationRouter = require("./routes/location.routes");
+const webhookRouter = require("./routes/webhook.routes");
+const publicUsersRouter = require("./routes/public.users.routes");
+const publicVideosRouter = require("./routes/public.videos.routes");
+const commonRouter = require("./routes/common.routes");
+const transactionsRouter = require("./routes/transactions.routes");
 
-const socketServer = require('http').createServer(app);
+const socketServer = require("http").createServer(app);
 
 socketInstance.initialize(socketServer);
 
-socketInstance.io().sockets.on('connection', (socket) => {
-  socket.on('createRoom', (data) => {
+socketInstance.io().sockets.on("connection", (socket) => {
+  socket.on("createRoom", (data) => {
     socket.join(data.userId);
-    //console.log(socketInstance.io().sockets.adapter.rooms, 'rooms');
+    // console.log(socketInstance.io().sockets.adapter.rooms, "rooms");
   });
 });
 
@@ -52,22 +52,22 @@ socketServer.listen(9999, () => {
 
 app.use(cookieParser());
 
-app.use('/', commonRouter);
-app.use('/video', videoRouter);
-app.use('/uploadInfo', uploadInfoRouter);
-app.use('/sendEmail', sendMailRouter);
-app.use('/users', userRouter);
-app.use('/links', LinksRouter);
-app.use('/trello', trelloRouter);
-app.use('/auth', authRouter);
-app.use('/viewedMentions', viewedMentionsRouter);
-app.use('/authorLink', authorLinkRouter);
-app.use('/sales', salesRouter);
-app.use('/location', locationRouter);
-app.use('/transactions', transactionsRouter);
-app.use('/webhook', webhookRouter);
-app.use('/public/users', publicUsersRouter);
-app.use('/public/videos', publicVideosRouter);
+app.use("/", commonRouter);
+app.use("/video", videoRouter);
+app.use("/uploadInfo", uploadInfoRouter);
+app.use("/sendEmail", sendMailRouter);
+app.use("/users", userRouter);
+app.use("/links", LinksRouter);
+app.use("/trello", trelloRouter);
+app.use("/auth", authRouter);
+app.use("/viewedMentions", viewedMentionsRouter);
+app.use("/authorLink", authorLinkRouter);
+app.use("/sales", salesRouter);
+app.use("/location", locationRouter);
+app.use("/transactions", transactionsRouter);
+app.use("/webhook", webhookRouter);
+app.use("/public/users", publicUsersRouter);
+app.use("/public/videos", publicVideosRouter);
 
 let PORT = process.env.PORT || 8888;
 

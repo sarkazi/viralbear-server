@@ -165,6 +165,8 @@ router.post(
         refHash,
       } = req?.body;
 
+    
+
       const isPaidParsed = JSON.parse(isPaid);
       const isReferralParsed = JSON.parse(isReferral);
 
@@ -296,7 +298,7 @@ router.post(
                 resolve,
                 socketInfo: {
                   userId: socketId,
-                  socketEmitName: "sendingVbForm",
+                  socketEmitName: "submitRequestProgress",
                   fileName: file.originalname,
                   eventName: "Uploading videos to storage",
                 },
@@ -330,67 +332,74 @@ router.post(
         email,
       };
 
-      // const resAfterPdfGenerate = await new Promise(async (resolve, reject) => {
-      //   socketInstance.io().sockets.in(socketId).emit("sendingVbForm", {
-      //     event: "Generating an agreement",
-      //     file: null,
-      //   });
+      let agreementLink = null;
 
-      //   pdfConverter
-      //     .create(generatingTextOfAgreement(dynamicDataForAgreement), {
-      //       format: "A4",
-      //       childProcessOptions: {
-      //         env: {
-      //           OPENSSL_CONF: "/dev/null",
-      //           // OPENSSL_CONF: "/opt/openssl.cnf",
-      //         },
-      //       },
-      //       border: {
-      //         bottom: "30px",
-      //         top: "30px",
-      //         left: "30px",
-      //         right: "30px",
-      //       },
-      //     })
-      //     .toBuffer(async (err, buffer) => {
-      //       if (err) {
-      //         console.log(
-      //           errorsHandler({ err, trace: "uploadinfo.convertAgreement" })
-      //         );
-      //         resolve({
-      //           status: "error",
-      //           event: "pdfGenerate",
-      //           message: "Error at the agreement generation stage. Try again.",
-      //         });
-      //       }
-      //       if (buffer) {
-      //         await uploadFileToStorage({
-      //           folder: "agreement",
-      //           name: `${createUniqueHash()}-${vbCode}`,
-      //           buffer,
-      //           type: "application/pdf",
-      //           extension: ".pdf",
-      //           resolve,
-      //           socketInfo: {
-      //             userId: socketId,
-      //             socketEmitName: "sendingVbForm",
-      //             eventName: "Saving the agreement to the repository",
-      //           },
-      //         });
-      //       }
-      //     });
-      // });
-
-      // if (resAfterPdfGenerate.status === "error") {
-      //   return res.status(200).json({
-      //     message: resAfterPdfGenerate.message,
-      //     status: "warning",
-      //   });
-      // }
-
-      // const agreementLink = resAfterPdfGenerate.response.Location;
-
-      const agreementLink = "https://ya.ru";
+      if (process.env.mode === "production") {
+        const resAfterPdfGenerate = await new Promise(
+          async (resolve, reject) => {
+            socketInstance
+              .io()
+              .sockets.in(socketId)
+              .emit("submitRequestProgress", {
+                event: "Generating an agreement",
+                file: null,
+              });
+            pdfConverter
+              .create(generatingTextOfAgreement(dynamicDataForAgreement), {
+                format: "A4",
+                childProcessOptions: {
+                  env: {
+                    OPENSSL_CONF: "/dev/null",
+                    // OPENSSL_CONF: "/opt/openssl.cnf",
+                  },
+                },
+                border: {
+                  bottom: "30px",
+                  top: "30px",
+                  left: "30px",
+                  right: "30px",
+                },
+              })
+              .toBuffer(async (err, buffer) => {
+                if (err) {
+                  console.log(
+                    errorsHandler({ err, trace: "uploadinfo.convertAgreement" })
+                  );
+                  resolve({
+                    status: "error",
+                    event: "pdfGenerate",
+                    message:
+                      "Error at the agreement generation stage. Try again.",
+                  });
+                }
+                if (buffer) {
+                  await uploadFileToStorage({
+                    folder: "agreement",
+                    name: `${createUniqueHash()}-${vbCode}`,
+                    buffer,
+                    type: "application/pdf",
+                    extension: ".pdf",
+                    resolve,
+                    socketInfo: {
+                      userId: socketId,
+                      socketEmitName: "submitRequestProgress",
+                      eventName: "Saving the agreement to the repository",
+                    },
+                  });
+                }
+              });
+          }
+        );
+        if (resAfterPdfGenerate.status === "error") {
+          return res.status(200).json({
+            message: resAfterPdfGenerate.message,
+            status: "warning",
+          });
+        }
+        agreementLink = resAfterPdfGenerate.response.Location;
+      } else {
+        agreementLink = "https://ya.ru";
+      }
 
       if (!agreementLink) {
         return res.status(200).json({
@@ -400,7 +409,7 @@ router.post(
         });
       }
 
-      socketInstance.io().sockets.in(socketId).emit("sendingVbForm", {
+      socketInstance.io().sockets.in(socketId).emit("submitRequestProgress", {
         event: "Saving data...",
         file: null,
       });
