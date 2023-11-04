@@ -1,8 +1,9 @@
-const { google } = require('googleapis');
+const { google } = require("googleapis");
 
 const googleApiOAuth2Instance = new google.auth.OAuth2(
   process.env.GOOGLE_API_CLIENT_ID,
-  process.env.GOOGLE_API_CLIENT_SECRET,
+  "gfjhdgfhjdfhjhdfhjhdf",
+  // process.env.GOOGLE_API_CLIENT_SECRET,
   process.env.GOOGLE_API_REDIRECT_URIS
 );
 

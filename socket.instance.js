@@ -1,4 +1,4 @@
-var sio = require('socket.io');
+var sio = require("socket.io");
 var io = null;
 
 exports.io = function () {
@@ -8,7 +8,11 @@ exports.io = function () {
 exports.initialize = function (server) {
   return (io = sio(server, {
     cors: {
-      origin: [process.env.CLIENT_URI, 'http://localhost:3001'],
+      origin: [
+        process.env.CLIENT_URI,
+        "http://localhost:3000",
+        "http://localhost:3001",
+      ],
     },
   }));
 };

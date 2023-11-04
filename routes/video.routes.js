@@ -847,7 +847,7 @@ router.get("/findAll", authMiddleware, async (req, res) => {
     isApproved,
     limit,
     wasRemovedFromPublication,
-        personal,
+    personal,
     forLastDays,
   } = req.query;
 
@@ -2377,10 +2377,7 @@ router.patch(
         });
       }
 
-      if (
-        !!JSON.parse(socialMedia) &&
-        (!video?.uploadedToFb || !video?.uploadedToYoutube)
-      ) {
+      if (!!JSON.parse(socialMedia)) {
         //await new Promise(async (resolve, reject) => {
         //  const directory = `./videos/${userId}`;
         //  if (!fs.existsSync(directory)) {
@@ -2427,47 +2424,150 @@ router.patch(
         //  }
         //});
 
-        let stream = null;
+        if (
+          process.env.MODE === "production" &&
+          (!video?.uploadedToFb || !video?.uploadedToYoutube)
+        ) {
+          let stream = null;
 
-        if (!!reqVideo) {
-          stream = streamifier.createReadStream(reqVideo[0].buffer);
-        } else {
-          const resBucket = await new Promise((resolve, reject) => {
-            storageInstance.getObject(
-              {
-                Bucket: process.env.YANDEX_CLOUD_BUCKET_NAME,
-                Key: video.bucket.cloudVideoPath,
-              },
-              (err, data) => {
-                if (err) {
-                  console.log(err);
-                  reject(err);
+          if (!!reqVideo) {
+            stream = streamifier.createReadStream(reqVideo[0].buffer);
+          } else {
+            const resBucket = await new Promise((resolve, reject) => {
+              storageInstance.getObject(
+                {
+                  Bucket: process.env.YANDEX_CLOUD_BUCKET_NAME,
+                  Key: video.bucket.cloudVideoPath,
+                },
+                (err, data) => {
+                  if (err) {
+                    console.log(err);
+                    reject(err);
+                  }
+                  resolve({ length: data.ContentLength, buffer: data.Body });
                 }
-                resolve({ length: data.ContentLength, buffer: data.Body });
-              }
-            );
-          });
-          stream = streamifier.createReadStream(resBucket.buffer);
-        }
+              );
+            });
+            stream = streamifier.createReadStream(resBucket.buffer);
+          }
 
-        if (!video?.uploadedToYoutube) {
-          const SCOPES = ["https://www.googleapis.com/auth/youtube"];
+          if (!video?.uploadedToYoutube) {
+            const SCOPES = ["https://www.googleapis.com/auth/youtube"];
 
-          const responseAfterUploadOnYoutube = await new Promise(
-            (resolve, reject) => {
-              if (!authUser.rt) {
-                if (!code) {
-                  const authUrl = googleApiOAuth2Instance.generateAuthUrl({
-                    access_type: "offline",
-                    prompt: "consent",
-                    scope: SCOPES,
-                  });
+            const responseAfterUploadOnYoutube = await new Promise(
+              (resolve, reject) => {
+                if (!authUser.rt) {
+                  if (!code) {
+                    const authUrl = googleApiOAuth2Instance.generateAuthUrl({
+                      access_type: "offline",
+                      prompt: "consent",
+                      scope: SCOPES,
+                    });
 
-                  return res.status(200).json({
-                    status: "redirect",
-                    apiData: authUrl,
-                    method: "publishingInFeeds",
-                  });
+                    return res.status(200).json({
+                      status: "redirect",
+                      apiData: authUrl,
+                      method: "publishingInFeeds",
+                    });
+                  } else {
+                    socketInstance
+                      .io()
+                      .sockets.in(req.user.id)
+                      .emit("progressOfRequestInPublishing", {
+                        event: "Uploading video to youtube",
+                        file: null,
+                      });
+
+                    googleApiOAuth2Instance.getToken(
+                      code,
+                      async (err, token) => {
+                        if (err) {
+                          socketInstance
+                            .io()
+                            .sockets.in(req.user.id)
+                            .emit("progressOfRequestInPublishing", {
+                              event: "Uploading video to youtube",
+                              file: null,
+                              error: {
+                                data: err,
+                                message:
+                                  "Error when uploading videos to youtube",
+                              },
+                            });
+
+                          resolve({
+                            status: "error",
+                            message: err,
+                          });
+                        }
+                        if (!!token) {
+                          googleApiOAuth2Instance.credentials = token;
+
+                          await updateUserBy({
+                            updateBy: "_id",
+                            value: mongoose.Types.ObjectId(userId),
+                            objDBForSet: {
+                              rt: token.refresh_token,
+                            },
+                          });
+
+                          google.youtube("v3").videos.insert(
+                            {
+                              access_token: token.access_token,
+                              part: "snippet,status",
+                              requestBody: {
+                                snippet: {
+                                  title: video.videoData.title,
+                                  description: definingDescriptionForYoutube({
+                                    desc: video.videoData.description,
+                                    country: video.videoData.country,
+                                  }),
+                                  tags: video.videoData.tags,
+                                  //categoryId: 28,
+                                  defaultLanguage: "en",
+                                  defaultAudioLanguage: "en",
+                                },
+                                status: {
+                                  privacyStatus: "public",
+                                },
+                              },
+                              media: {
+                                body: stream,
+                              },
+                            },
+                            (err, response) => {
+                              if (err) {
+                                socketInstance
+                                  .io()
+                                  .sockets.in(req.user.id)
+                                  .emit("progressOfRequestInPublishing", {
+                                    event: "Uploading video to youtube",
+                                    file: null,
+                                    error: {
+                                      data: err,
+                                      message:
+                                        "Error when uploading videos to youtube",
+                                    },
+                                  });
+
+                                resolve({
+                                  status: "error",
+                                  message: err,
+                                });
+                              }
+                              if (response) {
+                                resolve({
+                                  message: `Video uploaded to youtube successfully`,
+                                  status: "success",
+                                  apiData: response.data,
+                                });
+                              }
+                            }
+                          );
+                        }
+                      }
+                    );
+                  }
                 } else {
                   socketInstance
                     .io()
@@ -2477,33 +2577,32 @@ router.patch(
                       file: null,
                     });
 
-                  googleApiOAuth2Instance.getToken(code, async (err, token) => {
-                    if (err) {
-                      console.log(
-                        err?.response?.data?.error,
-                        err?.response?.data?.error_description
-                      );
-                      //resolve({
-                      //  status: 'error',
-                      //  message: err?.response?.data?.error,
-                      //});
+                  const refreshToken = authUser.rt;
 
-                      return res.status(200).json({
-                        status: "warning",
-                        message: `${err?.response?.data?.error} (Youtube API)`,
+                  googleApiOAuth2Instance.credentials = {
+                    refresh_token: refreshToken,
+                  };
+
+                  googleApiOAuth2Instance.refreshAccessToken((err, token) => {
+                    if (err) {
+                      socketInstance
+                        .io()
+                        .sockets.in(req.user.id)
+                        .emit("progressOfRequestInPublishing", {
+                          event: "Uploading video to youtube",
+                          file: null,
+                          error: {
+                            data: err,
+                            message: "Error when uploading videos to youtube",
+                          },
+                        });
+
+                      resolve({
+                        status: "error",
+                        message: err,
                       });
                     }
                     if (!!token) {
-                      googleApiOAuth2Instance.credentials = token;
-
-                      await updateUserBy({
-                        updateBy: "_id",
-                        value: mongoose.Types.ObjectId(userId),
-                        objDBForSet: {
-                          rt: token.refresh_token,
-                        },
-                      });
-
                       google.youtube("v3").videos.insert(
                         {
                           access_token: token.access_token,
@@ -2530,16 +2629,22 @@ router.patch(
                         },
                         (err, response) => {
                           if (err) {
-                            console.log(err);
-                            console.log(err?.response?.data?.error);
-                            //resolve({
-                            //  status: 'error',
-                            //  message: err?.response?.data?.error?.message,
-                            //});
+                            socketInstance
+                              .io()
+                              .sockets.in(req.user.id)
+                              .emit("progressOfRequestInPublishing", {
+                                event: "Uploading video to youtube",
+                                file: null,
+                                error: {
+                                  data: err,
+                                  message:
+                                    "Error when uploading videos to youtube",
+                                },
+                              });
 
-                            return res.status(200).json({
-                              status: "warning",
-                              message: `${err?.response?.data?.error?.message} (Youtube API)`,
+                            resolve({
+                              status: "error",
+                              message: err,
                             });
                           }
                           if (response) {
@@ -2554,156 +2659,88 @@ router.patch(
                     }
                   });
                 }
-              } else {
-                socketInstance
-                  .io()
-                  .sockets.in(req.user.id)
-                  .emit("progressOfRequestInPublishing", {
-                    event: "Uploading video to youtube",
-                    file: null,
-                  });
-
-                const refreshToken = authUser.rt;
-
-                googleApiOAuth2Instance.credentials = {
-                  refresh_token: refreshToken,
-                };
-
-                googleApiOAuth2Instance.refreshAccessToken((err, token) => {
-                  if (err) {
-                    console.log(err);
-
-                    //resolve({
-                    //  status: 'error',
-                    //  message: err?.response?.data?.error,
-                    //});
-
-                    return res.status(200).json({
-                      status: "warning",
-
-                      message: `${err?.response?.data?.error} (Youtube API)`,
-                    });
-                  }
-                  if (!!token) {
-                    google.youtube("v3").videos.insert(
-                      {
-                        access_token: token.access_token,
-                        part: "snippet,status",
-                        requestBody: {
-                          snippet: {
-                            title: video.videoData.title,
-                            description: definingDescriptionForYoutube({
-                              desc: video.videoData.description,
-                              country: video.videoData.country,
-                            }),
-                            tags: video.videoData.tags,
-                            //categoryId: 28,
-                            defaultLanguage: "en",
-                            defaultAudioLanguage: "en",
-                          },
-                          status: {
-                            privacyStatus: "public",
-                          },
-                        },
-                        media: {
-                          body: stream,
-                        },
-                      },
-                      (err, response) => {
-                        if (err) {
-                          console.log(err);
-                          console.log(err?.response?.data?.error);
-                          //resolve({
-                          //  status: 'error',
-                          //  message: err?.response?.data?.error?.message,
-                          //});
-
-                          return res.status(200).json({
-                            status: "warning",
-
-                            message: `${err?.response?.data?.error?.message} (Youtube API)`,
-                          });
-                        }
-                        if (response) {
-                          resolve({
-                            message: `Video uploaded to youtube successfully`,
-                            status: "success",
-                            apiData: response.data,
-                          });
-                        }
-                      }
-                    );
-                  }
-                });
               }
-            }
-          );
+            );
 
-          if (responseAfterUploadOnYoutube.status === "success") {
-            await updateVideoBy({
-              searchBy: "videoData.videoId",
-              searchValue: video.videoData.videoId,
-              dataToUpdate: { uploadedToYoutube: true },
-            });
+            if (responseAfterUploadOnYoutube.status === "success") {
+              await updateVideoBy({
+                searchBy: "videoData.videoId",
+                searchValue: video.videoData.videoId,
+                dataToUpdate: { uploadedToYoutube: true },
+              });
+            }
           }
-        }
 
-        if (!video?.uploadedToFb && process.env.MODE === "production") {
-          socketInstance
-            .io()
-            .sockets.in(req.user.id)
-            .emit("progressOfRequestInPublishing", {
-              event: "Uploading video to facebook",
-              file: null,
-            });
-          const { data: pagesResData } = await axios.get(
-            `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
-            {
-              params: {
-                fields: "name,access_token",
-                access_token: process.env.FACEBOOK_API_TOKEN,
-              },
-            }
-          );
-          const pageToken = pagesResData.data.find(
-            (page) => page.id === process.env.FACEBOOK_PAGE_ID
-          ).access_token;
-          const responseAfterUploadOnFacebook = await new Promise(
-            async (resolve, reject) => {
-              fbUpload({
-                token: pageToken,
-                id: process.env.FACEBOOK_PAGE_ID,
-                stream,
-                title: video.videoData.title,
-                description: video.videoData.description,
-              })
-                .then((res) => {
-                  resolve({
-                    status: "success",
-                    message: "Video successfully uploaded on facebook",
-                  });
+          if (!video?.uploadedToFb) {
+            socketInstance
+              .io()
+              .sockets.in(req.user.id)
+              .emit("progressOfRequestInPublishing", {
+                event: "Uploading video to facebook",
+                file: null,
+              });
+            const { data: pagesResData } = await axios.get(
+              `https://graph.facebook.com/${process.env.FACEBOOK_USER_ID}/accounts`,
+              {
+                params: {
+                  fields: "name,access_token",
+                  access_token: process.env.FACEBOOK_API_TOKEN,
+                },
+              }
+            );
+            const pageToken = pagesResData.data.find(
+              (page) => page.id === process.env.FACEBOOK_PAGE_ID
+            ).access_token;
+
+            const responseAfterUploadOnFacebook = await new Promise(
+              async (resolve, reject) => {
+                fbUpload({
+                  // token: pageToken,
+                  token: "dfh7fydsiufhsdrteyfyjdgfyuhsdfyujds",
+                  id: process.env.FACEBOOK_PAGE_ID,
+                  stream,
+                  title: video.videoData.title,
+                  description: video.videoData.description,
                 })
-                .catch((err) => {
-                  resolve({
-                    status: "error",
-                    resErr: err,
+                  .then((res) => {
+                    resolve({
+                      status: "success",
+                      message: "Video successfully uploaded on facebook",
+                    });
+                  })
+                  .catch((err) => {
+                    socketInstance
+                      .io()
+                      .sockets.in(req.user.id)
+                      .emit("progressOfRequestInPublishing", {
+                        event: "Uploading video to facebook",
+                        file: null,
+                        error: {
+                          data: err,
+                          message: "Error when uploading videos to facebook",
+                        },
+                      });
+                    resolve({
+                      status: "error",
+                      resErr: err,
+                    });
                   });
-                });
-            }
-          );
+              }
+            );
 
-          if (responseAfterUploadOnFacebook.status === "success") {
-            await updateVideoBy({
-              searchBy: "_id",
-              searchValue: video._id,
-              dataToUpdate: { uploadedToFb: true },
-            });
-          } else {
-            console.log({
-              message: "Error when uploading to facebook",
-              error: responseAfterUploadOnFacebook.resErr,
-              videoId: video.videoData.videoId,
-            });
+            if (responseAfterUploadOnFacebook.status === "success") {
+              await updateVideoBy({
+                searchBy: "_id",
+                searchValue: video._id,
+                dataToUpdate: { uploadedToFb: true },
+              });
+            } else {
+              console.log({
+                message: "Error when uploading to facebook",
+                error: responseAfterUploadOnFacebook.resErr,
+                videoId: video.videoData.videoId,
+              });
+            }
           }
         }
       }
@@ -3183,10 +3220,10 @@ router.post(
     const userId = req.user.id;
 
     try {
-      const authUser = await getUserBy({
-        searchBy: "_id",
-        value: mongoose.Types.ObjectId(userId),
-      });
+      // const authUser = await getUserBy({
+      //   searchBy: "_id",
+      //   value: mongoose.Types.ObjectId(userId),
+      // });
 
       const resBucket = await new Promise((resolve, reject) => {
         storageInstance.getObject(
@@ -3218,186 +3255,186 @@ router.post(
 
       const stream = streamifier.createReadStream(resBucket.buffer);
 
-      if (!video?.uploadedToYoutube) {
-        const SCOPES = ["https://www.googleapis.com/auth/youtube.upload"];
+      // if (!video?.uploadedToYoutube) {
+      //   const SCOPES = ["https://www.googleapis.com/auth/youtube.upload"];
 
-        const responseAfterUploadOnYoutube = await new Promise(
-          (resolve, reject) => {
-            if (!authUser.rt) {
-              if (!code) {
-                const authUrl = googleApiOAuth2Instance.generateAuthUrl({
-                  access_type: "offline",
-                  prompt: "consent",
-                  scope: SCOPES,
-                });
+      //   const responseAfterUploadOnYoutube = await new Promise(
+      //     (resolve, reject) => {
+      //       if (!authUser.rt) {
+      //         if (!code) {
+      //           const authUrl = googleApiOAuth2Instance.generateAuthUrl({
+      //             access_type: "offline",
+      //             prompt: "consent",
+      //             scope: SCOPES,
+      //           });
 
-                return res.status(200).json({
-                  status: "redirect",
-                  apiData: authUrl,
-                  method: "publishingInSocialMedia",
-                });
-              } else {
-                socketInstance
-                  .io()
-                  .sockets.in(req.user.id)
-                  .emit("progressOfRequestInPublishing", {
-                    event: "Uploading video to youtube",
-                    file: null,
-                  });
+      //           return res.status(200).json({
+      //             status: "redirect",
+      //             apiData: authUrl,
+      //             method: "publishingInSocialMedia",
+      //           });
+      //         } else {
+      //           socketInstance
+      //             .io()
+      //             .sockets.in(req.user.id)
+      //             .emit("progressOfRequestInPublishing", {
+      //               event: "Uploading video to youtube",
+      //               file: null,
+      //             });
 
-                googleApiOAuth2Instance.getToken(code, async (err, token) => {
-                  if (err) {
-                    console.log(
-                      err?.response?.data?.error,
-                      err?.response?.data?.error_description
-                    );
+      //           googleApiOAuth2Instance.getToken(code, async (err, token) => {
+      //             if (err) {
+      //               console.log(
+      //                 err?.response?.data?.error,
+      //                 err?.response?.data?.error_description
+      //               );
 
-                    return res.status(200).json({
-                      status: "warning",
-                      message: `${err?.response?.data?.error} (Youtube API)`,
-                    });
-                  }
-                  if (!!token) {
-                    googleApiOAuth2Instance.credentials = token;
+      //               return res.status(200).json({
+      //                 status: "warning",
+      //                 message: `${err?.response?.data?.error} (Youtube API)`,
+      //               });
+      //             }
+      //             if (!!token) {
+      //               googleApiOAuth2Instance.credentials = token;
 
-                    await updateUserBy({
-                      updateBy: "_id",
-                      value: mongoose.Types.ObjectId(userId),
-                      objDBForSet: {
-                        rt: token.refresh_token,
-                      },
-                    });
+      //               await updateUserBy({
+      //                 updateBy: "_id",
+      //                 value: mongoose.Types.ObjectId(userId),
+      //                 objDBForSet: {
+      //                   rt: token.refresh_token,
+      //                 },
+      //               });
 
-                    google.youtube("v3").videos.insert(
-                      {
-                        access_token: token.access_token,
-                        part: "snippet,status",
-                        requestBody: {
-                          snippet: {
-                            title: video.videoData.title,
-                            description: definingDescriptionForYoutube({
-                              desc: video.videoData.description,
-                              country: video.videoData.country,
-                            }),
-                            tags: video.videoData.tags,
-                            //categoryId: 28,
-                            defaultLanguage: "en",
-                            defaultAudioLanguage: "en",
-                          },
-                          status: {
-                            privacyStatus: "public",
-                          },
-                        },
-                        media: {
-                          body: stream,
-                        },
-                      },
-                      (err, response) => {
-                        if (err) {
-                          console.log(err);
-                          console.log(err?.response?.data?.error);
+      //               google.youtube("v3").videos.insert(
+      //                 {
+      //                   access_token: token.access_token,
+      //                   part: "snippet,status",
+      //                   requestBody: {
+      //                     snippet: {
+      //                       title: video.videoData.title,
+      //                       description: definingDescriptionForYoutube({
+      //                         desc: video.videoData.description,
+      //                         country: video.videoData.country,
+      //                       }),
+      //                       tags: video.videoData.tags,
+      //                       //categoryId: 28,
+      //                       defaultLanguage: "en",
+      //                       defaultAudioLanguage: "en",
+      //                     },
+      //                     status: {
+      //                       privacyStatus: "public",
+      //                     },
+      //                   },
+      //                   media: {
+      //                     body: stream,
+      //                   },
+      //                 },
+      //                 (err, response) => {
+      //                   if (err) {
+      //                     console.log(err);
+      //                     console.log(err?.response?.data?.error);
 
-                          return res.status(200).json({
-                            status: "warning",
-                            message: `${err?.response?.data?.error?.message} (Youtube API)`,
-                          });
-                        }
-                        if (response) {
-                          resolve({
-                            message: `Video uploaded to youtube successfully`,
-                            status: "success",
-                            apiData: response.data,
-                          });
-                        }
-                      }
-                    );
-                  }
-                });
-              }
-            } else {
-              socketInstance
-                .io()
-                .sockets.in(req.user.id)
-                .emit("progressOfRequestInPublishing", {
-                  event: "Uploading video to youtube",
-                  file: null,
-                });
+      //                     return res.status(200).json({
+      //                       status: "warning",
+      //                       message: `${err?.response?.data?.error?.message} (Youtube API)`,
+      //                     });
+      //                   }
+      //                   if (response) {
+      //                     resolve({
+      //                       message: `Video uploaded to youtube successfully`,
+      //                       status: "success",
+      //                       apiData: response.data,
+      //                     });
+      //                   }
+      //                 }
+      //               );
+      //             }
+      //           });
+      //         }
+      //       } else {
+      //         socketInstance
+      //           .io()
+      //           .sockets.in(req.user.id)
+      //           .emit("progressOfRequestInPublishing", {
+      //             event: "Uploading video to youtube",
+      //             file: null,
+      //           });
 
-              const refreshToken = authUser.rt;
+      //         const refreshToken = authUser.rt;
 
-              googleApiOAuth2Instance.credentials = {
-                refresh_token: refreshToken,
-              };
+      //         googleApiOAuth2Instance.credentials = {
+      //           refresh_token: refreshToken,
+      //         };
 
-              googleApiOAuth2Instance.refreshAccessToken((err, token) => {
-                if (err) {
-                  console.log(err);
+      //         googleApiOAuth2Instance.refreshAccessToken((err, token) => {
+      //           if (err) {
+      //             console.log(err);
 
-                  return res.status(200).json({
-                    status: "warning",
+      //             return res.status(200).json({
+      //               status: "warning",
 
-                    message: `${err?.response?.data?.error} (Youtube API)`,
-                  });
-                }
-                if (!!token) {
-                  google.youtube("v3").videos.insert(
-                    {
-                      access_token: token.access_token,
-                      part: "snippet,status",
-                      requestBody: {
-                        snippet: {
-                          title: video.videoData.title,
-                          description: definingDescriptionForYoutube({
-                            desc: video.videoData.description,
-                            country: video.videoData.country,
-                          }),
-                          tags: video.videoData.tags,
-                          //categoryId: 28,
-                          defaultLanguage: "en",
-                          defaultAudioLanguage: "en",
-                        },
-                        status: {
-                          privacyStatus: "public",
-                        },
-                      },
-                      media: {
-                        body: stream,
-                      },
-                    },
-                    (err, response) => {
-                      if (err) {
-                        console.log(err);
-                        console.log(err?.response?.data?.error);
+      //               message: `${err?.response?.data?.error} (Youtube API)`,
+      //             });
+      //           }
+      //           if (!!token) {
+      //             google.youtube("v3").videos.insert(
+      //               {
+      //                 access_token: token.access_token,
+      //                 part: "snippet,status",
+      //                 requestBody: {
+      //                   snippet: {
+      //                     title: video.videoData.title,
+      //                     description: definingDescriptionForYoutube({
+      //                       desc: video.videoData.description,
+      //                       country: video.videoData.country,
+      //                     }),
+      //                     tags: video.videoData.tags,
+      //                     //categoryId: 28,
+      //                     defaultLanguage: "en",
+      //                     defaultAudioLanguage: "en",
+      //                   },
+      //                   status: {
+      //                     privacyStatus: "public",
+      //                   },
+      //                 },
+      //                 media: {
+      //                   body: stream,
+      //                 },
+      //               },
+      //               (err, response) => {
+      //                 if (err) {
+      //                   console.log(err);
+      //                   console.log(err?.response?.data?.error);
 
-                        return res.status(200).json({
-                          status: "warning",
+      //                   return res.status(200).json({
+      //                     status: "warning",
 
-                          message: `${err?.response?.data?.error?.message} (Youtube API)`,
-                        });
-                      }
-                      if (response) {
-                        resolve({
-                          message: `Video uploaded to youtube successfully`,
-                          status: "success",
-                          apiData: response.data,
-                        });
-                      }
-                    }
-                  );
-                }
-              });
-            }
-          }
-        );
+      //                     message: `${err?.response?.data?.error?.message} (Youtube API)`,
+      //                   });
+      //                 }
+      //                 if (response) {
+      //                   resolve({
+      //                     message: `Video uploaded to youtube successfully`,
+      //                     status: "success",
+      //                     apiData: response.data,
+      //                   });
+      //                 }
+      //               }
+      //             );
+      //           }
+      //         });
+      //       }
+      //     }
+      //   );
 
-        if (responseAfterUploadOnYoutube.status === "success") {
-          await updateVideoBy({
-            searchBy: "_id",
-            searchValue: video._id,
-            dataToUpdate: { uploadedToYoutube: true },
-          });
-        }
-      }
+      //   if (responseAfterUploadOnYoutube.status === "success") {
+      //     await updateVideoBy({
+      //       searchBy: "_id",
+      //       searchValue: video._id,
+      //       dataToUpdate: { uploadedToYoutube: true },
+      //     });
+      //   }
+      // }
 
       if (!video?.uploadedToFb && process.env.MODE === "production") {
         socketInstance
@@ -3443,6 +3480,9 @@ router.post(
               });
           }
         );
+
+        console.log(responseAfterUploadOnFacebook);
+
         if (responseAfterUploadOnFacebook.status === "success") {
           await updateVideoBy({
             searchBy: "_id",

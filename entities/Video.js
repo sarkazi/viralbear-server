@@ -1,4 +1,4 @@
-const { Schema, model } = require('mongoose');
+const { Schema, model } = require("mongoose");
 
 const schema = new Schema(
   {
@@ -43,16 +43,7 @@ const schema = new Schema(
         type: String,
         required: true,
       },
-      uploadedToFb: {
-        type: Boolean,
-        required: false,
-        default: false,
-      },
-      uploadedToYoutube: {
-        type: Boolean,
-        required: false,
-        default: false,
-      },
+
       countryCode: {
         type: String,
         required: true,
@@ -94,7 +85,7 @@ const schema = new Schema(
         of: new Schema({
           researcher: {
             type: Schema.Types.ObjectId,
-            ref: 'User',
+            ref: "User",
             required: true,
           },
           advanceHasBeenPaid: {
@@ -156,7 +147,7 @@ const schema = new Schema(
     },
     vbForm: {
       type: Schema.Types.ObjectId,
-      ref: 'UploadInfo',
+      ref: "UploadInfo",
       required: false,
     },
     brandSafe: {
@@ -165,6 +156,16 @@ const schema = new Schema(
     },
     socialMedia: {
       type: Boolean,
+      default: false,
+    },
+    uploadedToFb: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    uploadedToYoutube: {
+      type: Boolean,
+      required: false,
       default: false,
     },
     reuters: {
@@ -212,4 +213,4 @@ const schema = new Schema(
   },
   { timestamps: true }
 );
-module.exports = model('Video', schema);
+module.exports = model("Video", schema);
