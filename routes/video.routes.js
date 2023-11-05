@@ -2425,8 +2425,9 @@ router.patch(
         //});
 
         if (
-          process.env.MODE === "production" &&
-          (!video?.uploadedToFb || !video?.uploadedToYoutube)
+          // process.env.MODE === "production" &&
+          !video?.uploadedToFb ||
+          !video?.uploadedToYoutube
         ) {
           let stream = null;
 
