@@ -10,6 +10,11 @@ const authMiddleware = require("../middleware/auth.middleware");
 const { getUserById } = require("../controllers/user.controller");
 
 const {
+  createCardInTrello,
+  getMemberTrelloById,
+} = require("../controllers/trello.controller");
+
+const {
   conversionIncorrectLinks,
 
   findLinkBy,
@@ -17,9 +22,8 @@ const {
 
 const {
   findAuthorLinkByVideoId,
-
-  createNewAuthorLink,
   findOneRefFormByParam,
+  createNewAuthorLink,
 } = require("../controllers/authorLink.controller");
 
 router.post("/create", authMiddleware, async (req, res) => {
@@ -30,6 +34,8 @@ router.post("/create", authMiddleware, async (req, res) => {
     confirmDeletion,
     confirmIncorrect,
     exclusivity,
+    trelloCardTitle,
+    trelloCardNickname,
   } = req.body;
 
   if (!reqVideoLink && (!percentage || !advancePayment)) {
@@ -74,6 +80,22 @@ router.post("/create", authMiddleware, async (req, res) => {
     //    .json({ message: 'Link is invalid', status: 'warning' });
     //}
 
+    const authorLink = await findOneRefFormByParam({
+      searchBy: "videoLink",
+      value: convertedLink,
+    });
+
+    if (!!authorLink) {
+      if (confirmDeletion === false) {
+        return res.status(200).json({
+          message:
+            "A unique form has already been generated for this video. Generate a new one?",
+          status: "await",
+          type: "repeat",
+        });
+      }
+    }
+
     const link = await findLinkBy({ searchBy: "link", value: convertedLink });
 
     if (!link) {
@@ -84,18 +106,32 @@ router.post("/create", authMiddleware, async (req, res) => {
           status: "await",
           type: "incorrect",
         });
-      }
-    }
+      } else {
+        if (!trelloCardTitle || !trelloCardNickname) {
+          return res.status(200).json({
+            message: "Missing values for creating trello card",
+            status: "warning",
+          });
+        }
 
-    const authorLink = await findAuthorLinkByVideoId(convertedLink);
+        const trelloMember = await getMemberTrelloById({
+          memberId: user.nickname.replace("@", ""),
+        });
 
-    if (!!authorLink) {
-      if (confirmDeletion === false) {
-        return res.status(200).json({
-          message:
-            "A unique form has already been generated for this video. Generate a new one?",
-          status: "await",
-          type: "repeat",
+        if (!trelloMember) {
+          return res.status(200).json({
+            message:
+              "No employee with your nickname was found in trello. Contact the admin",
+            status: "warning",
+          });
+        }
+
+        await createCardInTrello({
+          name: `@${trelloCardNickname} ${trelloCardTitle}`,
+          desc: convertedLink,
+          idList: process.env.TRELLO_LIST_DOING_ID,
+          idMembers: [trelloMember.id],
+          idLabels: [process.env.TRELLO_LABEL_IN_PROGRESS],
         });
       }
     }

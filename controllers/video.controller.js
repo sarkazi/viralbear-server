@@ -1,92 +1,92 @@
-const Video = require('../entities/Video');
-const async = require('async');
+const Video = require("../entities/Video");
+const async = require("async");
 
-const storageInstance = require('../storage.instance');
-const moment = require('moment');
+const storageInstance = require("../storage.instance");
+const moment = require("moment");
 
-const Stream = require('stream');
+const Stream = require("stream");
 
 const {
   paramsForVideoConversion,
-} = require('../const/paramsForVideoConversion');
+} = require("../const/paramsForVideoConversion");
 
-const calcTheRequiredFpsForVideo = require('../utils/calcTheRequiredFpsForVideo');
+const calcTheRequiredFpsForVideo = require("../utils/calcTheRequiredFpsForVideo");
 
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 
-const socketInstance = require('../socket.instance');
+const socketInstance = require("../socket.instance");
 
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
-const ffprobe = require('ffprobe');
-const ffprobeStatic = require('ffprobe-static');
+const ffprobe = require("ffprobe");
+const ffprobeStatic = require("ffprobe-static");
 
-const axios = require('axios');
-const trelloInstance = require('../api/trello.instance');
+const axios = require("axios");
+const trelloInstance = require("../api/trello.instance");
 
-const { exportsVideoToExcel } = require('../utils/exportsVideoToExcel');
+const { exportsVideoToExcel } = require("../utils/exportsVideoToExcel");
 
 const filePath2 = path.join(
   __dirname,
-  '..',
-  '/localstorage',
-  'localstorage.txt'
+  "..",
+  "/localstorage",
+  "localstorage.txt"
 );
 
 const refreshMrssFiles = async () => {
   const feedsData = [
-    { path: `${__dirname}/../mrssFiles/mrss.xml`, name: 'Main' },
-    { path: `${__dirname}/../mrssFiles/mrss2.xml`, name: 'Social Media' },
+    { path: `${__dirname}/../mrssFiles/mrss.xml`, name: "Main" },
+    { path: `${__dirname}/../mrssFiles/mrss2.xml`, name: "Social Media" },
     {
       path: `${__dirname}/../mrssFiles/mrssConvertedVideos.xml`,
-      name: 'Reuters',
+      name: "Reuters",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssAccidents.xml`,
-      name: 'Accidents',
+      name: "Accidents",
     },
-    { path: `${__dirname}/../mrssFiles/mrssCool.xml`, name: 'Cool' },
+    { path: `${__dirname}/../mrssFiles/mrssCool.xml`, name: "Cool" },
     {
       path: `${__dirname}/../mrssFiles/mrssFailsAndFunnies.xml`,
-      name: 'Fails and Funnies',
+      name: "Fails and Funnies",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssHeartwarming.xml`,
-      name: 'Heartwarming',
+      name: "Heartwarming",
     },
-    { path: `${__dirname}/../mrssFiles/mrssNews.xml`, name: 'News' },
+    { path: `${__dirname}/../mrssFiles/mrssNews.xml`, name: "News" },
     {
       path: `${__dirname}/../mrssFiles/mrssRescue.xml`,
-      name: 'Rescue',
+      name: "Rescue",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssRoadAccidents.xml`,
-      name: 'Road accidents',
+      name: "Road accidents",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssAp.xml`,
-      name: 'AP video hub',
+      name: "AP video hub",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssApArchive.xml`,
-      name: 'AP video hub archive',
+      name: "AP video hub archive",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssSport.xml`,
-      name: 'Sport',
+      name: "Sport",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssWeather.xml`,
-      name: 'Weather',
+      name: "Weather",
     },
     {
       path: `${__dirname}/../mrssFiles/mrssAnimals.xml`,
-      name: 'Animals',
+      name: "Animals",
     },
   ];
 
@@ -94,41 +94,41 @@ const refreshMrssFiles = async () => {
     feedsData.map(async (obj) => {
       const videos = await Video.find({
         isApproved: true,
-        ...(obj.name === 'Social Media' && { brandSafe: true }),
-        ...(obj.name === 'Reuters' && {
-          'videoData.hasAudioTrack': true,
+        ...(obj.name === "Social Media" && { brandSafe: true }),
+        ...(obj.name === "Reuters" && {
+          "videoData.hasAudioTrack": true,
           reuters: true,
         }),
-        ...(obj.name === 'AP video hub' && {
-          'videoData.hasAudioTrack': true,
-          'videoData.duration': {
+        ...(obj.name === "AP video hub" && {
+          "videoData.hasAudioTrack": true,
+          "videoData.duration": {
             $gte: 10,
             $lt: 300,
           },
           apVideoHub: true,
         }),
-        ...(obj.name === 'AP video hub archive' && {
-          'videoData.hasAudioTrack': true,
-          'videoData.duration': {
+        ...(obj.name === "AP video hub archive" && {
+          "videoData.hasAudioTrack": true,
+          "videoData.duration": {
             $gte: 10,
             $lt: 300,
           },
           apVideoHubArchive: true,
           apVideoHub: false,
         }),
-        ...(obj.name !== 'Reuters' &&
-          obj.name !== 'Main' &&
-          obj.name !== 'AP video hub' &&
-          obj.name !== 'AP video hub archive' &&
-          obj.name !== 'Social Media' && {
-            'videoData.category': { $in: [obj.name] },
+        ...(obj.name !== "Reuters" &&
+          obj.name !== "Main" &&
+          obj.name !== "AP video hub" &&
+          obj.name !== "AP video hub archive" &&
+          obj.name !== "Social Media" && {
+            "videoData.category": { $in: [obj.name] },
           }),
       })
         .limit(200)
         //.sort({ $natural: -1 });
-        .sort({ 'videoData.videoId': -1 });
+        .sort({ "videoData.videoId": -1 });
 
-      if (obj.name === 'AP video hub' || obj.name === 'AP video hub archive') {
+      if (obj.name === "AP video hub" || obj.name === "AP video hub archive") {
         fs.writeFile(
           obj.path,
           `<?xml version="1.0" encoding="UTF-8"?>
@@ -148,14 +148,14 @@ const refreshMrssFiles = async () => {
                       <item>
                         <title>${video.videoData.title.replace(
                           /&/g,
-                          '&amp;'
+                          "&amp;"
                         )}</title>
                         <description>${video.videoData.description.replace(
                           /&/g,
-                          '&amp;'
-                        )}${video.videoData?.creditTo ? ' ' : ''}${
+                          "&amp;"
+                        )}${video.videoData?.creditTo ? " " : ""}${
                       !video.videoData?.creditTo
-                        ? ''
+                        ? ""
                         : `Credit to: ${video.videoData.creditTo}`
                     }</description>
                         <media:keywords>${video.videoData.tags.slice(
@@ -167,7 +167,7 @@ const refreshMrssFiles = async () => {
                             ? video.pubDate
                             : video?.updatedAt
                             ? video.updatedAt
-                            : ''
+                            : ""
                         ).toGMTString()}</pubDate>
                         <guid isPermaLink="false">${
                           video.videoData.videoId
@@ -175,21 +175,21 @@ const refreshMrssFiles = async () => {
                         <viralbearID>${video.videoData.videoId}</viralbearID>
                         <slugline>${video.videoData.title.replace(
                           /&/g,
-                          '&amp;'
+                          "&amp;"
                         )}</slugline>
                         <media:content url="${
                           video.bucket.cloudConversionVideoLink
                         }" lang="en">
                           <media:title>${video.videoData.title.replace(
                             /&/g,
-                            '&amp;'
+                            "&amp;"
                           )}</media:title>
                           <media:description>${video.videoData.description.replace(
                             /&/g,
-                            '&amp;'
-                          )}${video.videoData?.creditTo ? ' ' : ''}${
+                            "&amp;"
+                          )}${video.videoData?.creditTo ? " " : ""}${
                       !video.videoData?.creditTo
-                        ? ''
+                        ? ""
                         : `Credit to: ${video.videoData.creditTo}`
                     }</media:description>
                         </media:content>
@@ -199,7 +199,7 @@ const refreshMrssFiles = async () => {
                       </item>
                       `;
                   })
-                  .join('')}
+                  .join("")}
                        </channel>
                     </rss>
                   `,
@@ -228,14 +228,14 @@ const refreshMrssFiles = async () => {
                         <item>
                           <media:title>${video.videoData.title.replace(
                             /&/g,
-                            '&amp;'
+                            "&amp;"
                           )}</media:title>
                           <media:description>${video.videoData.description.replace(
                             /&/g,
-                            '&amp;'
-                          )}${video.videoData?.creditTo ? ' ' : ''}${
+                            "&amp;"
+                          )}${video.videoData?.creditTo ? " " : ""}${
                         !video.videoData?.creditTo
-                          ? ''
+                          ? ""
                           : `Credit to: ${video.videoData.creditTo}`
                       }</media:description>
                           <media:keywords>${
@@ -255,13 +255,13 @@ const refreshMrssFiles = async () => {
                             video.videoData.category
                           }</media:category>
                           <media:exclusivity>${
-                            video.exclusivity ? 'exclusive' : 'non-exсlusive'
+                            video.exclusivity ? "exclusive" : "non-exсlusive"
                           }</media:exclusivity>
                           <media:filmingDate>${moment(
                             video.videoData.date
                           ).format(`ddd, D MMM YYYY`)}</media:filmingDate>
                           <guid>${
-                            obj.name === 'Reuters' &&
+                            obj.name === "Reuters" &&
                             ((+video.videoData.videoId >= 2615 &&
                               +video.videoData.videoId <= 2773) ||
                               (+video.videoData.videoId >= 3149 &&
@@ -274,13 +274,13 @@ const refreshMrssFiles = async () => {
                               ? video.pubDate
                               : video?.updatedAt
                               ? video.updatedAt
-                              : ''
+                              : ""
                           ).toGMTString()}</pubDate>
                           <media:thumbnail url="${
                             video.bucket.cloudScreenLink
                           }" />
                           <media:content url="${
-                            obj.name === 'Reuters'
+                            obj.name === "Reuters"
                               ? video.bucket.cloudConversionVideoLink
                               : video.bucket.cloudVideoLink
                           }" />
@@ -289,12 +289,12 @@ const refreshMrssFiles = async () => {
                               ? `<dfpvideo:lastModifiedDate>${new Date(
                                   video.lastChange
                                 ).toGMTString()}</dfpvideo:lastModifiedDate>`
-                              : '<dfpvideo:lastModifiedDate/>'
+                              : "<dfpvideo:lastModifiedDate/>"
                           }
                           </item>
                         `;
                     })
-                    .join('')}
+                    .join("")}
                          </channel>
                       </rss>
                     `,
@@ -331,24 +331,24 @@ const generateExcelFile = async (req, res) => {
 
   let listVideo = [];
   for (u of range) {
-    const video = await Video.findOne({ 'videoData.videoId': +u });
+    const video = await Video.findOne({ "videoData.videoId": +u });
     if (video) {
       listVideo.push(u);
     }
   }
 
   if (listVideo.length === 0) {
-    res.set('Content-Type', 'application/json');
+    res.set("Content-Type", "application/json");
     res
       .status(200)
-      .json({ message: 'Videos with the id of this range were not found' });
+      .json({ message: "Videos with the id of this range were not found" });
     return;
   }
 
   let dataFromFoundVideo = [];
 
   for (i of listVideo) {
-    const video = await Video.findOne({ 'videoData.videoId': +i });
+    const video = await Video.findOne({ "videoData.videoId": +i });
 
     let objectExcel = {
       id: video.videoData.videoId,
@@ -364,18 +364,18 @@ const generateExcelFile = async (req, res) => {
   }
 
   const columnList = [
-    'ID',
-    'TITLE',
-    'VideoLink',
-    'STORY',
-    'DATE',
-    'CITY',
-    'COUNTRY',
-    'KEYWORDS',
+    "ID",
+    "TITLE",
+    "VideoLink",
+    "STORY",
+    "DATE",
+    "CITY",
+    "COUNTRY",
+    "KEYWORDS",
   ];
 
-  const workSheetName = 'Videos';
-  const filePathExcel = path.join(__dirname, '..', 'excel', 'data.xlsx');
+  const workSheetName = "Videos";
+  const filePathExcel = path.join(__dirname, "..", "excel", "data.xlsx");
 
   exportsVideoToExcel(
     dataFromFoundVideo,
@@ -393,16 +393,16 @@ const generateExcelFile = async (req, res) => {
   }, 2000);
 
   res.set(
-    'Content-Type',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   );
-  res.status(200).download(path.resolve(__dirname, '..', 'excel', 'data.xlsx'));
+  res.status(200).download(path.resolve(__dirname, "..", "excel", "data.xlsx"));
 };
 
 const updateVideoById = async ({ videoId, dataToDelete, dataToUpdate }) => {
   await Video.updateOne(
     {
-      'videoData.videoId': videoId,
+      "videoData.videoId": videoId,
     },
     {
       ...(dataToDelete && { $unset: dataToDelete }),
@@ -433,10 +433,10 @@ const updateVideoBy = async ({
 const findNextVideoInFeed = async ({ currentVideoId }) => {
   return await Video.find({
     isApproved: true,
-    'videoData.videoId': { $gt: currentVideoId },
+    "videoData.videoId": { $gt: currentVideoId },
   })
     .limit(1)
-    .sort({ 'videoData.videoId': 1 });
+    .sort({ "videoData.videoId": 1 });
 };
 
 const uploadContentOnBucket = async (buffer, name, bucketPath) => {
@@ -456,10 +456,10 @@ const uploadContentOnBucket = async (buffer, name, bucketPath) => {
 const findPrevVideoInFeed = async ({ currentVideoId }) => {
   return await Video.find({
     isApproved: true,
-    'videoData.videoId': { $lt: currentVideoId },
+    "videoData.videoId": { $lt: currentVideoId },
   })
     .limit(1)
-    .sort({ 'videoData.videoId': -1 });
+    .sort({ "videoData.videoId": -1 });
 };
 
 const createNewVideo = async (body) => {
@@ -520,20 +520,20 @@ const readingAndUploadingConvertedVideoToBucket = async (name, userId) => {
         if (err) {
           console.log(err);
           reject({
-            status: 'error',
-            message: 'Error when reading a file from disk',
+            status: "error",
+            message: "Error when reading a file from disk",
           });
         } else {
           const bucketResByConvertedVideoUpload = await uploadContentOnBucket(
             buffer,
             name,
-            '/converted-videos'
+            "/converted-videos"
           );
 
           resolve({
-            status: 'success',
+            status: "success",
             message:
-              'The converted video was successfully uploaded to the bucket',
+              "The converted video was successfully uploaded to the bucket",
             response: bucketResByConvertedVideoUpload,
           });
         }
@@ -550,16 +550,16 @@ const findByNotApproved = async () => {
     needToBeFixed: { $exists: false },
   })
     .populate({
-      path: 'vbForm',
+      path: "vbForm",
       select: { refFormId: 1 },
       populate: {
-        path: 'refFormId',
+        path: "refFormId",
         select: { advancePayment: 1 },
       },
     })
     .populate({
-      path: 'trelloData.researchers.researcher',
-      model: 'User',
+      path: "trelloData.researchers.researcher",
+      model: "User",
       select: {
         name: 1,
         email: 1,
@@ -588,9 +588,9 @@ const findRelated = async (req, res) => {
 
   try {
     const videos = await Video.find({
-      'videoData.category': { $in: [category] },
-      'videoData.tags': { $in: [tag] },
-      'videoData.videoId': { $ne: +videoId },
+      "videoData.category": { $in: [category] },
+      "videoData.tags": { $in: [tag] },
+      "videoData.videoId": { $ne: +videoId },
       isApproved: true,
     });
 
@@ -604,7 +604,7 @@ const findOneVideoInFeed = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const video = await Video.findOne({ 'videoData.videoId': +id });
+    const video = await Video.findOne({ "videoData.videoId": +id });
 
     if (!video) {
       return res
@@ -615,20 +615,20 @@ const findOneVideoInFeed = async (req, res) => {
     if (video.isApproved === false) {
       return res
         .status(200)
-        .json({ message: 'This video is not available in the feed' });
+        .json({ message: "This video is not available in the feed" });
     }
 
     const nextVideo = await Video.findOne({
       isApproved: true,
-      'videoData.videoId': { $gt: +video.videoData.videoId },
+      "videoData.videoId": { $gt: +video.videoData.videoId },
     });
 
     const prevVideo = await Video.find({
       isApproved: true,
-      'videoData.videoId': { $lt: +video?.videoData?.videoId },
+      "videoData.videoId": { $lt: +video?.videoData?.videoId },
     })
       .limit(1)
-      .sort({ 'videoData.videoId': -1 });
+      .sort({ "videoData.videoId": -1 });
 
     const { _id, __v, updatedAt, ...data } = video._doc;
 
@@ -647,16 +647,16 @@ const findByFixed = async () => {
     needToBeFixed: { $exists: true },
   })
     .populate({
-      path: 'vbForm',
+      path: "vbForm",
       select: { refFormId: 1 },
       populate: {
-        path: 'refFormId',
+        path: "refFormId",
         select: { advancePayment: 1 },
       },
     })
     .populate({
-      path: 'trelloData.researchers.researcher',
-      model: 'User',
+      path: "trelloData.researchers.researcher",
+      model: "User",
       select: {
         name: 1,
         email: 1,
@@ -668,10 +668,10 @@ const findByFixed = async () => {
 };
 
 const findVideoById = async (id) => {
-  const video = await Video.findOne({ 'videoData.videoId': id }).populate({
-    path: 'vbForm',
+  const video = await Video.findOne({ "videoData.videoId": id }).populate({
+    path: "vbForm",
     populate: {
-      path: 'sender refFormId',
+      path: "sender refFormId",
       select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
     },
   });
@@ -680,7 +680,7 @@ const findVideoById = async (id) => {
 };
 
 const findById = async (id) => {
-  return await Video.findOne({ 'videoData.videoId': +id });
+  return await Video.findOne({ "videoData.videoId": +id });
 };
 
 const getAllVideos = async ({
@@ -701,32 +701,32 @@ const getAllVideos = async ({
 }) => {
   return Video.find(
     {
-      ...(typeof vbFormExists === 'boolean' && {
+      ...(typeof vbFormExists === "boolean" && {
         vbForm: {
           $exists: vbFormExists,
         },
       }),
-      ...(typeof isApproved === 'boolean' && { isApproved }),
-      ...(typeof wasRemovedFromPublication === 'boolean' && {
+      ...(typeof isApproved === "boolean" && { isApproved }),
+      ...(typeof wasRemovedFromPublication === "boolean" && {
         wasRemovedFromPublication,
       }),
       ...(forLastDays && {
         createdAt: {
           $gte: moment()
             .utc()
-            .subtract(forLastDays, 'd')
-            .startOf('d')
+            .subtract(forLastDays, "d")
+            .startOf("d")
             .valueOf(),
         },
       }),
       ...(researcher && {
-        'trelloData.researchers': {
+        "trelloData.researchers": {
           $elemMatch: {
             [researcher.searchBy]: researcher.value,
-            ...(typeof researcher?.advanceHasBeenPaid === 'boolean' && {
+            ...(typeof researcher?.advanceHasBeenPaid === "boolean" && {
               advanceHasBeenPaid: researcher.advanceHasBeenPaid,
             }),
-            ...(typeof researcher?.isAcquirer === 'boolean' && {
+            ...(typeof researcher?.isAcquirer === "boolean" && {
               main: researcher.isAcquirer,
             }),
           },
@@ -734,20 +734,20 @@ const getAllVideos = async ({
       }),
 
       ...(durationPoints && {
-        'videoData.duration': {
+        "videoData.duration": {
           $gte: durationPoints?.start,
           $lt: durationPoints?.finish,
         },
       }),
-      ...(category && { 'videoData.category': { $in: [category] } }),
-      ...(tag && { 'videoData.tags': { $in: [tag] } }),
+      ...(category && { "videoData.category": { $in: [category] } }),
+      ...(tag && { "videoData.tags": { $in: [tag] } }),
       ...(location && {
         $or: [
           {
-            'videoData.city': location,
+            "videoData.city": location,
           },
           {
-            'videoData.country': location,
+            "videoData.country": location,
           },
         ],
       }),
@@ -758,7 +758,7 @@ const getAllVideos = async ({
     }
   )
     .populate({
-      path: 'vbForm',
+      path: "vbForm",
       select: {
         formId: 1,
         sender: 1,
@@ -767,13 +767,13 @@ const getAllVideos = async ({
         createdAt: 1,
       },
       populate: {
-        path: 'sender refFormId',
+        path: "sender refFormId",
         select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
       },
     })
     .populate({
-      path: 'trelloData.researchers.researcher',
-      model: 'User',
+      path: "trelloData.researchers.researcher",
+      model: "User",
       select: {
         name: 1,
         email: 1,
@@ -781,7 +781,7 @@ const getAllVideos = async ({
       },
     })
 
-    .collation({ locale: 'en', strength: 2 })
+    .collation({ locale: "en", strength: 2 })
     .sort(sort ? sort : null)
     .limit(limit ? limit : null)
     .skip(skip ? skip : null);
@@ -791,7 +791,7 @@ const publishingVideoInSocialMedia = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const video = await Video.findOne({ 'videoData.videoId': +id });
+    const video = await Video.findOne({ "videoData.videoId": +id });
 
     if (!video) {
       res.status(200).json({ message: `Video with id "${id}" was not found` });
@@ -813,12 +813,12 @@ const publishingVideoInSocialMedia = async (req, res) => {
     }
 
     await Video.updateOne(
-      { 'videoData.videoId': +id },
+      { "videoData.videoId": +id },
       { publishedInSocialMedia: true }
     );
 
     const updatedVideo = await Video.findOne({
-      'videoData.videoId': +id,
+      "videoData.videoId": +id,
     });
 
     const { _id, __v, updatedAt, ...data } = updatedVideo._doc;
@@ -830,12 +830,12 @@ const publishingVideoInSocialMedia = async (req, res) => {
     res.status(200).json(data);
   } catch (err) {
     console.log(err);
-    throw Error('Server side error...');
+    throw Error("Server side error...");
   }
 };
 
 const deleteVideoById = async (id) => {
-  await Video.deleteOne({ 'videoData.videoId': id });
+  await Video.deleteOne({ "videoData.videoId": id });
 };
 
 const getCountVideosBy = async ({
@@ -848,32 +848,32 @@ const getCountVideosBy = async ({
     {
       $match: {
         ...(user && {
-          'trelloData.researchers': {
+          "trelloData.researchers": {
             $elemMatch: {
               [user.searchBy]: user.value,
-              ...(typeof user?.purchased === 'boolean' && {
+              ...(typeof user?.purchased === "boolean" && {
                 main: user.purchased,
               }),
-              ...(typeof user?.advanceHasBeenPaid === 'boolean' && {
+              ...(typeof user?.advanceHasBeenPaid === "boolean" && {
                 advanceHasBeenPaid: user.advanceHasBeenPaid,
               }),
             },
           },
         }),
-        ...(typeof isApproved === 'boolean' && { isApproved }),
-        ...(typeof exclusivity === 'boolean' && { exclusivity }),
+        ...(typeof isApproved === "boolean" && { isApproved }),
+        ...(typeof exclusivity === "boolean" && { exclusivity }),
         ...(forLastDays && {
           pubDate: {
             $exists: true,
             $gte: new Date(
-              moment().subtract(forLastDays, 'd').startOf('d').toISOString()
+              moment().subtract(forLastDays, "d").startOf("d").toISOString()
             ),
           },
         }),
       },
     },
     {
-      $count: 'acquiredVideosCount',
+      $count: "acquiredVideosCount",
     },
   ];
 
@@ -907,9 +907,9 @@ const findReadyForPublication = async () => {
 
       if (
         //если карточка находится в листе "done" в trello
-        data?.idList === '61a1c05f03075c0ea01b62af' ||
+        data?.idList === "61a1c05f03075c0ea01b62af" ||
         //или если у карточки есть наклейка "done"
-        data?.labels?.find((label) => label.id === '61a1d74565c249483548bf9a')
+        data?.labels?.find((label) => label.id === "61a1d74565c249483548bf9a")
       ) {
         return data.id;
       }
@@ -1056,38 +1056,38 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
         if (err) {
           console.log(err);
           reject({
-            message: 'Error when reading video parameters',
-            status: 'error',
+            message: "Error when reading video parameters",
+            status: "error",
           });
         }
 
         const heightVideo = info.streams.find(
-          (stream) => stream.codec_type === 'video'
+          (stream) => stream.codec_type === "video"
         ).height;
 
         if (!heightVideo) {
           reject({
-            message: 'Error in determining the height of the incoming video',
-            status: 'error',
+            message: "Error in determining the height of the incoming video",
+            status: "error",
           });
         }
 
         const stringVideoFps = info.streams.find(
-          (stream) => stream.codec_type === 'video'
+          (stream) => stream.codec_type === "video"
         ).r_frame_rate;
 
         if (!stringVideoFps) {
           reject({
-            message: 'Error in determining the fps of the video',
-            status: 'error',
+            message: "Error in determining the fps of the video",
+            status: "error",
           });
         }
 
         videoFps =
-          +stringVideoFps.split('/')[0] / +stringVideoFps.split('/')[1];
+          +stringVideoFps.split("/")[0] / +stringVideoFps.split("/")[1];
 
         const hasAudioTrack = info.streams.find(
-          (stream) => stream.codec_type === 'audio'
+          (stream) => stream.codec_type === "audio"
         )
           ? true
           : false;
@@ -1105,12 +1105,12 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
           .videoBitrate(paramsForVideoConversion.videoBitrate, false)
           .fps(calcTheRequiredFpsForVideo({ videoFps }))
           .toFormat(paramsForVideoConversion.format)
-          .on('start', () => {
+          .on("start", () => {
             console.log(
-              '------------------ start conversion ----------------------'
+              "------------------ start conversion ----------------------"
             );
           })
-          .on('progress', (progress) => {
+          .on("progress", (progress) => {
             //console.log(progress, `видео ${video.originalname}`);
 
             const loaded = Math.round((progress.percent * 100) / 100);
@@ -1118,31 +1118,31 @@ const convertingVideoToHorizontal = async ({ buffer, userId, filename }) => {
             socketInstance
               .io()
               .sockets.in(userId)
-              .emit('progressOfRequestInPublishing', {
-                event: 'Converting video to horizontal format',
+              .emit("progressOfRequestInPublishing", {
+                event: "Converting video to horizontal format",
                 file: {
                   name: filename,
                   loaded,
                 },
               });
           })
-          .on('end', () => {
+          .on("end", () => {
             console.log(
-              '------------------------- end conversion ----------------------------------'
+              "------------------------- end conversion ----------------------------------"
             );
             resolve({
-              message: 'the video has been successfully converted and saved',
-              status: 'success',
+              message: "the video has been successfully converted and saved",
+              status: "success",
               data: {
                 hasAudioTrack,
               },
             });
           })
-          .on('error', (err) => {
+          .on("error", (err) => {
             console.log(err);
             reject({
-              message: 'Error when converting video',
-              status: 'error',
+              message: "Error when converting video",
+              status: "error",
             });
           })
           .saveToFile(`${directoryForInputVideo}/output-for-conversion.mp4`);
@@ -1162,9 +1162,9 @@ const updateVideosBy = async ({ updateBy, value, objForSet }) => {
 
 const markVideoEmployeeAsHavingReceivedAnAdvance = async ({ researcherId }) => {
   return Video.updateMany(
-    { 'trelloData.researchers': { $elemMatch: { researcher: researcherId } } },
-    { $set: { 'trelloData.researchers.$[field].advanceHasBeenPaid': true } },
-    { arrayFilters: [{ 'field.researcher': researcherId }] }
+    { "trelloData.researchers": { $elemMatch: { researcher: researcherId } } },
+    { $set: { "trelloData.researchers.$[field].advanceHasBeenPaid": true } },
+    { arrayFilters: [{ "field.researcher": researcherId }] }
   );
 };
 
@@ -1173,9 +1173,9 @@ const markResearcherAdvanceForOneVideoAsPaid = async ({
   researcherId,
 }) => {
   return Video.updateOne(
-    { 'videoData.videoId': videoId },
-    { $set: { 'trelloData.researchers.$[field].advanceHasBeenPaid': true } },
-    { arrayFilters: [{ 'field.researcher': researcherId }] }
+    { "videoData.videoId": videoId },
+    { $set: { "trelloData.researchers.$[field].advanceHasBeenPaid": true } },
+    { arrayFilters: [{ "field.researcher": researcherId }] }
   );
 };
 
@@ -1193,8 +1193,8 @@ const findVideoBy = async ({
     }
   )
     .populate({
-      path: 'trelloData.researchers.researcher',
-      model: 'User',
+      path: "trelloData.researchers.researcher",
+      model: "User",
       select: {
         name: 1,
         avatarUrl: 1,
@@ -1202,9 +1202,9 @@ const findVideoBy = async ({
       },
     })
     .populate({
-      path: 'vbForm',
+      path: "vbForm",
       populate: {
-        path: 'sender refFormId',
+        path: "sender refFormId",
         select: {
           email: 1,
           name: 1,

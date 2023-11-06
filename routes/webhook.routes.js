@@ -307,11 +307,13 @@ router.post("/trello/allBoard", async (req, res) => {
           value: `@${researcherUsernameInTrello}`,
         });
 
-        //записываем событие о перемещенной карточке в базу
-        await writeNewMoveToDone({
-          researcherId: researcherInDatabase._id,
-          trelloCardId: changedData.action.data.card.id,
-        });
+        if (!!researcherInDatabase) {
+          //записываем событие о перемещенной карточке в базу
+          await writeNewMoveToDone({
+            researcherId: researcherInDatabase._id,
+            trelloCardId: changedData.action.data.card.id,
+          });
+        }
       }
 
       //const cardId = changedData.action.data.card.id;

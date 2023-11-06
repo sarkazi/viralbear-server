@@ -20,15 +20,15 @@ const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
 
   const linkMarkup = vbForm.videoLinks
     .map((link) => {
-      return `<li>${link}</li>,`;
+      return `<li>${link}</li>`;
     })
-    .join(", ");
+    .join("");
 
   const resourcesMarkup = vbForm.resources
     ?.map((site) => {
-      return `<li style="color: #DC143C; text-decoration: none">${site}</li>,`;
+      return `<li style="color: #DC143C; text-decoration: none">${site}</li>`;
     })
-    .join(", ");
+    .join("");
 
   mailTransporter.sendMail({
     from: '"«VIRALBEAR» LLC" <info@viralbear.media>',
@@ -38,76 +38,78 @@ const sendMainInfoByVBToServiceMail = (dataForSendingMessage) => {
       ""
     )}`,
     html: `
-
-   <b>Name: ${vbForm.sender.name}</b><br>
-   <b>Email: ${vbForm.sender.email}</b><br>
+<div style="display: flex;flex-direction: column; align-items: flex-start">
+<b>Name:</b> ${vbForm.sender.name}<br>
+   <b>Email:</b> ${vbForm.sender.email}<br>
    <b>Video link/s:</b><br>
    <ul style="list-style: none; padding: 0; margin: 0">${linkMarkup}</ul>
-   <b>Did you record: ${
+   <b>Did you record:</b> ${
      !!vbForm.didYouRecord
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
-   }</b><br>
+   }
    ${
      vbForm.operator
-       ? `<b>Operator: <span style="color: #DC143C">${vbForm.operator}</span></b><br></br>`
-       : `<b style="display: none"></b>`
+       ? `<b>Operator:</b> <span style="color: #DC143C">${vbForm.operator}</span>`
+       : `<b style="display:</b> none">`
    }
-   <b>I didn’t submit or upload this video to any other site: ${
+   <b>I didn’t submit or upload this video to any other site:</b> ${
      !!vbForm.noSubmitAnywhere
        ? '<b style="color: #32CD32">Yes</b>'
        : '<b style="color: #DC143C">No</b>'
-   }</b><br>
+   }
    ${
      vbForm.resources.length
        ? `<b>Resource/s:</b><br>
           <ul style="list-style: none; padding: 0; margin: 0">${resourcesMarkup}</ul>`
-       : `<b style="display: none"></b>`
+       : `<b style="display:</b> none">`
    }
-   <b>Over 18 years old: ${
+   <b>Over 18 years old:</b> ${
      !!vbForm.over18YearOld
-       ? '<b style="color: #32CD32">Yes</b>'
-       : '<b style="color: #DC143C">No</b>'
-   }</b><br>
-   <b>Agreed with terms: ${
+       ? '<b style="color: #32CD32">Yes'
+       : '<b style="color: #DC143C">No>'
+   }
+   <b>Agreed with terms:</b> ${
      !!vbForm.agreedWithTerms
-       ? '<b style="color: #32CD32">Yes</b>'
-       : '<b style="color: #DC143C">No</b>'
-   }</b><br>
-   <b>Didn’t give rights: ${
+       ? '<b style="color: #32CD32">Yes'
+       : '<b style="color: #DC143C">No'
+   }
+   <b>Didn’t give rights:</b> ${
      !!vbForm.didNotGiveRights
-       ? '<b style="color: #32CD32">Yes</b>'
-       : '<b style="color: #DC143C">No</b>'
-   }</b><br>
+       ? '<b style="color: #32CD32">Yes'
+       : '<b style="color: #DC143C">No'
+   }
    ${
      !!vbForm?.refFormId?.advancePayment
-       ? `<b>Advance payment: ${vbForm.refFormId.advancePayment}</b><br></br>`
+       ? `<b>Advance payment:</b> ${vbForm.refFormId.advancePayment}`
        : ""
    }
    ${
      !!vbForm?.refFormId?.percentage
-       ? `<b>Percentage: ${vbForm.refFormId.percentage}</b><br></br>`
+       ? `<b>Percentage:</b> ${vbForm.refFormId.percentage}`
        : ""
    }
    ${
      !!vbForm?.refFormId?.researcher?.email
-       ? `<b>Researcher email: ${vbForm.refFormId.researcher.email}</b><br>`
+       ? `<b>Researcher email:</b> ${vbForm.refFormId.researcher.email}`
        : ""
    }
    ${
      !!vbForm?.refFormId?.trelloCardUrl
-       ? `<b>Trello card URL: ${vbForm.refFormId.trelloCardUrl}</b><br>`
+       ? `<b>Trello card URL:</b> ${vbForm.refFormId.trelloCardUrl}`
        : ""
    }
-   <b>IP: ${vbForm.ip}</b><br>
-   <b>Submitted date: ${vbForm.createdAt}</b><br>
-   <b>Contract: ${vbForm.agreementLink}</b><br>
-   <b>Form VB code: ${vbForm.formId.replace("VB", "")}</b><br>
+   <b>IP:</b> ${vbForm.ip}
+   <b>Submitted date:</b> ${vbForm.createdAt}
+   <b>Contract:</b> ${vbForm.agreementLink}
+   <b>Form VB code:</b> ${vbForm.formId.replace("VB", "")}
    ${
      !!accountActivationLink
-       ? `<b>Link to the personal account of the author ${vbForm.sender.name}: ${accountActivationLink}</b>`
+       ? `<b>Link to the personal account of the author ${vbForm.sender.name}:</b> ${accountActivationLink}`
        : ""
    }
+</div>
+   
    `,
   });
 };
@@ -161,22 +163,22 @@ const sendSurveyInfoToServiceMail = async (dataForSendingSurveyInfo) => {
       ""
     )}`,
     html: `
-         <b>Where was this video filmed (city): ${
+         <b>Where was this video filmed (city):</b> ${
            whereFilmed ? whereFilmed : "-"
-         }</b><br>
-         <b>When was this video filmed (date): ${
+         }<br>
+         <b>When was this video filmed (date):</b> ${
            whenFilmed ? whenFilmed : "-"
-         }</b><br>
-         <b>Who appears in the video? Their names and ages?: ${
+         }<br>
+         <b>Who appears in the video? Their names and ages?:</b> ${
            whoAppears ? whoAppears : "-"
-         }</b><br>
-         <b>Why did you decide to film this video: ${
+         }<br>
+         <b>Why did you decide to film this video:</b> ${
            whyDecide ? whyDecide : "-"
-         }</b><br>
-         <b>What is happening on the video: ${
+         }<br>
+         <b>What is happening on the video:</b> ${
            whatHappen ? whatHappen : "-"
-         }</b><br>
-         <b>Form VB code: ${formId.replace("VB", "")}</b><br>
+         }<br>
+         <b>Form VB code:</b> ${formId.replace("VB", "")}<br>
          `,
   });
 };

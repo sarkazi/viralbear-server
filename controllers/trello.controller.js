@@ -132,40 +132,40 @@ const addLabelToCard = async (trelloCardId, labelId) => {
   );
 };
 
-const createCardInTrello = async (
-  authorNickname,
-  title,
-  videoLink,
-  list,
-  foundWorkersTrelloIds
-) => {
+const createCardInTrello = async ({
+  name,
+  desc,
+  idList,
+  idMembers,
+  idLabels,
+}) => {
   const { data } = await trelloInstance.post(
-    `1/cards?idList=63bdfa7ecbe3f5018172bdc8`,
+    `1/cards`,
     {
-      name:
-        authorNickname && title
-          ? `@${authorNickname} ${title}`
-          : !authorNickname && title
-          ? `${title}`
-          : authorNickname && !title
-          ? `@${authorNickname}`
-          : " ",
-      desc: videoLink,
-      idMembers: foundWorkersTrelloIds,
-      ...(list !== "Review" && {
-        idLabels: [
-          list === "To do"
-            ? "61a1c05f33ccc35e92aab1fd"
-            : "61a1c05f33ccc35e92aab202",
-        ],
-      }),
+      ...(name && { name }),
+      ...(desc && { desc }),
+      ...(idMembers && { idMembers }),
+      ...(idLabels && { idLabels }),
     },
     {
+      params: {
+        idList,
+      },
       headers: {
         "Content-Type": "application/json",
       },
     }
   );
+
+  return data;
+};
+
+const getMemberTrelloById = async ({ memberId }) => {
+  const { data } = await trelloInstance.get(`1/members/${memberId}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
   return data;
 };
@@ -340,4 +340,5 @@ module.exports = {
   deleteLabelFromTrelloCard,
   getAllCardsFromTrello,
   addNewCommentToTrelloCard,
+  getMemberTrelloById,
 };

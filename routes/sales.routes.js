@@ -1192,12 +1192,19 @@ router.get("/getAll", authMiddleware, async (req, res) => {
       ...(date && {
         date: date[0] === "null" || date[1] === "null" ? null : date,
       }),
-      ...(forLastDays && { forLastDays }),
+      ...(forLastDays && { forLastDays: +forLastDays }),
       ...(relatedToTheVbForm &&
         typeof JSON.parse(relatedToTheVbForm) === "boolean" && {
           relatedToTheVbForm: JSON.parse(relatedToTheVbForm),
         }),
     });
+
+    console.log(
+      sales.map((hh) => {
+        return hh.createdAt;
+      }),
+      88
+    );
 
     const sumAmount = sales.reduce((acc, item) => {
       return acc + item.amount;

@@ -1,7 +1,7 @@
-const Sales = require('../entities/Sales');
-const moment = require('moment');
+const Sales = require("../entities/Sales");
+const moment = require("moment");
 
-var mongoose = require('mongoose');
+var mongoose = require("mongoose");
 
 const createNewSale = async (body) => {
   const newSales = await Sales.create(body);
@@ -18,6 +18,7 @@ const getAllSales = async ({
   paidFor,
   forLastDays,
 }) => {
+  console.log(forLastDays);
   return await Sales.find({
     ...(userId && {
       researchers: {
@@ -35,7 +36,7 @@ const getAllSales = async ({
     }),
     ...(forLastDays && {
       createdAt: {
-        $gte: moment().utc().subtract(forLastDays, 'd').startOf('d').valueOf(),
+        $gte: moment().utc().subtract(forLastDays, "d").startOf("d").valueOf(),
       },
     }),
     ...(relatedToTheVbForm && {
@@ -45,10 +46,10 @@ const getAllSales = async ({
     .limit(count ? count : null)
     .sort({ $natural: -1 })
     .populate({
-      path: 'vbFormInfo.uid',
+      path: "vbFormInfo.uid",
       select: { formId: 1, sender: 1, refFormId: 1, advancePaymentReceived: 1 },
       populate: {
-        path: 'sender refFormId',
+        path: "sender refFormId",
         select: { email: 1, advancePayment: 1, percentage: 1, exclusivity: 1 },
       },
     });
@@ -71,12 +72,12 @@ const getSalesByUserId = async ({ userId, dateLimit, paidFor }) => {
     researchers: {
       $elemMatch: {
         id: userId,
-        ...(typeof paidFor === 'boolean' && { paidFor }),
+        ...(typeof paidFor === "boolean" && { paidFor }),
       },
     },
     ...(dateLimit && {
       createdAt: {
-        $gte: moment().utc().subtract(dateLimit, 'd').startOf('d').valueOf(),
+        $gte: moment().utc().subtract(dateLimit, "d").startOf("d").valueOf(),
       },
     }),
   }).sort({ createdAt: -1 });
@@ -109,8 +110,8 @@ const updateSaleBy = async ({ updateBy, value, dataForUpdate }) => {
 const markEmployeeOnSalesHavingReceivePercentage = async ({ researcherId }) => {
   return Sales.updateMany(
     { researchers: { $elemMatch: { id: researcherId } } },
-    { $set: { 'researchers.$[field].paidFor': true } },
-    { arrayFilters: [{ 'field.id': researcherId }] }
+    { $set: { "researchers.$[field].paidFor": true } },
+    { arrayFilters: [{ "field.id": researcherId }] }
   );
 };
 

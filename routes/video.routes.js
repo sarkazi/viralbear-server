@@ -776,6 +776,11 @@ router.get("/findCountByGroups", async (req, res) => {
               moment().subtract(30, "d").startOf("d").toISOString()
             ),
           },
+          "videoData.hasAudioTrack": true,
+          "videoData.duration": {
+            $gte: 10,
+            $lt: 300,
+          },
         },
       },
       {
@@ -863,15 +868,17 @@ router.get("/findAll", authMiddleware, async (req, res) => {
       ...(tag && { tag }),
       ...(location && { location }),
       ...(forLastDays && { forLastDays: +forLastDays }),
-      ...(typeof JSON.parse(isApproved) === "boolean" && {
-        isApproved: JSON.parse(isApproved),
-      }),
-      ...(typeof JSON.parse(personal) === "boolean" && {
-        researcher: {
-          searchBy: "researcher",
-          value: convertInMongoIdFormat({ string: req.user.id }),
-        },
-      }),
+      ...(isApproved &&
+        typeof JSON.parse(isApproved) === "boolean" && {
+          isApproved: JSON.parse(isApproved),
+        }),
+      ...(personal &&
+        typeof JSON.parse(personal) === "boolean" && {
+          researcher: {
+            searchBy: "researcher",
+            value: convertInMongoIdFormat({ string: req.user.id }),
+          },
+        }),
       ...(wasRemovedFromPublication &&
         typeof JSON.parse(wasRemovedFromPublication) === "boolean" && {
           wasRemovedFromPublication: JSON.parse(wasRemovedFromPublication),
@@ -910,6 +917,13 @@ router.get("/findAll", authMiddleware, async (req, res) => {
         sort: { "videoData.videoId": -1 },
       });
     }
+
+    console.log(
+      videos.map((ff) => {
+        return ff.trelloData.researchers;
+      }),
+      888
+    );
 
     const apiData = {
       ...(limit &&
@@ -1051,6 +1065,8 @@ router.get("/findByAuthor", authMiddleware, async (req, res) => {
 
     let videos = await Promise.all(
       videosWithVbCode.map(async (video) => {
+        console.log(video?.vbForm?.sender?._id, userId);
+
         if (video?.vbForm?.sender?._id.toString() === userId.toString()) {
           const sales = await getAllSales({ videoId: video.videoData.videoId });
 

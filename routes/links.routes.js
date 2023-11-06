@@ -95,13 +95,36 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
       });
     }
 
-    const trelloResponseAfterCreatingCard = await createCardInTrello(
-      authorNickname,
-      title,
-      videoLink,
-      list,
-      foundWorkersTrelloIds
-    );
+    const defineTrelloCardName = () => {
+      if (!!authorNickname && !!title) {
+        return `@${authorNickname} ${title}`;
+      } else if (!authorNickname && title) {
+        return `${title}`;
+      } else if (authorNickname && !title) {
+        return `@${authorNickname}`;
+      }
+    };
+
+    const defineListId = () => {
+      switch (list) {
+        case "Review":
+          return process.env.TRELLO_LIST_REVIEW_ID;
+        case "In progress":
+          return process.env.TRELLO_LIST_DOING_ID;
+        case "To do":
+          return process.env.TRELLO_LIST_TODO_ID;
+      }
+    };
+
+    const trelloResponseAfterCreatingCard = await createCardInTrello({
+      name: defineTrelloCardName(),
+      desc: videoLink,
+      idList: defineListId(),
+      idMembers: foundWorkersTrelloIds,
+      ...(list === "In progress" && {
+        idLabels: [process.env.TRELLO_LABEL_IN_PROGRESS],
+      }),
+    });
 
     if (JSON.parse(priority)) {
       //меняем кастомное поле "priority" в карточке trello
@@ -146,7 +169,6 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
       message: "Video added and sent",
     });
   } catch (err) {
-    console.log(err, 88);
     console.log(errorsHandler({ err, trace: "link.sendLinkToTrello" }));
     return res
       .status(400)

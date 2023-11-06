@@ -1722,6 +1722,18 @@ router.get("/collectStatForEmployee", authMiddleware, async (req, res) => {
       },
     });
 
+    // const acquiredVideosMainRole30 = await getAllVideos({
+    //   isApproved: true,
+    //   forLastDays: 30,
+    //   researcher: {
+    //     searchBy: "researcher",
+    //     value: user._id,
+    //     isAcquirer: true,
+    //   },
+    // });
+
+    // console.log(acquiredVideosMainRole30);
+
     const profitableVideos = acquiredVideosMainRole.filter((video) => {
       if (!!video.vbForm?.refFormId?.percentage) {
         return (
@@ -1875,7 +1887,7 @@ router.get("/collectStatForEmployee", authMiddleware, async (req, res) => {
         forWhat: definePaymentSubject(),
       },
       name: user.name,
-      salesCount: sales.length,
+      salesCount: salesDateLimit.length,
     };
 
     return res.status(200).json({
