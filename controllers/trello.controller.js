@@ -301,6 +301,20 @@ const getAllCardsFromTrello = async () => {
   return data;
 };
 
+const addNewCommentToTrelloCard = async ({ cardId, textComment }) => {
+  const { data } = await trelloInstance.post(
+    `/1/cards/${cardId}/actions/comments`,
+    {},
+    {
+      params: {
+        text: textComment,
+      },
+    }
+  );
+
+  return data;
+};
+
 module.exports = {
   getAllCommentsByBoard,
   getPriorityCardByCardId,
@@ -325,4 +339,5 @@ module.exports = {
   inviteMemberOnBoard,
   deleteLabelFromTrelloCard,
   getAllCardsFromTrello,
+  addNewCommentToTrelloCard,
 };

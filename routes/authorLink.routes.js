@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const fetch = require("node-fetch");
 
 const { errorsHandler } = require("../handlers/error.handler");
 
@@ -12,14 +11,13 @@ const { getUserById } = require("../controllers/user.controller");
 
 const {
   conversionIncorrectLinks,
-  findBaseUrl,
-  pullIdFromUrl,
+
   findLinkBy,
 } = require("../controllers/links.controller");
 
 const {
   findAuthorLinkByVideoId,
-  deleteAuthorLink,
+
   createNewAuthorLink,
   findOneRefFormByParam,
 } = require("../controllers/authorLink.controller");

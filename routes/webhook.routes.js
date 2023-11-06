@@ -1,35 +1,41 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const socketInstance = require('../socket.instance');
+const socketInstance = require("../socket.instance");
 
-const { getUserBy } = require('../controllers/user.controller');
+const { getUserBy } = require("../controllers/user.controller");
 
-const { errorsHandler } = require('../handlers/error.handler');
+const { errorsHandler } = require("../handlers/error.handler");
 const {
   writeNewMoveToDone,
   findTheRecordOfTheCardMovedToDone,
-} = require('../controllers/movedToDoneList.controller');
+} = require("../controllers/movedToDoneList.controller");
 
 const {
   writeNewMoveFromReview,
   findTheRecordOfTheCardMovedFromReview,
-} = require('../controllers/movedFromReviewList.controller');
+} = require("../controllers/movedFromReviewList.controller");
+
+const {
+  findOne,
+  deleteVbFormsBy,
+} = require("../controllers/uploadInfo.controller");
 
 const {
   getPriorityCardByCardId,
   getCardLabelsByCardId,
   updateTrelloCard,
-} = require('../controllers/trello.controller');
+  addNewCommentToTrelloCard,
+} = require("../controllers/trello.controller");
 
 const {
   deleteVideoById,
   findVideoBy,
-} = require('../controllers/video.controller');
+} = require("../controllers/video.controller");
 
-const { findLinkBy } = require('../controllers/links.controller');
+const { findLinkBy } = require("../controllers/links.controller");
 
-router.post('/trello/doneList', async (req, res) => {
+router.post("/trello/doneList", async (req, res) => {
   try {
     //const allNecessaryLabelsForDoneCard = [
     //  process.env.TRELLO_LABEL_NOT_PUBLISHED,
@@ -101,30 +107,30 @@ router.post('/trello/doneList', async (req, res) => {
     //}
 
     if (
-      changedData.action?.type === 'updateCard' &&
+      changedData.action?.type === "updateCard" &&
       (changedData.action?.display?.translationKey ===
-        'action_moved_card_lower' ||
+        "action_moved_card_lower" ||
         changedData.action?.display?.translationKey ===
-          'action_moved_card_higher')
+          "action_moved_card_higher")
     ) {
       const cardId = changedData.action.data.card.id;
 
       const { priority } = await getPriorityCardByCardId(cardId);
 
-      socketInstance.io().emit('triggerForAnUpdateInPublishing', {
+      socketInstance.io().emit("triggerForAnUpdateInPublishing", {
         priority,
-        event: 'new card in done',
+        event: "new card in done",
       });
     }
 
-    return res.status(200).json({ status: 'success' });
+    return res.status(200).json({ status: "success" });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'webhookTrello.doneList' }));
-    return res.status(200).json({ status: 'error' });
+    console.log(errorsHandler({ err, trace: "webhookTrello.doneList" }));
+    return res.status(200).json({ status: "error" });
   }
 });
 
-router.post('/trello/reviewList', async (req, res) => {
+router.post("/trello/reviewList", async (req, res) => {
   try {
     const changedData = req.body;
 
@@ -134,7 +140,7 @@ router.post('/trello/reviewList', async (req, res) => {
       changedData.webhook.idModel === process.env.TRELLO_LIST_REVIEW_ID &&
       changedData?.action?.data?.listBefore?.name
         ?.toLowerCase()
-        ?.includes('review')
+        ?.includes("review")
     ) {
       console.log(`webhook "${changedData.webhook.description}" сработал`);
 
@@ -150,7 +156,7 @@ router.post('/trello/reviewList', async (req, res) => {
         const trelloCardId = changedData.action.data.card.id;
 
         const addedTrelloCard = await findLinkBy({
-          searchBy: 'trelloCardId',
+          searchBy: "trelloCardId",
           value: trelloCardId,
         });
 
@@ -160,7 +166,7 @@ router.post('/trello/reviewList', async (req, res) => {
           cardCreatorId = addedTrelloCard.researcher._id;
         } else {
           const researcher = await getUserBy({
-            searchBy: 'nickname',
+            searchBy: "nickname",
             value: `@${changedData.action.memberCreator.username}`,
           });
 
@@ -176,21 +182,112 @@ router.post('/trello/reviewList', async (req, res) => {
       }
     }
 
-    return res.status(200).json({ status: 'success' });
+    return res.status(200).json({ status: "success" });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'webhookTrello.reviewList' }));
+    console.log(errorsHandler({ err, trace: "webhookTrello.reviewList" }));
   }
 });
 
-router.post('/trello/allBoard', async (req, res) => {
+router.post("/trello/allBoard", async (req, res) => {
   try {
     const changedData = req.body;
 
     if (
+      changedData?.action?.type === "updateCustomFieldItem" &&
+      changedData?.action?.data?.customField?.id ===
+        process.env.TRELLO_CUSTOM_FIELD_VB_CODE &&
+      !!changedData?.action?.data?.customFieldItem?.value
+    ) {
+      const vbCode = changedData.action.data.customFieldItem.value.number;
+      const cardId = changedData.action.data.card.id;
+
+      const vbForm = await findOne({
+        searchBy: "formId",
+        param: `VB${vbCode}`,
+      });
+
+      if (!!vbForm?.refFormId) {
+        const linkMarkup = vbForm.videoLinks
+          .map((link, index) => {
+            return `${link}${index + 1 !== vbForm.videoLinks.length && `\n`}`;
+          })
+          .join(``);
+
+        const renderTermsOfTheAgreement = () => {
+          if (vbForm.refFormId.percentage && vbForm.refFormId.advancePayment) {
+            return `${vbForm.refFormId.advancePayment}$ + ${vbForm.refFormId.percentage}%`;
+          } else if (
+            vbForm.refFormId.percentage &&
+            !vbForm.refFormId.advancePayment
+          ) {
+            return `${vbForm.refFormId.percentage}%`;
+          } else if (
+            !vbForm.refFormId.percentage &&
+            vbForm.refFormId.advancePayment
+          ) {
+            return `${vbForm.refFormId.advancePayment}%`;
+          } else {
+            return "";
+          }
+        };
+
+        const contentComment = `
+          ${linkMarkup}\n
+          ${renderTermsOfTheAgreement()}
+        `;
+
+        await addNewCommentToTrelloCard({
+          textComment: contentComment,
+          cardId,
+        });
+
+        const surveyKeys = {
+          whereFilmed: "Where filmed",
+          whenFilmed: "When filmed",
+          whoAppears: "Who appears",
+          whyDecide: "Why decide",
+          whatHappen: "What happen",
+        };
+
+        if (
+          Object.keys(vbForm._doc).some((key) => {
+            return Object.keys(surveyKeys).includes(key);
+          })
+        ) {
+          const { whereFilmed, whenFilmed, whoAppears, whyDecide, whatHappen } =
+            vbForm;
+
+          const arrInfo = [
+            ...(whereFilmed
+              ? [`${surveyKeys.whereFilmed}: ${whereFilmed}`]
+              : []),
+            ...(whenFilmed ? [`${surveyKeys.whenFilmed}: ${whenFilmed}`] : []),
+            ...(whoAppears ? [`${surveyKeys.whoAppears}: ${whoAppears}`] : []),
+            ...(whyDecide ? [`${surveyKeys.whyDecide}: ${whyDecide}`] : []),
+            ...(whatHappen ? [`${surveyKeys.whatHappen}: ${whatHappen}`] : []),
+          ];
+
+          const surveyComment = `
+  ${arrInfo
+    .map((value, index) => {
+      return `${value}${index + 1 !== arrInfo.length ? `\n` : ``}`;
+    })
+    .join(``)}
+  `;
+
+          await addNewCommentToTrelloCard({
+            textComment: surveyComment,
+            cardId,
+          });
+        }
+      }
+    }
+
+    if (
       changedData?.action?.display?.translationKey ===
-        'action_add_label_to_card' &&
+        "action_add_label_to_card" &&
       !changedData?.action?.appCreator &&
-      changedData?.action?.data?.text === 'Done'
+      changedData?.action?.data?.text === "Done"
     ) {
       console.log(`webhook "${changedData.webhook.description}" сработал`);
 
@@ -206,7 +303,7 @@ router.post('/trello/allBoard', async (req, res) => {
           changedData.action.memberCreator.username;
 
         const researcherInDatabase = await getUserBy({
-          searchBy: 'nickname',
+          searchBy: "nickname",
           value: `@${researcherUsernameInTrello}`,
         });
 
@@ -260,9 +357,9 @@ router.post('/trello/allBoard', async (req, res) => {
     //  }
     //}
 
-    return res.status(200).json({ status: 'success' });
+    return res.status(200).json({ status: "success" });
   } catch (err) {
-    console.log(errorsHandler({ err, trace: 'webhookTrello.allBoard' }));
+    console.log(errorsHandler({ err, trace: "webhookTrello.allBoard" }));
   }
 });
 

@@ -1,4 +1,4 @@
-const UploadInfo = require('../entities/UploadInfo');
+const UploadInfo = require("../entities/UploadInfo");
 
 const findOne = async (objDB) => {
   const { searchBy, param } = objDB;
@@ -7,9 +7,9 @@ const findOne = async (objDB) => {
     [searchBy]: param,
   })
     .populate({
-      path: 'refFormId',
+      path: "refFormId",
       populate: {
-        path: 'researcher',
+        path: "researcher",
         select: { email: 1, name: 1 },
       },
       select: {
@@ -19,10 +19,11 @@ const findOne = async (objDB) => {
         trelloCardUrl: 1,
         videoId: 1,
         paid: 1,
+        videoLink: 1,
       },
     })
     .populate({
-      path: 'sender',
+      path: "sender",
       select: {
         email: 1,
         name: 1,

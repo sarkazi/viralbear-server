@@ -61,6 +61,7 @@ const {
 const {
   getCardDataByCardId,
   updateCustomFieldByTrelloCard,
+  addNewCommentToTrelloCard,
 } = require("../controllers/trello.controller");
 
 const storage = multer.memoryStorage();
@@ -121,6 +122,36 @@ router.patch("/addAdditionalInfo", async (req, res) => {
     };
 
     await updateVbFormByFormId(formId, objDB);
+
+    if (!!vbForm.refFormId?.paid) {
+      const linkData = await findLinkBy({
+        searchBy: "link",
+        value: vbForm.refFormId.videoLink,
+      });
+
+      if (!!linkData?.trelloCardId) {
+        const arrInfo = [
+          ...(whereFilmed ? [`whereFilmed: ${whereFilmed}`] : []),
+          ...(whenFilmed ? [`whenFilmed: ${whenFilmed}`] : []),
+          ...(whoAppears ? [`whoAppears: ${whoAppears}`] : []),
+          ...(whyDecide ? [`whyDecide: ${whyDecide}`] : []),
+          ...(whatHappen ? [`whatHappen: ${whatHappen}`] : []),
+        ];
+
+        const textComment = `
+${arrInfo
+  .map((value, index) => {
+    return `${value}${index + 1 !== arrInfo.length ? `\n` : ``}`;
+  })
+  .join(``)}
+`;
+
+        await addNewCommentToTrelloCard({
+          textComment,
+          cardId: linkData.trelloCardId,
+        });
+      }
+    }
 
     sendSurveyInfoToServiceMail({ ...objDB, formId });
 
@@ -615,11 +646,13 @@ router.post(
 
       if (!!newVbForm.refFormId?.paid) {
         const linkData = await findLinkBy({
-          searchBy: "unixid",
-          value: newVbForm.refFormId.videoId,
+          searchBy: "link",
+          value: newVbForm.refFormId.videoLink,
         });
 
-        if (!!linkData?.trelloCardId && process.env.MODE === "production") {
+        // && process.env.MODE === "production"
+
+        if (!!linkData?.trelloCardId) {
           const trelloCard = await getCardDataByCardId(linkData.trelloCardId);
 
           await updateCustomFieldByTrelloCard(
