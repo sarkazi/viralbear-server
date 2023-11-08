@@ -1,7 +1,10 @@
+const defaultAdvanceValueToResearcher = require("../const/defaultAdvanceValueToResearcher");
+
 const defineResearchersListForCreatingVideo = ({
   mainResearcher,
   allResearchersList,
   researcherWithPaidAdvance,
+  advanceToResearcher,
 }) => {
   return allResearchersList.map((researcher) => {
     return {
@@ -17,9 +20,11 @@ const defineResearchersListForCreatingVideo = ({
           researcherWithPaidAdvance.researcher._id.toString()
           ? true
           : false,
-      ...(mainResearcher._id.toString() === researcher._id.toString() && {
-        advance: 10,
-      }),
+      advanceValue:
+        advanceToResearcher &&
+        researcher._id.toString() === mainResearcher._id.toString()
+          ? advanceToResearcher
+          : defaultAdvanceValueToResearcher,
     };
   });
 };

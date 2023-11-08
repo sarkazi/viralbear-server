@@ -406,8 +406,6 @@ router.post(
                 });
 
                 if (!videoDb) {
-                  console.log(obj);
-
                   return {
                     videoId: obj.videoId,
                     status: "notFound",

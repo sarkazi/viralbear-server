@@ -93,7 +93,7 @@ const schema = new Schema(
             required: true,
             default: false,
           },
-          advance: {
+          advanceValue: {
             type: Number,
             required: false,
           },

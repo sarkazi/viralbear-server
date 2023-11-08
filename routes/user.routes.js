@@ -977,126 +977,36 @@ router.get(
 
           //-----------------------------------------------------------------------------------------------------
 
-          let advance = 0;
-          let percentage = 0;
-
-          const videosCountWithUnpaidAdvance = await getCountVideosBy({
+          const videosWithUnpaidAdvance = await getAllVideos({
             isApproved: true,
-            user: {
+            researcher: {
               value: user._id,
-              purchased: true,
+              isAcquirer: true,
               searchBy: "researcher",
               advanceHasBeenPaid: false,
             },
           });
 
+          const defineAdvanceValueToResearcher = () => {
+            if (!user?.advancePayment) {
+              return 0;
+            } else {
+              return videosWithUnpaidAdvance.reduce((acc, videoData) => {
+                const thisResearcher = videoData.trelloData.researchers.find(
+                  (researcherData) =>
+                    researcherData.researcher._id.toString() ===
+                    user._id.toString()
+                );
+
+                return thisResearcher.advanceValue + acc;
+              }, 0);
+            }
+          };
+
+          let advance = defineAdvanceValueToResearcher();
+          let percentage = 0;
+
           //--------------------------------------------------------
-
-          if (user.name === "Kirill") {
-            //const test = await getAllVideos({
-            //  isApproved: true,
-            //  researcher: {
-            //    value: user._id,
-            //    searchBy: 'researcher',
-            //    isAcquirer: true,
-            //    advanceHasBeenPaid: false,
-            //  },
-            //});
-            //Promise.delay = function (t, val) {
-            //  return new Promise((resolve) => {
-            //    setTimeout(resolve.bind(null, val), t);
-            //  });
-            //};
-            //Promise.raceAll = function (promises, timeoutTime, timeoutVal) {
-            //  return Promise.all(
-            //    promises.map((p) => {
-            //      return Promise.race([
-            //        p,
-            //        Promise.delay(timeoutTime, timeoutVal),
-            //      ]);
-            //    })
-            //  );
-            //};
-            //const hh = await Promise.raceAll(
-            //  arr.map(async (ll) => {
-            //    return await getCardDataByCardId(ll);
-            //  }),
-            //  6000,
-            //  null
-            //);
-            //const hhhhh = await Promise.all(
-            //  testff.map(async (fff) => {
-            //    const video = await findVideoBy({
-            //      searchBy: 'trelloData.trelloCardId',
-            //      value: fff.id,
-            //    });
-            //    console.log(
-            //      video.trelloData.researchers.map((jj) => {
-            //        return jj;
-            //      })
-            //    );
-            //    if (!video) {
-            //      return {
-            //        id: fff.id,
-            //        status: 'not found',
-            //      };
-            //    } else {
-            //      return {
-            //        researcher: video.trelloData.researchers.find((ydgfyds) => {
-            //          ydgfyds.researcher.name === user.name;
-            //        }),
-            //        id: fff.id,
-            //        status: 'found',
-            //      };
-            //    }
-            //  })
-            //);
-            //fs.writeFile('output.json', JSON.stringify(hhhh), 'utf8', () => {});
-          }
-
-          //if (
-          //  user.name === 'Apratim' ||
-          //  user.name === 'Marina' ||
-          //  user.name === 'Maher'
-          //) {
-          //  if (user.name === 'Marina') {
-          //    //const tt = await getApprovedTrelloCardBy({
-          //    //  searchBy: 'researcherId',
-          //    //  value: user._id,
-          //    //});
-          //    const yy = await getLinks({
-          //      researcherId: user._id,
-          //      //listInTrello: 'Review',
-          //    });
-
-          //    //const arr = tt.map((el) => {
-          //    //  return el.trelloCardId;
-          //    //});
-
-          //    //console.log(
-          //    //  arr.filter((item, index) => arr.indexOf(item) !== index),
-          //    //  55
-          //    //);
-
-          //    //fs.writeFile(
-          //    //  'movedFromReview_Marina.json',
-          //    //  JSON.stringify(tt),
-          //    //  'utf8',
-          //    //  () => {}
-          //    //);
-          //    //fs.writeFile(
-          //    //  'sendToReview_Marina.json',
-          //    //  JSON.stringify(yy),
-          //    //  'utf8',
-          //    //  () => {}
-          //    //);
-          //  }
-          //}
-          //--------------------------------------------------------
-
-          advance = !user?.advancePayment
-            ? 0
-            : videosCountWithUnpaidAdvance * user.advancePayment;
 
           const unpaidSales = await getSalesByUserId({
             userId: user._id,
@@ -1114,7 +1024,7 @@ router.get(
           const definePaymentSubject = () => {
             if (advance > percentage) {
               return {
-                tooltip: `Advance payment for ${videosCountWithUnpaidAdvance} videos`,
+                tooltip: `Advance payment for ${videosWithUnpaidAdvance.length} videos`,
               };
             } else if (
               advance < percentage ||
@@ -1722,18 +1632,6 @@ router.get("/collectStatForEmployee", authMiddleware, async (req, res) => {
       },
     });
 
-    // const acquiredVideosMainRole30 = await getAllVideos({
-    //   isApproved: true,
-    //   forLastDays: 30,
-    //   researcher: {
-    //     searchBy: "researcher",
-    //     value: user._id,
-    //     isAcquirer: true,
-    //   },
-    // });
-
-    // console.log(acquiredVideosMainRole30);
-
     const profitableVideos = acquiredVideosMainRole.filter((video) => {
       if (!!video.vbForm?.refFormId?.percentage) {
         return (
@@ -1753,24 +1651,35 @@ router.get("/collectStatForEmployee", authMiddleware, async (req, res) => {
           100
         ).toFixed(2);
 
-    let advance = 0;
+    const videosWithUnpaidAdvance = await getAllVideos({
+      isApproved: true,
+      researcher: {
+        value: user._id,
+        isAcquirer: true,
+        searchBy: "researcher",
+        advanceHasBeenPaid: false,
+      },
+    });
+
+    const defineAdvanceValueToResearcher = () => {
+      if (!user?.advancePayment) {
+        return 0;
+      } else {
+        return videosWithUnpaidAdvance.reduce((acc, videoData) => {
+          const thisResearcher = videoData.trelloData.researchers.find(
+            (researcherData) =>
+              researcherData.researcher._id.toString() === user._id.toString()
+          );
+
+          return thisResearcher.advanceValue + acc;
+        }, 0);
+      }
+    };
+
+    let advance = defineAdvanceValueToResearcher();
     let percentage = 0;
 
     let videosCountWithUnpaidAdvance = null;
-
-    if (!!user?.advancePayment) {
-      videosCountWithUnpaidAdvance = await getCountVideosBy({
-        isApproved: true,
-        user: {
-          value: user._id,
-          purchased: true,
-          searchBy: "researcher",
-          advanceHasBeenPaid: false,
-        },
-      });
-
-      advance = videosCountWithUnpaidAdvance * user.advancePayment;
-    }
 
     const unpaidSales = await getSalesByUserId({
       userId: user._id,

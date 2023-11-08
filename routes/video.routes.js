@@ -166,7 +166,6 @@ router.post(
         commentToAdmin,
         acquirerName,
         checkPaymentToTheAuthor,
-        acquirerPaidAdvance,
       } = req.body;
 
       const { video, screen } = req.files;
@@ -857,6 +856,7 @@ router.get("/findAll", authMiddleware, async (req, res) => {
     wasRemovedFromPublication,
     personal,
     forLastDays,
+    onlyWhereAcquirer,
   } = req.query;
 
   if ((limit && !page) || (!limit && page)) {
@@ -876,10 +876,14 @@ router.get("/findAll", authMiddleware, async (req, res) => {
           isApproved: JSON.parse(isApproved),
         }),
       ...(personal &&
-        typeof JSON.parse(personal) === "boolean" && {
+        !!JSON.parse(personal) && {
           researcher: {
             searchBy: "researcher",
             value: convertInMongoIdFormat({ string: req.user.id }),
+            ...(onlyWhereAcquirer &&
+              typeof JSON.parse(onlyWhereAcquirer) === "boolean" && {
+                isAcquirer: JSON.parse(onlyWhereAcquirer),
+              }),
           },
         }),
       ...(wasRemovedFromPublication &&
@@ -1265,7 +1269,10 @@ router.patch(
       commentToAdmin,
       acquirerName,
       acquirerPaidAdvance,
+      advanceToResearcher,
     } = req.body;
+
+    console.log(advanceToResearcher, 77);
 
     if (
       !originalLink ||
@@ -1602,6 +1609,7 @@ router.patch(
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
+          advanceToResearcher: +advanceToResearcher,
           ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
@@ -1840,6 +1848,7 @@ router.patch(
       apVideoHub,
       commentToAdmin,
       acquirerName,
+      advanceToResearcher,
     } = req.body;
 
     if (
@@ -2177,6 +2186,7 @@ router.patch(
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
+          advanceToResearcher: +advanceToResearcher,
           ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
@@ -2337,6 +2347,7 @@ router.patch(
       socialMedia,
       acquirerName,
       acquirerPaidAdvance,
+      advanceToResearcher,
     } = req.body;
 
     if (
@@ -3060,6 +3071,7 @@ router.patch(
         defineResearchersListForCreatingVideo({
           mainResearcher: acquirer ? acquirer : null,
           allResearchersList: researchersList,
+          advanceToResearcher: +advanceToResearcher,
           ...(!!researcherWithPaidAdvance && { researcherWithPaidAdvance }),
         });
 
