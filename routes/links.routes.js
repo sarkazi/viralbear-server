@@ -36,11 +36,9 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
   const convertedLink = conversionIncorrectLinks(link);
 
   try {
-    let videoLink = null;
+    let response = await findBaseUrl(convertedLink);
 
-    const response = await findBaseUrl(convertedLink);
-
-    if (response.status === "success") {
+    if (response.status === "success" && response.href.includes("tiktok")) {
       videoLink = response.href;
     } else {
       videoLink = pullIdFromUrl(convertedLink);

@@ -2459,9 +2459,8 @@ router.patch(
         //});
 
         if (
-          // process.env.MODE === "production" &&
-          !video?.uploadedToFb ||
-          !video?.uploadedToYoutube
+          process.env.MODE === "production" &&
+          (!video?.uploadedToFb || !video?.uploadedToYoutube)
         ) {
           let stream = null;
 
@@ -3501,7 +3500,7 @@ router.post(
           }
         }
 
-        if (!video?.uploadedToFb && process.env.MODE === "production") {
+        if (!video?.uploadedToFb) {
           socketInstance
             .io()
             .sockets.in(req.user.id)
