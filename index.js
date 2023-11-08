@@ -35,6 +35,7 @@ const publicVideosRouter = require("./routes/public.videos.routes");
 const commonRouter = require("./routes/common.routes");
 const transactionsRouter = require("./routes/transactions.routes");
 const emailRouter = require("./routes/email.routes");
+const stringerVideosRouter = require("./routes/stringerVideos.routes");
 
 const socketServer = require("http").createServer(app);
 
@@ -70,6 +71,7 @@ app.use("/webhook", webhookRouter);
 app.use("/public/users", publicUsersRouter);
 app.use("/public/videos", publicVideosRouter);
 app.use("/email", emailRouter);
+app.use("/videos/stringers", stringerVideosRouter);
 
 let PORT = process.env.PORT || 8888;
 
@@ -85,6 +87,5 @@ let PORT = process.env.PORT || 8888;
     });
   } catch (e) {
     console.log(e);
-    console.log("77777777777777");
   }
 })();

@@ -17,6 +17,9 @@ const defineResearchersListForCreatingVideo = ({
           researcherWithPaidAdvance.researcher._id.toString()
           ? true
           : false,
+      ...(mainResearcher._id.toString() === researcher._id.toString() && {
+        advance: 10,
+      }),
     };
   });
 };

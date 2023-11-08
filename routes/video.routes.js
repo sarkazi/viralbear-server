@@ -495,9 +495,12 @@ router.post(
           sendEmail(bodyForEmail);
         }
 
-        socketInstance.io().emit("triggerForAnUpdateInPublishing", {
-          event: "ready for publication",
-          priority: null,
+        const acquirerData = newVideo.trelloData.researchers.find(
+          (obj) => obj.main
+        );
+
+        socketInstance.io().emit("editorPanelChanges", {
+          event: "prePublish",
         });
 
         return res.status(200).json({
@@ -2277,6 +2280,10 @@ router.patch("/addCommentForFixed", authMiddleware, async (req, res) => {
     const updatedVideo = await findVideoBy({
       searchBy: "videoData.videoId",
       value: videoId,
+    });
+
+    socketInstance.io().emit("editorPanelChanges", {
+      event: "fixCard",
     });
 
     return res.status(200).json({

@@ -93,6 +93,10 @@ const schema = new Schema(
             required: true,
             default: false,
           },
+          advance: {
+            type: Number,
+            required: false,
+          },
           main: {
             type: Boolean,
             required: true,
