@@ -155,11 +155,10 @@ router.get("/findCardsFromDoneList", authMiddleware, async (req, res) => {
     requiredCards = await Promise.all(
       requiredCards.map(async (card) => {
         let vbForm = null;
-        let researcher = null;
 
         if (
           card.customFieldItems.find(
-            (el) => el.idCustomField === "63e659f754cea8f9978e3b63"
+            (el) => el.idCustomField === process.env.TRELLO_CUSTOM_FIELD_VB_CODE
           )
         ) {
           const vbFormId = card.customFieldItems.find(
@@ -204,25 +203,39 @@ router.get("/findCardsFromDoneList", authMiddleware, async (req, res) => {
           }
         }
 
+        const researcherPaidAdvance = Boolean(
+          card.customFieldItems.find(
+            (customField) => customField?.idValue === "651026f4df5a55197865fad2"
+          )
+        );
+
+        const cardIsPriority = Boolean(
+          card.customFieldItems.find(
+            (customField) => customField?.idValue === "62c7e0032a86d7161f8cadb2"
+          )
+        );
+
+        const cardIsApproved = Boolean(
+          card.customFieldItems.find(
+            (customField) => customField?.idValue === "6360c514c95f85019ca4d612"
+          )
+        );
+
+        const cardHasAdvance = Boolean(
+          !!vbForm?.refFormId?.advancePayment && !researcherPaidAdvance
+        );
+
+        const cardName =
+          card.name.length >= 20
+            ? card.name.substring(0, 20) + "..."
+            : card.name;
+
         return {
           id: card.id,
-          name:
-            card.name.length >= 20
-              ? card.name.substring(0, 20) + "..."
-              : card.name,
-          priority: card.customFieldItems.find(
-            (customField) => customField.idValue === "62c7e0032a86d7161f8cadb2"
-          )
-            ? true
-            : false,
-
-          hasAdvance:
-            vbForm && vbForm?.refFormId?.advancePayment ? true : false,
-          list: card.customFieldItems.find(
-            (customField) => customField.idValue === "6360c514c95f85019ca4d612"
-          )
-            ? "approve"
-            : "done",
+          name: cardName,
+          priority: cardIsPriority,
+          hasAdvance: cardHasAdvance,
+          list: cardIsApproved ? "approve" : "done",
           url: card.url,
           ...(acquirer && { acquirer }),
           ...(cardMembers && { cardMembers }),
