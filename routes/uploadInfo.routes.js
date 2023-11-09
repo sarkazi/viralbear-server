@@ -363,72 +363,62 @@ router.post(
 
       let agreementLink = null;
 
-      if (process.env.MODE === "production") {
-        const resAfterPdfGenerate = await new Promise(
-          async (resolve, reject) => {
-            socketInstance
-              .io()
-              .sockets.in(socketId)
-              .emit("submitRequestProgress", {
-                event: "Generating an agreement",
-                file: null,
+      const resAfterPdfGenerate = await new Promise(async (resolve, reject) => {
+        socketInstance.io().sockets.in(socketId).emit("submitRequestProgress", {
+          event: "Generating an agreement",
+          file: null,
+        });
+        pdfConverter
+          .create(generatingTextOfAgreement(dynamicDataForAgreement), {
+            format: "A4",
+            childProcessOptions: {
+              env: {
+                OPENSSL_CONF: "/dev/null",
+                // OPENSSL_CONF: "/opt/openssl.cnf",
+              },
+            },
+            border: {
+              bottom: "30px",
+              top: "30px",
+              left: "30px",
+              right: "30px",
+            },
+          })
+          .toBuffer(async (err, buffer) => {
+            if (err) {
+              console.log(
+                errorsHandler({ err, trace: "uploadinfo.convertAgreement" })
+              );
+              resolve({
+                status: "error",
+                event: "pdfGenerate",
+                message: "Error at the agreement generation stage. Try again.",
               });
-            pdfConverter
-              .create(generatingTextOfAgreement(dynamicDataForAgreement), {
-                format: "A4",
-                childProcessOptions: {
-                  env: {
-                    OPENSSL_CONF: "/dev/null",
-                    // OPENSSL_CONF: "/opt/openssl.cnf",
-                  },
+            }
+            if (buffer) {
+              await uploadFileToStorage({
+                folder: "agreement",
+                name: `${createUniqueHash()}-${vbCode}`,
+                buffer,
+                type: "application/pdf",
+                extension: ".pdf",
+                resolve,
+                socketInfo: {
+                  userId: socketId,
+                  socketEmitName: "submitRequestProgress",
+                  eventName: "Saving the agreement to the repository",
                 },
-                border: {
-                  bottom: "30px",
-                  top: "30px",
-                  left: "30px",
-                  right: "30px",
-                },
-              })
-              .toBuffer(async (err, buffer) => {
-                if (err) {
-                  console.log(
-                    errorsHandler({ err, trace: "uploadinfo.convertAgreement" })
-                  );
-                  resolve({
-                    status: "error",
-                    event: "pdfGenerate",
-                    message:
-                      "Error at the agreement generation stage. Try again.",
-                  });
-                }
-                if (buffer) {
-                  await uploadFileToStorage({
-                    folder: "agreement",
-                    name: `${createUniqueHash()}-${vbCode}`,
-                    buffer,
-                    type: "application/pdf",
-                    extension: ".pdf",
-                    resolve,
-                    socketInfo: {
-                      userId: socketId,
-                      socketEmitName: "submitRequestProgress",
-                      eventName: "Saving the agreement to the repository",
-                    },
-                  });
-                }
               });
-          }
-        );
-        if (resAfterPdfGenerate.status === "error") {
-          return res.status(200).json({
-            message: resAfterPdfGenerate.message,
-            status: "warning",
+            }
           });
-        }
-        agreementLink = resAfterPdfGenerate.response.Location;
-      } else {
-        agreementLink = "https://ya.ru";
+      });
+      if (resAfterPdfGenerate.status === "error") {
+        return res.status(200).json({
+          message: resAfterPdfGenerate.message,
+          status: "warning",
+        });
       }
+      agreementLink = resAfterPdfGenerate.response.Location;
 
       if (!agreementLink) {
         return res.status(200).json({

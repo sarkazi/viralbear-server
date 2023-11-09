@@ -231,8 +231,11 @@ router.post("/trello/allBoard", async (req, res) => {
       if (!!vbForm?.refFormId) {
         const linkMarkup = vbForm.videoLinks
           .map((link, index) => {
-            return `${link}${index + 1 !== vbForm.videoLinks.length && `\n`}`;
+            if (link.includes("yandexcloud")) {
+              return `${link}${index + 1 !== vbForm.videoLinks.length && `\n`}`;
+            }
           })
+          .filter((el) => el)
           .join(``);
 
         const renderTermsOfTheAgreement = () => {
@@ -253,15 +256,19 @@ router.post("/trello/allBoard", async (req, res) => {
           }
         };
 
-        const contentComment = `
-          ${linkMarkup}\n
-          ${renderTermsOfTheAgreement()}
-        `;
+        const terms = renderTermsOfTheAgreement();
 
-        await addNewCommentToTrelloCard({
-          textComment: contentComment,
-          cardId,
-        });
+        if (!!linkMarkup || !!terms) {
+          const contentComment = `
+${linkMarkup}\n
+${renderTermsOfTheAgreement()}
+`;
+
+          await addNewCommentToTrelloCard({
+            textComment: contentComment,
+            cardId,
+          });
+        }
 
         const surveyKeys = {
           whereFilmed: "Where filmed",
