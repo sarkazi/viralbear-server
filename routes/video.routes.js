@@ -1272,8 +1272,6 @@ router.patch(
       advanceToResearcher,
     } = req.body;
 
-    console.log(advanceToResearcher, 77);
-
     if (
       !originalLink ||
       !JSON.parse(researchers).length ||

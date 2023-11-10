@@ -9,6 +9,8 @@ const authMiddleware = require("../middleware/auth.middleware");
 
 const { getUserById } = require("../controllers/user.controller");
 
+const { findOne } = require("../controllers/uploadInfo.controller");
+
 const {
   createCardInTrello,
   getMemberTrelloById,
@@ -24,6 +26,7 @@ const {
   findAuthorLinkByVideoId,
   findOneRefFormByParam,
   createNewAuthorLink,
+  updateAuthorLinkBy,
 } = require("../controllers/authorLink.controller");
 
 router.post("/create", authMiddleware, async (req, res) => {
@@ -195,6 +198,69 @@ router.get("/findOne/:value", async (req, res) => {
       message: `The referral form data is obtained from the database`,
       status: "success",
       apiData: authorLinkForm,
+    });
+  } catch (err) {
+    console.log(errorsHandler({ err, trace: "authorLink.findOne" }));
+    return res.status(500).json({
+      message: "Server side error",
+      status: "error",
+    });
+  }
+});
+
+router.patch("/:value", async (req, res) => {
+  const { searchBy } = req.query;
+  const { advancePayment, percentage } = req.body;
+  const { value } = req.params;
+
+  if (!value || !searchBy) {
+    return res.status(200).json({
+      message: `missing "searchBy" or "value"`,
+      status: "warning",
+    });
+  }
+
+  if (!advancePayment && !percentage) {
+    return res.status(200).json({
+      message: `Missing parameters for ref form update`,
+      status: "warning",
+    });
+  }
+
+  try {
+    if (searchBy === "vbCode") {
+      const vbForm = await findOne({
+        searchBy: "formId",
+        param: `VB${value}`,
+      });
+
+      if (!vbForm) {
+        return res.status(200).json({
+          message: `VB${value} is not found`,
+          status: "warning",
+        });
+      }
+
+      if (!vbForm?.refFormId?.paid) {
+        return res.status(200).json({
+          message: `This is a no-paid form`,
+          status: "warning",
+        });
+      }
+
+      await updateAuthorLinkBy({
+        updateBy: "_id",
+        updateValue: vbForm.refFormId._id,
+        objForSet: {
+          advancePayment: !!advancePayment ? advancePayment : 0,
+          percentage: !!percentage ? percentage : 0,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      message: `The referral form data succesfully updated`,
+      status: "success",
     });
   } catch (err) {
     console.log(errorsHandler({ err, trace: "authorLink.findOne" }));

@@ -1,9 +1,9 @@
-const { Schema, model } = require('mongoose');
+const { Schema, model } = require("mongoose");
 const schema = new Schema(
   {
     researcher: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     authorsNick: {
@@ -18,7 +18,10 @@ const schema = new Schema(
       type: String,
       required: true,
     },
-
+    unixid: {
+      type: String,
+      required: true,
+    },
     listInTrello: {
       type: String,
       required: true,
@@ -38,4 +41,4 @@ const schema = new Schema(
   },
   { timestamps: true }
 );
-module.exports = model('Links', schema);
+module.exports = model("Links", schema);

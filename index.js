@@ -43,7 +43,6 @@ socketInstance.initialize(socketServer);
 
 socketInstance.io().sockets.on("connection", (socket) => {
   socket.on("createRoom", (data) => {
-    console.log(data, 88);
     socket.join(data.userId);
     // console.log(socketInstance.io().sockets.adapter.rooms, "rooms");
   });

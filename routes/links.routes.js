@@ -33,20 +33,21 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
   const { list, workers, reminders, title, authorNickname, link, priority } =
     req.body;
 
-  const convertedLink = conversionIncorrectLinks(link);
+  const finalLink = conversionIncorrectLinks(link);
 
   try {
-    let response = await findBaseUrl(convertedLink);
+    let response = await findBaseUrl(finalLink);
+    let unixid = null;
 
     if (response.status === "success" && response.href.includes("tiktok")) {
-      videoLink = response.href;
+      unixid = response.href;
     } else {
-      videoLink = pullIdFromUrl(convertedLink);
+      unixid = pullIdFromUrl(finalLink);
     }
 
     const linkInfo = await findLinkBy({
-      searchBy: "link",
-      value: videoLink,
+      searchBy: "unixid",
+      value: unixid,
     });
 
     if (!!linkInfo) {
@@ -77,6 +78,8 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
       valueList: [...workers, selfWorker.name],
     });
 
+    console.log(foundWorkers);
+
     if (!foundWorkers.length) {
       return res.status(200).json({
         message: 'Not a single user with the role of "worker" was found',
@@ -85,6 +88,8 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
     }
 
     const foundWorkersTrelloIds = await findWorkersTrelloIds(foundWorkers);
+
+    console.log(foundWorkersTrelloIds);
 
     if (!foundWorkersTrelloIds.length) {
       return res.status(200).json({
@@ -116,7 +121,7 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
 
     const trelloResponseAfterCreatingCard = await createCardInTrello({
       name: defineTrelloCardName(),
-      desc: videoLink,
+      desc: finalLink,
       idList: defineListId(),
       idMembers: foundWorkersTrelloIds,
       ...(list === "In progress" && {
@@ -152,8 +157,9 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
     const bodyForCreateLink = {
       researcher: selfWorker._id,
       authorsNick: authorNickname,
+      unixid,
       title,
-      link: videoLink,
+      link: finalLink,
       trelloCardUrl: trelloResponseAfterCreatingCard.url,
       trelloCardId: trelloResponseAfterCreatingCard.id,
       listInTrello: list,

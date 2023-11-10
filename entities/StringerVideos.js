@@ -20,7 +20,7 @@ const schema = new Schema(
       default: [],
     },
     assignedTo: {
-      type: String,
+      type: Schema.Types.ObjectId,
       required: false,
     },
   },
