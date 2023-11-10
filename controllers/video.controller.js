@@ -1199,6 +1199,7 @@ const findVideoBy = async ({
         name: 1,
         avatarUrl: 1,
         email: 1,
+        advancePayment: 1,
       },
     })
     .populate({

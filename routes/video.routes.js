@@ -925,13 +925,6 @@ router.get("/findAll", authMiddleware, async (req, res) => {
       });
     }
 
-    console.log(
-      videos.map((ff) => {
-        return ff.trelloData.researchers;
-      }),
-      888
-    );
-
     const apiData = {
       ...(limit &&
         page && {

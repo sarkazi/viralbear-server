@@ -1,5 +1,3 @@
-const defaultAdvanceValueToResearcher = require("../const/defaultAdvanceValueToResearcher");
-
 const defineResearchersListForCreatingVideo = ({
   mainResearcher,
   allResearchersList,
@@ -14,17 +12,15 @@ const defineResearchersListForCreatingVideo = ({
         : mainResearcher._id.toString() === researcher._id.toString()
         ? true
         : false,
-      advanceHasBeenPaid:
+      advanceHasBeenPaid: Boolean(
         !!researcherWithPaidAdvance &&
-        researcher._id.toString() ===
-          researcherWithPaidAdvance.researcher._id.toString()
-          ? true
-          : false,
-      advanceValue:
-        advanceToResearcher &&
-        researcher._id.toString() === mainResearcher._id.toString()
-          ? advanceToResearcher
-          : defaultAdvanceValueToResearcher,
+          researcher._id.toString() ===
+            researcherWithPaidAdvance.researcher._id.toString()
+      ),
+      ...(advanceToResearcher &&
+        researcher._id.toString() === mainResearcher._id.toString() && {
+          advanceValue: advanceToResearcher,
+        }),
     };
   });
 };

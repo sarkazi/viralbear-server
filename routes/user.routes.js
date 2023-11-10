@@ -988,9 +988,7 @@ router.get(
           });
 
           const defineAdvanceValueToResearcher = () => {
-            if (!user?.advancePayment) {
-              return 0;
-            } else {
+            if (videosWithUnpaidAdvance.length) {
               return videosWithUnpaidAdvance.reduce((acc, videoData) => {
                 const thisResearcher = videoData.trelloData.researchers.find(
                   (researcherData) =>
@@ -1000,6 +998,8 @@ router.get(
 
                 return thisResearcher.advanceValue + acc;
               }, 0);
+            } else {
+              return 0;
             }
           };
 
@@ -1662,9 +1662,7 @@ router.get("/collectStatForEmployee", authMiddleware, async (req, res) => {
     });
 
     const defineAdvanceValueToResearcher = () => {
-      if (!user?.advancePayment) {
-        return 0;
-      } else {
+      if (videosWithUnpaidAdvance.length) {
         return videosWithUnpaidAdvance.reduce((acc, videoData) => {
           const thisResearcher = videoData.trelloData.researchers.find(
             (researcherData) =>
@@ -1673,6 +1671,8 @@ router.get("/collectStatForEmployee", authMiddleware, async (req, res) => {
 
           return thisResearcher.advanceValue + acc;
         }, 0);
+      } else {
+        return 0;
       }
     };
 
