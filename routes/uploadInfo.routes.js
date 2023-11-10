@@ -635,38 +635,15 @@ router.post(
       };
 
       if (!!newVbForm.refFormId?.paid) {
-        const linkData = await findLinkBy({
-          searchBy: "link",
-          value: newVbForm.refFormId.videoLink,
-        });
-
-        // && process.env.MODE === "production"
-
-        if (!!linkData?.trelloCardId) {
-          const trelloCard = await getCardDataByCardId(linkData.trelloCardId);
-
-          await updateCustomFieldByTrelloCard(
-            trelloCard.id,
-            process.env.TRELLO_CUSTOM_FIELD_VB_CODE,
-            {
-              value: {
-                number: newVbForm.formId.replace("VB", ""),
-              },
-            }
-          );
-        }
-      }
-
-      if (!!refPaidForm) {
-        //TODO привести все таблицы реф ссылок и ссылок к одному виду
-
-        //await updateManyAuthorLinks({
-        //  searchBy: 'videoId',
-        // searchValue: refForm.videoId,
-        // objForSet: {
-        //    used: true,
-        //  },
-        //});
+        await updateCustomFieldByTrelloCard(
+          newVbForm.refFormId.trelloCardId,
+          process.env.TRELLO_CUSTOM_FIELD_VB_CODE,
+          {
+            value: {
+              number: newVbForm.formId.replace("VB", ""),
+            },
+          }
+        );
 
         await updateAuthorLinkBy({
           updateBy: "_id",

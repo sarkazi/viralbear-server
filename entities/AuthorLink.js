@@ -22,6 +22,10 @@ const schema = new Schema(
       type: String,
       required: false,
     },
+    unixid: {
+      type: String,
+      required: false,
+    },
     videoId: {
       type: String,
       required: false,
@@ -47,6 +51,10 @@ const schema = new Schema(
       required: true,
     },
     trelloCardUrl: {
+      type: String,
+      required: false,
+    },
+    trelloCardId: {
       type: String,
       required: false,
     },

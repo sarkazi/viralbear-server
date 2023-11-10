@@ -18,8 +18,9 @@ const {
 
 const {
   conversionIncorrectLinks,
-
+  findBaseUrl,
   findLinkBy,
+  pullIdFromUrl,
 } = require("../controllers/links.controller");
 
 const {
@@ -65,27 +66,27 @@ router.post("/create", authMiddleware, async (req, res) => {
       });
     }
 
-    const convertedLink = conversionIncorrectLinks(reqVideoLink);
+    const finalLink = conversionIncorrectLinks(reqVideoLink);
 
-    //const videoLink = await findBaseUrl(convertedLink);
+    let response = await findBaseUrl(finalLink);
+    let unixid = null;
 
-    //if (!videoLink) {
-    //  return res
-    //    .status(200)
-    //    .json({ message: 'Link is invalid', status: 'warning' });
-    //}
+    if (response.status === "success" && response.href.includes("tiktok")) {
+      unixid = response.href;
+    } else {
+      unixid = pullIdFromUrl(finalLink);
+    }
 
-    //const videoId = await pullIdFromUrl(convertedLink);
-
-    //if (!videoId) {
-    //  return res
-    //    .status(200)
-    //    .json({ message: 'Link is invalid', status: 'warning' });
-    //}
+    if (!unixid) {
+      return res.status(200).json({
+        status: "warning",
+        message: "Could not determine unixid. Contact the administrator",
+      });
+    }
 
     const authorLink = await findOneRefFormByParam({
-      searchBy: "videoLink",
-      value: convertedLink,
+      searchBy: "unixid",
+      value: unixid,
     });
 
     if (!!authorLink) {
@@ -99,9 +100,11 @@ router.post("/create", authMiddleware, async (req, res) => {
       }
     }
 
-    const link = await findLinkBy({ searchBy: "link", value: convertedLink });
+    const linkForm = await findLinkBy({ searchBy: "unixid", value: unixid });
 
-    if (!link) {
+    let newTrelloCard = null;
+
+    if (!linkForm) {
       if (confirmIncorrect === false) {
         return res.status(200).json({
           message:
@@ -129,15 +132,22 @@ router.post("/create", authMiddleware, async (req, res) => {
           });
         }
 
-        await createCardInTrello({
+        const resTrello = await createCardInTrello({
           name: `@${trelloCardNickname} ${trelloCardTitle}`,
-          desc: convertedLink,
+          desc: finalLink,
           idList: process.env.TRELLO_LIST_DOING_ID,
           idMembers: [trelloMember.id],
           idLabels: [process.env.TRELLO_LABEL_IN_PROGRESS],
         });
+
+        newTrelloCard = resTrello;
       }
     }
+
+    const trelloCardId = !!linkForm ? linkForm.trelloCardId : newTrelloCard.id;
+    const trelloCardUrl = !!linkForm
+      ? linkForm.trelloCardUrl
+      : newTrelloCard.url;
 
     const formHash = generateHash({ length: 7 });
 
@@ -147,13 +157,12 @@ router.post("/create", authMiddleware, async (req, res) => {
       researcher: user._id,
       formHash,
       formLink: `${process.env.CLIENT_URI}/submitVideos/${formHash}`,
-      videoLink: convertedLink,
-      convertedLink,
+      videoLink: finalLink,
       exclusivity,
+      unixid,
       paid: true,
-
-      ...(link?.trelloCardUrl && { trelloCardUrl: link.trelloCardUrl }),
-      ...(link?.trelloCardId && { trelloCardId: link.trelloCardId }),
+      trelloCardUrl,
+      trelloCardId,
     };
 
     const newAuthorLink = await createNewAuthorLink(bodyForNewAuthorLink);

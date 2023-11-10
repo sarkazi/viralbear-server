@@ -17,6 +17,7 @@ const findOne = async (objDB) => {
         advancePayment: 1,
         exclusivity: 1,
         trelloCardUrl: 1,
+        trelloCardId: 1,
         videoId: 1,
         paid: 1,
         videoLink: 1,

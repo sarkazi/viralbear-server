@@ -45,6 +45,13 @@ router.post("/sendLinkToTrello", authMiddleware, async (req, res) => {
       unixid = pullIdFromUrl(finalLink);
     }
 
+    if (!unixid) {
+      return res.status(200).json({
+        status: "warning",
+        message: "Could not determine unixid. Contact the administrator",
+      });
+    }
+
     const linkInfo = await findLinkBy({
       searchBy: "unixid",
       value: unixid,
